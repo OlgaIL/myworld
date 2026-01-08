@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import session from "express-session";
 import passport from "passport";
@@ -22,8 +24,8 @@ app.use(passport.session());
 passport.use(
   new GoogleStrategy(
     {
-      clientID: "532493933750-ll9ttnl7gkrllelgkr44h9bfntk0jgjp.apps.googleusercontent.com",
-      clientSecret: "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",
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "http://localhost:4000/auth/google/callback",
     },
     (accessToken, refreshToken, profile, done) => done(null, profile)
