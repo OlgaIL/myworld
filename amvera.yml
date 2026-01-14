@@ -1,0 +1,27 @@
+version: null
+meta:
+  environment: node
+  toolchain:
+    name: npm
+    version: 18
+
+build:
+  skip: false
+ 
+additionalCommands:
+    - cd client
+    - npm install
+    - npm run build
+
+      artifacts:
+    '*': /
+
+    
+run:
+  persistenceMount: /distr
+  scriptName: server/server.js
+  scriptArguments: npm  START
+  nodeArguments: null
+  command: npm run start
+  containerPort: 80
+serviceType: compute
