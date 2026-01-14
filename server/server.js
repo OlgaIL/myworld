@@ -1,3 +1,7 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
@@ -10,10 +14,13 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
+
+const app = express();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: false }));
@@ -60,5 +67,16 @@ app.delete("/api/photos/:name", (req, res) => {
   fs.unlinkSync(path.join(__dirname, "uploads", req.params.name));
   res.sendStatus(200);
 });
+
+app.use(
+  express.static(path.join(__dirname, "../client/dist"))
+);
+
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../client/dist/index.html")
+  );
+});
+
 
 app.listen(4000, () => console.log("Server running on http://localhost:4000"));
