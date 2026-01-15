@@ -17,11 +17,3 @@ additionalCommands:
     '*': /
 
     
-run:
-  persistenceMount: /distr
-  scriptName: server/server.js
-  scriptArguments: npm  START
-  nodeArguments: null
-  command: npm run start
-  containerPort: 80
-serviceType: compute
