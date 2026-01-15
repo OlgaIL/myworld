@@ -4,16 +4,13 @@ meta:
   toolchain:
     name: npm
     version: 18
-
+    
 build:
-  skip: false
- 
-additionalCommands:
+  commands:
     - cd client
     - npm install
     - npm run build
 
-      artifacts:
-    '*': /
-
+start:
+  command: echo "build only"
     
