@@ -1,6 +1,3 @@
-import path from "path";
-import { fileURLToPath } from "url";
-
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -11,6 +8,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import multer from "multer";
 import fs from "fs";
 import cors from "cors";
+
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -68,15 +66,6 @@ app.delete("/api/photos/:name", (req, res) => {
   res.sendStatus(200);
 });
 
-app.use(
-  express.static(path.join(__dirname, "../client/dist"))
-);
-
-app.get("*", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../client/dist/index.html")
-  );
-});
 
 
 app.listen(4000, () => console.log("Server running on http://localhost:4000"));
