@@ -23,7 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-server/.env
 
 
 # dependencies
@@ -35,6 +34,7 @@ uploads/
 # env files
 .env
 server/.env
+client/.env
 
 # logs
 npm-debug.log*

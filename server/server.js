@@ -12,6 +12,9 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
+const CLIENT_URL = process.env.CLIENT_URL;
+const SERVER_URL = process.env.SERVER_URL;
+
 
 const app = express();
 
@@ -19,7 +22,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+//app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+app.use(cors({
+  origin: CLIENT_URL,
+  credentials: true
+}));
+
+
 app.use(express.json());
 app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
@@ -31,7 +41,8 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:4000/auth/google/callback",
+      callbackURL: `${SERVER_URL}/auth/google/callback`
+
     },
     (accessToken, refreshToken, profile, done) => done(null, profile)
   )
@@ -43,11 +54,11 @@ passport.deserializeUser((obj, done) => done(null, obj));
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 app.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => res.redirect("http://localhost:5173/")
+  (req, res) => res.redirect(CLIENT_URL)
 );
 app.get("/api/me", (req, res) => res.send(req.user || null));
 app.get("/logout", (req, res) => {
-  req.logout(() => res.redirect("http://localhost:5173/"));
+  req.logout(() => res.redirect(CLIENT_URL));
 });
 
 // === Uploads ===
