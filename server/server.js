@@ -78,5 +78,11 @@ app.delete("/api/photos/:name", (req, res) => {
 });
 
 
+app.use(express.static(path.join(__dirname, "../client/dist")));
+
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+});
+
 
 app.listen(4000, () => console.log("Server running on http://localhost:4000"));
