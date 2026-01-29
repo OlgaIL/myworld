@@ -5,13 +5,35 @@ import { getPhotoUrl } from "../services/api";
 import Gallery from "../components/Gallery";
 import Modal from "../components/Modal";
 
+
+
 function App() {
   const { user, login, logout } = useAuth();
-  const { photos, addPhoto, removePhoto } = usePhotos();
+  const { photos, loading, addPhoto, removePhoto } = usePhotos();
+  
   const [activePhoto, setActivePhoto] = useState(null);
 
-  function handleUpload(e) {
-    addPhoto(e.target.files[0]);
+  // ✅ состояние загрузки файла
+  const [uploading, setUploading] = useState(false);
+
+  async function handleUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+
+      // ✅ ждём пока загрузка завершится
+      await addPhoto(file);
+
+      // очищаем input чтобы можно было загрузить тот же файл снова
+      e.target.value = "";
+    } catch (err) {
+      console.error("Ошибка загрузки:", err);
+      alert("Не удалось загрузить фото");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -29,16 +51,30 @@ function App() {
             <button onClick={logout}>Выйти</button>
           </div>
 
-          <input type="file" onChange={handleUpload} />
+          {/* ✅ Загрузка файла */}
+          <input type="file" onChange={handleUpload} disabled={uploading} />
 
-          <Gallery
-            photos={photos}
-            onOpen={setActivePhoto}
-            onDelete={removePhoto}
-          />
+          {/* ✅ Индикатор */}
+          {uploading && (
+            <p style={{ marginTop: "10px" }}>Загрузка фото...</p>
+          )}
+
+          {/* ✅ Gallery показываем только если массив */}
+          {Array.isArray(photos) && photos.length > 0 ? (
+            <Gallery
+              photos={photos}
+              onOpen={setActivePhoto}
+              onDelete={removePhoto}
+            />
+          ) : (
+            <p style={{ marginTop: "20px" }}>
+              Пока нет загруженных фотографий
+            </p>
+          )}
         </>
       )}
 
+      {/* ✅ Модалка */}
       {activePhoto && (
         <Modal
           src={getPhotoUrl(activePhoto)}
