@@ -10,7 +10,7 @@ import Modal from "../components/Modal";
 function App() {
   const { user, login, logout } = useAuth();
   const { photos, loading, addPhoto, removePhoto } = usePhotos();
-  
+
   const [activePhoto, setActivePhoto] = useState(null);
 
   // ✅ состояние загрузки файла
@@ -59,7 +59,9 @@ function App() {
             <p style={{ marginTop: "10px" }}>Загрузка фото...</p>
           )}
 
-          {/* ✅ Gallery показываем только если массив */}
+
+          
+           {/* ✅ Gallery показываем только если массив */}
           {Array.isArray(photos) && photos.length > 0 ? (
             <Gallery
               photos={photos}

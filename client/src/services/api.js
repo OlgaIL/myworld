@@ -35,12 +35,52 @@ export function getPhotos() {
   });
 }
 
-export function uploadPhoto(file) {
+/*export function uploadPhoto(file) {
   const formData = new FormData();
   formData.append("photo", file);
 
   return axios.post(`${API_URL}/api/upload`, formData);
+}*/
+
+
+export function uploadPhoto(file, onProgress) {
+  const formData = new FormData();
+  formData.append("photo", file);
+
+  return axios
+    .post(`${API_URL}/api/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      },
+
+      onUploadProgress: (progressEvent) => {
+        if (onProgress) {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          onProgress(percent);
+        }
+      }
+    })
+    .then(res => res.data)
+
+    .catch(err => {
+
+      if (err.response) {
+
+        if (err.response.status === 413) {
+          throw new Error("Файл слишком большой (макс 20MB)");
+        }
+
+        throw new Error("Ошибка загрузки файла");
+      }
+
+      throw new Error("Сервер недоступен");
+    });
 }
+
+
+
 
 export function deletePhoto(name) {
   return axios.delete(`${API_URL}/api/photos/${name}`);

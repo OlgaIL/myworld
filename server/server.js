@@ -62,8 +62,67 @@ app.get("/logout", (req, res) => {
 });
 
 // === Uploads ===
-const upload = multer({ dest: "uploads/" });
-app.post("/api/upload", upload.single("photo"), (req, res) => res.send({ filename: req.file.filename }));
+const upload = multer({
+  dest: "uploads/",
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10 MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      const err = new Error("INVALID_FILE_TYPE");
+      err.code = "INVALID_FILE_TYPE";
+      cb(err);
+    }
+  }
+});
+
+
+//app.post("/api/upload", upload.single("photo"), (req, res) => res.send({ filename: req.file.filename }));
+
+app.post("/api/upload", (req, res) => {
+
+  upload.single("photo")(req, res, function (err) {
+
+    if (err) {
+
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({
+          error: "FILE_TOO_LARGE",
+          message: "Файл превышает максимальный размер 10MB"
+        });
+      }
+
+      if (err.code === "INVALID_FILE_TYPE") {
+        return res.status(400).json({
+          error: "INVALID_FILE_TYPE",
+          message: "Разрешены только JPG PNG WEBP"
+        });
+      }
+
+      return res.status(500).json({
+        error: "UPLOAD_ERROR",
+        message: "Ошибка загрузки файла"
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: "NO_FILE",
+        message: "Файл не был загружен"
+      });
+    }
+
+    res.json({
+      filename: req.file.filename
+    });
+
+  });
+
+});
 
 app.get("/api/photos", (req, res) => {
   const files = fs.readdirSync("uploads");
