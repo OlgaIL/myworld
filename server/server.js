@@ -14,8 +14,8 @@ import { fileURLToPath } from "url";
 
 // --- Подключаем сервисы ---
 
- import ocrService from "./services/ocrService.js";
-import * as aiService from "./services/aiService.js";
+  import ocrService from "./services/ocrService.js";
+  import * as aiService from "./services/aiService.js";
 
 const CLIENT_URL = process.env.CLIENT_URL;
 const SERVER_URL = process.env.SERVER_URL;

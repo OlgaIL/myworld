@@ -4,6 +4,9 @@ import { useState } from "react";
 import { getPhotoInfo } from "../services/api";
 
 
+
+
+
 function Gallery({ photos, onOpen, onDelete }) {
   const [infoMap, setInfoMap] = useState({});
   const [processingMap, setProcessingMap] = useState({});
@@ -12,9 +15,8 @@ const handleProcess = async (name) => {
   try {
     setProcessingMap((prev) => ({ ...prev, [name]: true }));
 
-    const result = await processPhoto(name);
+    await processPhoto(name);
 
-    // сразу пробуем получить инфо
     const info = await getPhotoInfo(name);
 
     setInfoMap((prev) => ({
@@ -27,7 +29,6 @@ const handleProcess = async (name) => {
         error: info.error || null,
       },
     }));
-
   } catch (e) {
     console.error(e);
 
@@ -38,12 +39,10 @@ const handleProcess = async (name) => {
         error: e.message,
       },
     }));
-
   } finally {
     setProcessingMap((prev) => ({ ...prev, [name]: false }));
   }
 };
-
 
   if (photos.length === 0) {
     return <p className="gallery__empty">Пока тут пусто. Загрузите ваши фото.</p>;
@@ -53,7 +52,7 @@ const handleProcess = async (name) => {
     
     <section className="gallery">
       {Array.isArray(photos) && photos.map(photo => (
-         <div className="gallery__item" key={photo.id}>
+         <div className="gallery__item" key={photo.name}>
             <img
               src={photo.url}
               className="gallery__image"
@@ -74,8 +73,9 @@ const handleProcess = async (name) => {
                 <h4>{infoMap[photo.name].title}</h4>
                 <p>{infoMap[photo.name].summary}</p>
                 <div>
-                  {infoMap[photo.name].tags.map((tag) => (
-                    <span key={tag}>#{tag} </span>
+                {Array.isArray(infoMap[photo.name]?.tags) &&
+                        infoMap[photo.name].tags.map((tag) => (
+                        <span key={tag}>#{tag} </span>
                   ))}
                 </div>
               </div>

@@ -31,7 +31,25 @@ export function getPhotos() {
       return [];
     }
 
-    return data;
+    return data
+      .map((item) => {
+        if (typeof item === "string") {
+          return {
+            name: item,
+            url: getPhotoUrl(item)
+          };
+        }
+
+        if (item && typeof item === "object" && typeof item.name === "string") {
+          return {
+            ...item,
+            url: item.url || getPhotoUrl(item.name)
+          };
+        }
+
+        return null;
+      })
+      .filter(Boolean);
   });
 }
 
@@ -70,7 +88,7 @@ export function uploadPhoto(file, onProgress) {
       if (err.response) {
 
         if (err.response.status === 413) {
-          throw new Error("Файл слишком большой (макс 20MB)");
+          throw new Error("Файл слишком большой (макс 10MB)");
         }
 
         throw new Error("Ошибка загрузки файла");
