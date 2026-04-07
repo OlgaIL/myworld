@@ -43,6 +43,7 @@ export function getPhotos() {
 }*/
 
 
+
 export function uploadPhoto(file, onProgress) {
   const formData = new FormData();
   formData.append("photo", file);
@@ -89,3 +90,40 @@ export function deletePhoto(name) {
 export function getPhotoUrl(name) {
   return `${API_URL}/api/photos/${name}`;
 }
+
+
+// ==================== PROCESSING ====================
+
+/**
+ * Запускает обработку фото на сервере
+ * @param {string} id - уникальный id файла (filename)
+ */
+export function processPhoto(id) {
+  return axios
+    .post(`${API_URL}/api/photos/${id}/process`)
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err.response) {
+        throw new Error("Ошибка запуска обработки");
+      }
+      throw new Error("Сервер недоступен");
+    });
+}
+
+/**
+ * Получает информацию о фото после обработки
+ * @param {string} id - уникальный id файла (filename)
+ */
+export function getPhotoInfo(id) {
+  return axios
+    .get(`${API_URL}/api/photos/${id}/info`)
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err.response) {
+        throw new Error("Ошибка получения информации");
+      }
+      throw new Error("Сервер недоступен");
+    });
+}
+
+

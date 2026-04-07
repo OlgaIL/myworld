@@ -35,6 +35,7 @@ uploads/
 .env
 server/.env
 client/.env
+server/myworld-11470-baac8f1b9876.json
 
 # logs
 npm-debug.log*
