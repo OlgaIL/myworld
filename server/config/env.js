@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+
+dotenv.config();
+
 export const CLIENT_URL = process.env.CLIENT_URL;
 export const SERVER_URL = process.env.SERVER_URL;
 export const SESSION_SECRET = process.env.SESSION_SECRET || "keyboard cat";
