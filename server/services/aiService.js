@@ -1,6 +1,6 @@
 import axios from "axios";
+import OpenAI from "openai";
 
-// === MAIN ENTRY ===
 export async function process(text, options) {
   const { provider } = options;
 
@@ -12,15 +12,9 @@ export async function process(text, options) {
     return processOpenAI(text, options);
   }
 
-  return {
-    title: "",
-    summary: "",
-    tags: [],
-    error: "Unknown AI provider"
-  };
+  return errorResult("Unknown AI provider");
 }
 
-// === YANDEX GPT ===
 async function processYandex(text, { apiKey, folderId }) {
   if (!apiKey) {
     return errorResult("YANDEX_API_KEY is not set");
@@ -45,7 +39,7 @@ async function processYandex(text, { apiKey, folderId }) {
         messages: [
           {
             role: "system",
-            text: "Ты анализируешь текст с изображения и возвращаешь JSON."
+            text: "Analyze OCR text from an image and return JSON only."
           },
           {
             role: "user",
@@ -62,54 +56,83 @@ async function processYandex(text, { apiKey, folderId }) {
       }
     );
 
-    const rawText =
-      response.data?.result?.alternatives?.[0]?.message?.text || "";
-
+    const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
     return parseAIResponse(rawText);
-
   } catch (error) {
-  if (error.response) {
-    console.error("YANDEX GPT API ERROR:", {
-      status: error.response.status,
-      data: JSON.stringify(error.response.data, null, 2)
-    });
-  } else {
-    console.error("YANDEX GPT NETWORK ERROR:", error.message);
+    if (error.response) {
+      console.error("YANDEX GPT API ERROR:", {
+        status: error.response.status,
+        data: JSON.stringify(error.response.data, null, 2)
+      });
+    } else {
+      console.error("YANDEX GPT NETWORK ERROR:", error.message);
+    }
+
+    return errorResult("Yandex GPT failed");
+  }
+}
+
+async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
+  if (!openAiApiKey) {
+    return errorResult("OPENAI_API_KEY is not set");
   }
 
-  return errorResult("Yandex GPT failed");
+  const prompt = buildPrompt(text);
+  const client = new OpenAI({ apiKey: openAiApiKey });
+
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      temperature: 0.3,
+      max_tokens: 500,
+      response_format: {
+        type: "json_object"
+      },
+      messages: [
+        {
+          role: "system",
+          content: "You analyze OCR text from an image and return valid JSON only."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    });
+
+    const rawText = response.choices?.[0]?.message?.content || "";
+    return parseAIResponse(rawText);
+  } catch (error) {
+    if (error.status) {
+      console.error("OPENAI API ERROR:", {
+        status: error.status,
+        message: error.message
+      });
+    } else {
+      console.error("OPENAI NETWORK ERROR:", error.message);
+    }
+
+    return errorResult("OpenAI request failed");
+  }
 }
 
-
-}
-
-// === OPENAI (fallback, можно оставить) ===
-async function processOpenAI(text) {
-  return {
-    title: "",
-    summary: "",
-    tags: [],
-    error: "OpenAI disabled"
-  };
-}
-
-// === PROMPT ===
 function buildPrompt(text) {
   return `
-Проанализируй текст и верни JSON:
+Analyze the OCR text and return JSON in this format:
 
 {
-  "title": "короткий заголовок",
-  "summary": "краткое описание",
-  "tags": ["тег1", "тег2"]
+  "title": "short title",
+  "summary": "short summary",
+  "tags": ["tag1", "tag2"]
 }
 
-Текст:
+Return only valid JSON.
+
+OCR text:
 ${text}
 `;
 }
 
-// === PARSER ===
 function parseAIResponse(raw) {
   try {
     const jsonStart = raw.indexOf("{");
@@ -123,24 +146,16 @@ function parseAIResponse(raw) {
     const parsed = JSON.parse(jsonString);
 
     return {
-      title: parsed.title || "",
-      summary: parsed.summary || "",
-      tags: Array.isArray(parsed.tags) ? parsed.tags : []
+      title: typeof parsed.title === "string" ? parsed.title : "",
+      summary: typeof parsed.summary === "string" ? parsed.summary : "",
+      tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === "string") : []
     };
-
-  } catch (e) {
-    console.error("AI PARSE ERROR:", e.message);
-
-    return {
-      title: "",
-      summary: "",
-      tags: [],
-      error: "Invalid AI response"
-    };
+  } catch (error) {
+    console.error("AI PARSE ERROR:", error.message);
+    return errorResult("Invalid AI response");
   }
 }
 
-// === ERROR RESULT ===
 function errorResult(message) {
   return {
     title: "",

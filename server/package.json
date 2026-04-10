@@ -4,7 +4,9 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:migrate": "node db/migrate.js",
+    "db:status": "node db/status.js"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.5",
@@ -16,6 +18,7 @@
     "multer": "^2.0.2",
     "openai": "^6.33.0",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.16.3"
   }
 }

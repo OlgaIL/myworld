@@ -30,12 +30,13 @@ client/ node_modules/
 server / node_modules/ 
 node_modules/ 
 uploads/
+.local-postgres/
 
 # env files
 .env
 server/.env
 client/.env
-server/myworld-11470-baac8f1b9876.json
+server/myworld-11470-eb45e519bcf2.json
 
 # logs
 npm-debug.log*
