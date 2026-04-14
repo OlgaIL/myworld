@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import fs from "fs";
 import pg from "pg";
 
 dotenv.config();
@@ -7,6 +8,7 @@ const { Pool } = pg;
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_SSL = process.env.DATABASE_SSL === "true";
+const DATABASE_SSL_CA_PATH = process.env.DATABASE_SSL_CA_PATH;
 
 let pool = null;
 
@@ -15,9 +17,24 @@ function buildPoolConfig() {
     return null;
   }
 
+  let ssl = false;
+
+  if (DATABASE_SSL) {
+    ssl = {
+      rejectUnauthorized: false
+    };
+
+    if (DATABASE_SSL_CA_PATH) {
+      ssl = {
+        ca: fs.readFileSync(DATABASE_SSL_CA_PATH, "utf8"),
+        rejectUnauthorized: true
+      };
+    }
+  }
+
   return {
     connectionString: DATABASE_URL,
-    ssl: DATABASE_SSL ? { rejectUnauthorized: false } : false
+    ssl
   };
 }
 
