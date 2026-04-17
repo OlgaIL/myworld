@@ -1,36 +1,39 @@
 import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { usePhotos } from "../hooks/usePhotos";
-import { getPhotoUrl } from "../services/api";
 import Gallery from "../components/Gallery";
 import Modal from "../components/Modal";
-
-
+import { useAuth } from "../hooks/useAuth";
+import { usePhotos } from "../hooks/usePhotos";
+import { getPhotoUrl, processPhoto } from "../services/api";
 
 function App() {
   const { user, login, logout } = useAuth();
-  const { photos, loading, addPhoto, removePhoto } = usePhotos();
-
+  const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos();
   const [activePhoto, setActivePhoto] = useState(null);
-
-  // ✅ состояние загрузки файла
   const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
 
-  async function handleUpload(e) {
-    const file = e.target.files[0];
+  async function handleUpload(event) {
+    const file = event.target.files[0];
     if (!file) return;
 
     try {
       setUploading(true);
+      setUploadMessage("Загрузка фото...");
 
-      // ✅ ждём пока загрузка завершится
-      await addPhoto(file);
+      const uploadedPhoto = await addPhoto(file);
 
-      // очищаем input чтобы можно было загрузить тот же файл снова
-      e.target.value = "";
-    } catch (err) {
-      console.error("Ошибка загрузки:", err);
+      if (user?.processingAllowed && uploadedPhoto?.filename) {
+        setUploadMessage("Фото загружено. Запускаем обработку...");
+        await processPhoto(uploadedPhoto.filename);
+        await reloadPhotos();
+      }
+
+      event.target.value = "";
+      setUploadMessage("");
+    } catch (error) {
+      console.error("Upload error:", error);
       alert("Не удалось загрузить фото");
+      setUploadMessage("");
     } finally {
       setUploading(false);
     }
@@ -51,32 +54,29 @@ function App() {
             <button onClick={logout}>Выйти</button>
           </div>
 
-          {/* ✅ Загрузка файла */}
           <input type="file" onChange={handleUpload} disabled={uploading} />
 
-          {/* ✅ Индикатор */}
-          {uploading && (
-            <p style={{ marginTop: "10px" }}>Загрузка фото...</p>
-          )}
+          {uploading && <p style={{ marginTop: "10px" }}>{uploadMessage || "Загрузка фото..."}</p>}
 
-
-          
-           {/* ✅ Gallery показываем только если массив */}
           {Array.isArray(photos) && photos.length > 0 ? (
             <Gallery
               photos={photos}
+              processingAllowed={Boolean(user?.processingAllowed)}
               onOpen={setActivePhoto}
               onDelete={removePhoto}
             />
           ) : (
+            <p style={{ marginTop: "20px" }}>Пока нет загруженных фотографий</p>
+          )}
+
+          {!user?.processingAllowed && (
             <p style={{ marginTop: "20px" }}>
-              Пока нет загруженных фотографий
+              Обработка фото сейчас скрыта для пользователей вне разрешенного списка.
             </p>
           )}
         </>
       )}
 
-      {/* ✅ Модалка */}
       {activePhoto && (
         <Modal
           src={getPhotoUrl(activePhoto)}

@@ -1,46 +1,42 @@
 import { useEffect, useState } from "react";
-import { getPhotos, uploadPhoto, deletePhoto } from "../services/api";
+import { deletePhoto, getPhotos, uploadPhoto } from "../services/api";
 
 export function usePhotos() {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
-  
 
-  // ✅ Загружаем фото правильно
   async function loadPhotos() {
     try {
       setLoading(true);
-
       const data = await getPhotos();
-
-      // защита: если сервер вернул не массив
       setPhotos(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Ошибка загрузки списка фото:", err);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("Ошибка загрузки списка фото:", error);
       setPhotos([]);
+      return [];
     } finally {
       setLoading(false);
     }
   }
 
-  // ✅ Добавляем фото и ждём обновления списка
   async function addPhoto(file) {
     try {
-      await uploadPhoto(file);
+      const uploadedPhoto = await uploadPhoto(file);
       await loadPhotos();
-    } catch (err) {
-      console.error("Ошибка загрузки фото:", err);
-      throw err;
+      return uploadedPhoto;
+    } catch (error) {
+      console.error("Ошибка загрузки фото:", error);
+      throw error;
     }
   }
 
-  // ✅ Удаляем фото и обновляем список
   async function removePhoto(name) {
     try {
       await deletePhoto(name);
       await loadPhotos();
-    } catch (err) {
-      console.error("Ошибка удаления фото:", err);
+    } catch (error) {
+      console.error("Ошибка удаления фото:", error);
     }
   }
 
@@ -52,6 +48,7 @@ export function usePhotos() {
     photos,
     loading,
     addPhoto,
-    removePhoto
+    removePhoto,
+    reloadPhotos: loadPhotos
   };
 }

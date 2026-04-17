@@ -71,6 +71,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e4e8f0;
+  border-radius: 12px;
+  background: #fff;
 }
 
 .gallery__image {
@@ -92,6 +97,104 @@ body {
 .gallery__empty {
   color: #777;
   font-style: italic;
+}
+
+.gallery__primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gallery__details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gallery__details h4,
+.gallery__details p {
+  margin: 0;
+}
+
+.gallery__summary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gallery__summary-row p {
+  flex: 1;
+}
+
+.gallery__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gallery__tags span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef3fb;
+  font-size: 13px;
+}
+
+.gallery__text-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gallery__text-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.gallery__text-block {
+  width: 100%;
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f5f7fb;
+  white-space: pre-wrap;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d7dce5;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.icon-button:hover {
+  background: #f5f7fb;
+  border-color: #b8c1d1;
+}
+
+.icon-button:active {
+  transform: translateY(1px);
+}
+
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ===== modal ===== */
