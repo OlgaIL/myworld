@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { getPhotoInfo, processPhoto } from "../services/api";
+import { getPhotoInfo } from "../services/api";
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6l12 12" />
+      <path d="M18 6l-12 12" />
+    </svg>
+  );
+}
 
 function CopyIcon() {
   return (
@@ -30,11 +39,66 @@ function EyeOffIcon() {
   );
 }
 
-function Gallery({ photos, processingAllowed, onOpen, onDelete }) {
+function ZoomIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="6" />
+      <path d="M20 20l-4.35-4.35" />
+    </svg>
+  );
+}
+
+function getStatusMeta(status) {
+  if (status === "processing") {
+    return {
+      label: "Обработка",
+      className: "gallery__status-badge gallery__status-badge--processing"
+    };
+  }
+
+  if (status === "processed") {
+    return {
+      label: "Готово",
+      className: "gallery__status-badge gallery__status-badge--processed"
+    };
+  }
+
+  if (status === "no_text") {
+    return {
+      label: "Текст не найден",
+      className: "gallery__status-badge gallery__status-badge--warning"
+    };
+  }
+
+  if (status === "error") {
+    return {
+      label: "Ошибка",
+      className: "gallery__status-badge gallery__status-badge--error"
+    };
+  }
+
+  return null;
+}
+
+function formatCreatedAt(value) {
+  if (!value) {
+    return "";
+  }
+
+  const formatted = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(value));
+
+  return formatted.replace(".", "");
+}
+
+function Gallery({ photos, onOpen, onDelete }) {
   const [infoMap, setInfoMap] = useState({});
-  const [processingMap, setProcessingMap] = useState({});
   const [expandedTextMap, setExpandedTextMap] = useState({});
   const [copiedMap, setCopiedMap] = useState({});
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +135,8 @@ function Gallery({ photos, processingAllowed, onOpen, onDelete }) {
               summary: info.summary || "",
               text: info.text || "",
               tags: Array.isArray(info.tags) ? info.tags : [],
-              error: info.error || null
+              error: info.error || null,
+              createdAt: info.createdAt || null
             }
           }));
         } catch (error) {
@@ -98,48 +163,6 @@ function Gallery({ photos, processingAllowed, onOpen, onDelete }) {
     };
   }, [photos, infoMap]);
 
-  async function handleProcess(name) {
-    try {
-      setProcessingMap((prev) => ({ ...prev, [name]: true }));
-      setInfoMap((prev) => ({
-        ...prev,
-        [name]: {
-          ...prev[name],
-          status: "processing",
-          error: null
-        }
-      }));
-
-      await processPhoto(name);
-      const info = await getPhotoInfo(name);
-
-      setInfoMap((prev) => ({
-        ...prev,
-        [name]: {
-          status: info.status,
-          title: info.title || "",
-          summary: info.summary || "",
-          text: info.text || "",
-          tags: Array.isArray(info.tags) ? info.tags : [],
-          error: info.error || null
-        }
-      }));
-    } catch (error) {
-      console.error(error);
-
-      setInfoMap((prev) => ({
-        ...prev,
-        [name]: {
-          ...prev[name],
-          status: "error",
-          error: error.message
-        }
-      }));
-    } finally {
-      setProcessingMap((prev) => ({ ...prev, [name]: false }));
-    }
-  }
-
   async function handleCopy(key, text) {
     if (!text) {
       return;
@@ -157,6 +180,15 @@ function Gallery({ photos, processingAllowed, onOpen, onDelete }) {
     }
   }
 
+  async function confirmDelete() {
+    if (!pendingDelete) {
+      return;
+    }
+
+    await onDelete(pendingDelete);
+    setPendingDelete(null);
+  }
+
   function toggleText(name) {
     setExpandedTextMap((prev) => ({
       ...prev,
@@ -164,11 +196,13 @@ function Gallery({ photos, processingAllowed, onOpen, onDelete }) {
     }));
   }
 
-  function renderIconButton({ label, title, onClick, children }) {
+  function renderIconButton({ className = "", label, title, onClick, children }) {
+    const classes = ["icon-button", className].filter(Boolean).join(" ");
+
     return (
       <button
         type="button"
-        className="icon-button"
+        className={classes}
         onClick={onClick}
         title={title || label}
         aria-label={label}
@@ -183,103 +217,138 @@ function Gallery({ photos, processingAllowed, onOpen, onDelete }) {
   }
 
   return (
-    <section className="gallery">
-      {photos.map((photo) => {
-        const info = infoMap[photo.name];
-        const summaryCopied = copiedMap[`${photo.name}-summary`];
-        const textCopied = copiedMap[`${photo.name}-text`];
-        const isExpanded = expandedTextMap[photo.name];
+    <>
+      <section className="gallery">
+        {photos.map((photo) => {
+          const info = infoMap[photo.name];
+          const summaryCopied = copiedMap[`${photo.name}-summary`];
+          const textCopied = copiedMap[`${photo.name}-text`];
+          const isExpanded = expandedTextMap[photo.name];
+          const statusMeta = getStatusMeta(info?.status);
+          const createdAtLabel = formatCreatedAt(info?.createdAt);
 
-        return (
-          <div className="gallery__item" key={photo.name}>
-            <img
-              src={photo.url}
-              className="gallery__image"
-              alt=""
-              onClick={() => onOpen(photo.name)}
-            />
+          return (
+            <article className="gallery__item" key={photo.name}>
+              {renderIconButton({
+                className: "gallery__delete-button",
+                label: "Удалить фото",
+                title: "Удалить фото",
+                onClick: () => setPendingDelete(photo.name),
+                children: <CloseIcon />
+              })}
 
-            <div className="gallery__primary-actions">
-              <button type="button" onClick={() => onDelete(photo.name)}>
-                Удалить
-              </button>
-              {processingAllowed && (
-                <button
-                  type="button"
-                  onClick={() => handleProcess(photo.name)}
-                  disabled={processingMap[photo.name]}
-                >
-                  {processingMap[photo.name] ? "Обработка..." : "Обработать"}
-                </button>
-              )}
-            </div>
-
-            {info?.status === "processing" && <p>Обработка...</p>}
-
-            {info?.status === "processed" && (
-              <div className="gallery__details">
-                <h4>{info.title}</h4>
-                <div className="gallery__summary-row">
-                  <p>{info.summary}</p>
-                  {info.summary &&
-                    renderIconButton({
-                      label: summaryCopied ? "Summary скопирован" : "Скопировать summary",
-                      title: summaryCopied ? "Summary скопирован" : "Скопировать summary",
-                      onClick: () => handleCopy(`${photo.name}-summary`, info.summary),
-                      children: <CopyIcon />
-                    })}
+              <div className="gallery__top">
+                <div className="gallery__preview">
+                  <img
+                    src={photo.url}
+                    className="gallery__image"
+                    alt=""
+                    onClick={() => onOpen(photo.name)}
+                  />
+                  <div className="gallery__preview-overlay" onClick={() => onOpen(photo.name)}>
+                    <span className="gallery__preview-zoom" aria-hidden="true">
+                      <ZoomIcon />
+                    </span>
+                  </div>
                 </div>
 
-                <div className="gallery__tags">
-                  {info.tags.map((tag) => (
-                    <span key={tag}>#{tag}</span>
-                  ))}
+                <div className="gallery__meta">
+                  {statusMeta && <p className={statusMeta.className}>{statusMeta.label}</p>}
+                  {createdAtLabel && (
+                    <p className="gallery__date" title={`Загружено: ${createdAtLabel}`}>
+                      {createdAtLabel}
+                    </p>
+                  )}
                 </div>
+              </div>
 
-                {info.text && (
-                  <div className="gallery__text-section">
-                    <div className="gallery__text-actions">
-                      {renderIconButton({
-                        label: isExpanded ? "Скрыть текст" : "Показать текст",
-                        title: isExpanded ? "Скрыть текст" : "Показать текст",
-                        onClick: () => toggleText(photo.name),
-                        children: isExpanded ? <EyeOffIcon /> : <EyeIcon />
-                      })}
-                      {renderIconButton({
-                        label: textCopied ? "Текст скопирован" : "Скопировать текст",
-                        title: textCopied ? "Текст скопирован" : "Скопировать текст",
-                        onClick: () => handleCopy(`${photo.name}-text`, info.text),
-                        children: <CopyIcon />
-                      })}
+              <div className="gallery__content">
+                {info?.status === "processed" && (
+                  <>
+                    <h4>{info.title}</h4>
+
+                    <div className="gallery__summary-row">
+                      <p>{info.summary}</p>
+                      {info.summary &&
+                        renderIconButton({
+                          label: summaryCopied ? "Summary скопирован" : "Скопировать summary",
+                          title: summaryCopied ? "Summary скопирован" : "Скопировать summary",
+                          onClick: () => handleCopy(`${photo.name}-summary`, info.summary),
+                          children: <CopyIcon />
+                        })}
                     </div>
 
-                    {isExpanded && <p className="gallery__text-block">{info.text}</p>}
-                  </div>
+                    <div className="gallery__tags">
+                      {info.tags.map((tag) => (
+                        <span key={tag}>#{tag}</span>
+                      ))}
+                    </div>
+
+                    {info.text && (
+                      <div className="gallery__text-section">
+                        <div className="gallery__text-actions">
+                          {renderIconButton({
+                            label: isExpanded ? "Скрыть текст" : "Показать текст",
+                            title: isExpanded ? "Скрыть текст" : "Показать текст",
+                            onClick: () => toggleText(photo.name),
+                            children: isExpanded ? <EyeOffIcon /> : <EyeIcon />
+                          })}
+                          {isExpanded &&
+                            renderIconButton({
+                              label: textCopied ? "Текст скопирован" : "Скопировать текст",
+                              title: textCopied ? "Текст скопирован" : "Скопировать текст",
+                              onClick: () => handleCopy(`${photo.name}-text`, info.text),
+                              children: <CopyIcon />
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {info?.status === "no_text" && <p>Текст не найден.</p>}
+
+                {info?.status === "error" && (
+                  <>
+                    <p>Ошибка обработки.</p>
+                    {info.error && <p>{info.error}</p>}
+                  </>
                 )}
               </div>
-            )}
 
-            {info?.status === "no_text" && (
-              <div className="gallery__details">
-                <p>Текст не найден</p>
-              </div>
-            )}
+              {info?.status === "processed" && isExpanded && (
+                <p className="gallery__text-block">{info.text}</p>
+              )}
+            </article>
+          );
+        })}
+      </section>
 
-            {info?.status === "error" && (
-              <div className="gallery__details">
-                <p>Ошибка обработки</p>
-                {info.error && <p>{info.error}</p>}
-                {processingAllowed && (
-                  <button type="button" onClick={() => handleProcess(photo.name)}>
-                    Повторить
-                  </button>
-                )}
-              </div>
-            )}
+      {pendingDelete && (
+        <div className="confirm-modal" onClick={() => setPendingDelete(null)}>
+          <div className="confirm-modal__content" onClick={(event) => event.stopPropagation()}>
+            <h3 className="confirm-modal__title">Удалить фото?</h3>
+            <p className="confirm-modal__text">Это действие нельзя отменить.</p>
+            <div className="confirm-modal__actions">
+              <button
+                type="button"
+                className="confirm-modal__button confirm-modal__button--secondary"
+                onClick={() => setPendingDelete(null)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="confirm-modal__button confirm-modal__button--danger"
+                onClick={confirmDelete}
+              >
+                Удалить
+              </button>
+            </div>
           </div>
-        );
-      })}
-    </section>
+        </div>
+      )}
+    </>
   );
 }
 

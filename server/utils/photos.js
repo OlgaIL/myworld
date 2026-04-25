@@ -23,6 +23,21 @@ export function mapPhotoInfo(photo) {
   };
 }
 
+export function getUserProcessingAccess(user) {
+  const processingQuota = Number(user?.processingQuota || 0);
+  const processingUsed = Number(user?.processingUsed || 0);
+  const processingUnlimited = Boolean(user?.processingEnabled);
+  const processingRemaining = Math.max(processingQuota - processingUsed, 0);
+
+  return {
+    processingUnlimited,
+    processingQuota,
+    processingUsed,
+    processingRemaining,
+    processingAllowedByAccount: processingUnlimited || processingRemaining > 0
+  };
+}
+
 function isCurrentOcrProviderEnabled() {
   if (OCR_PROVIDER === "google") {
     return GOOGLE_OCR_ENABLED;
@@ -66,6 +81,12 @@ export function getProcessingGuardError(user) {
 
   if (!isCurrentAiProviderEnabled()) {
     return `${AI_PROVIDER.toUpperCase()}_AI_DISABLED`;
+  }
+
+  const access = getUserProcessingAccess(user);
+
+  if (!access.processingAllowedByAccount) {
+    return "PROCESSING_NOT_AVAILABLE_FOR_USER";
   }
 
   return null;

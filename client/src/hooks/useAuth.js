@@ -4,13 +4,20 @@ import { getCurrentUser, loginWithGoogle, logout } from "../services/api";
 export function useAuth() {
   const [user, setUser] = useState(null);
 
+  async function loadUser() {
+    const currentUser = await getCurrentUser();
+    setUser(currentUser);
+    return currentUser;
+  }
+
   useEffect(() => {
-    getCurrentUser().then(setUser);
+    loadUser();
   }, []);
 
   return {
     user,
     login: loginWithGoogle,
-    logout
+    logout,
+    reloadUser: loadUser
   };
 }

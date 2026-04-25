@@ -14,6 +14,7 @@ import {
   updatePhotoProcessingResult,
   updatePhotoStatus
 } from "../repositories/photosRepository.js";
+import { consumeProcessingAccess } from "../repositories/usersRepository.js";
 import * as aiService from "../services/aiService.js";
 import ocrService from "../services/ocrService.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
@@ -188,6 +189,15 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
   }
 
   try {
+    const accessSnapshot = await consumeProcessingAccess(req.user.id);
+
+    if (!accessSnapshot) {
+      return res.status(403).json({
+        status: "error",
+        error: "PROCESSING_NOT_AVAILABLE_FOR_USER"
+      });
+    }
+
     await updatePhotoStatus(photo.id, "processing", null);
     const imagePath = photo.storage_path;
 
