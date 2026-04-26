@@ -21,6 +21,15 @@ function getProcessingHint(user) {
   return `Осталось обработок: ${user.processingRemaining}`;
 }
 
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 function App() {
   const { user, login, logout, reloadUser } = useAuth();
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos();
@@ -87,40 +96,39 @@ function App() {
       </header>
 
       {user && (
-        <section className="upload-panel">
-          <div className="upload-panel__controls">
-            <button
-              className="upload-button"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? "Загружаем..." : "Добавить фото"}
-            </button>
-            <input
-              ref={fileInputRef}
-              className="upload-input"
-              type="file"
-              onChange={handleUpload}
-              disabled={uploading}
-            />
-          </div>
-
-          {(uploadMessage || !user.processingAllowed) && (
-            <p className="upload-panel__message">
-              {uploading ? uploadMessage : getProcessingHint(user)}
-            </p>
-          )}
-        </section>
-      )}
-
-      {user && (
         <>
+          {(uploadMessage || !user.processingAllowed) && (
+            <section className="upload-panel">
+              <p className="upload-panel__message">
+                {uploading ? uploadMessage : getProcessingHint(user)}
+              </p>
+            </section>
+          )}
+
           {Array.isArray(photos) && photos.length > 0 ? (
             <Gallery photos={photos} onOpen={setActivePhoto} onDelete={removePhoto} />
           ) : (
             <p className="gallery__empty">Пока нет загруженных фотографий.</p>
           )}
+
+          <input
+            ref={fileInputRef}
+            className="upload-input"
+            type="file"
+            onChange={handleUpload}
+            disabled={uploading}
+          />
+
+          <button
+            className="fab-upload"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="Добавить фото"
+            aria-label="Добавить фото"
+          >
+            <PlusIcon />
+          </button>
         </>
       )}
 
