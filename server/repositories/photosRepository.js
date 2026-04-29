@@ -8,7 +8,13 @@ export async function createPhoto({
   sizeBytes,
   status = "uploaded",
   ocrProvider = null,
-  aiProvider = null
+  aiProvider = null,
+  ocrText = "",
+  title = "",
+  summary = "",
+  tags = [],
+  errorMessage = null,
+  processedAt = null
 }) {
   const result = await query(
     `
@@ -20,12 +26,33 @@ export async function createPhoto({
         size_bytes,
         status,
         ocr_provider,
-        ai_provider
+        ai_provider,
+        ocr_text,
+        title,
+        summary,
+        tags,
+        error_message,
+        processed_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       returning *
     `,
-    [userId, filename, storagePath, mimeType, sizeBytes, status, ocrProvider, aiProvider]
+    [
+      userId,
+      filename,
+      storagePath,
+      mimeType,
+      sizeBytes,
+      status,
+      ocrProvider,
+      aiProvider,
+      ocrText,
+      title,
+      summary,
+      JSON.stringify(Array.isArray(tags) ? tags : []),
+      errorMessage,
+      processedAt
+    ]
   );
 
   return result.rows[0];

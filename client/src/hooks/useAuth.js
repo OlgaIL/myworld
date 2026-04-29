@@ -3,11 +3,17 @@ import { getCurrentUser, loginWithGoogle, logout } from "../services/api";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   async function loadUser() {
-    const currentUser = await getCurrentUser();
-    setUser(currentUser);
-    return currentUser;
+    try {
+      setLoading(true);
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      return currentUser;
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -16,6 +22,7 @@ export function useAuth() {
 
   return {
     user,
+    authLoading: loading,
     login: loginWithGoogle,
     logout,
     reloadUser: loadUser

@@ -24,9 +24,9 @@ export function mapPhotoInfo(photo) {
 }
 
 export function getUserProcessingAccess(user) {
-  const processingQuota = Number(user?.processingQuota || 0);
-  const processingUsed = Number(user?.processingUsed || 0);
-  const processingUnlimited = Boolean(user?.processingEnabled);
+  const processingQuota = Number(user?.processingQuota ?? user?.processing_quota ?? 0);
+  const processingUsed = Number(user?.processingUsed ?? user?.processing_used ?? 0);
+  const processingUnlimited = Boolean(user?.processingEnabled ?? user?.processing_enabled);
   const processingRemaining = Math.max(processingQuota - processingUsed, 0);
 
   return {

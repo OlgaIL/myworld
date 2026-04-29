@@ -1,11 +1,8 @@
 import axios from "axios";
 
-// ✅ Если переменная окружения не задана — работаем локально
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 axios.defaults.withCredentials = true;
-
-// ==================== AUTH ====================
 
 export function getCurrentUser() {
   return axios.get(`${API_URL}/api/me`).then((res) => res.data);
@@ -19,13 +16,52 @@ export function logout() {
   window.location.href = `${API_URL}/logout`;
 }
 
-// ==================== PHOTOS ====================
+export function getGuestDocument() {
+  return axios.get(`${API_URL}/api/guest/document`).then((res) => res.data);
+}
+
+export function uploadGuestPhoto(file, onProgress) {
+  const formData = new FormData();
+  formData.append("photo", file);
+
+  return axios
+    .post(`${API_URL}/api/guest/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
+        }
+      }
+    })
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err.response) {
+        if (err.response.status === 409 && err.response.data?.error === "GUEST_LIMIT_REACHED") {
+          throw new Error("GUEST_LIMIT_REACHED");
+        }
+
+        if (err.response.status === 413) {
+          throw new Error("Файл слишком большой (макс 10MB)");
+        }
+
+        throw new Error("Ошибка загрузки файла");
+      }
+
+      throw new Error("Сервер недоступен");
+    });
+}
+
+export function getGuestDocumentFileUrl(id) {
+  return `${API_URL}/api/guest/documents/${id}/file`;
+}
 
 export function getPhotos() {
   return axios.get(`${API_URL}/api/photos`).then((res) => {
     const data = res.data;
 
-    // ✅ Главное исправление: всегда возвращаем массив
     if (!Array.isArray(data)) {
       console.warn("getPhotos: сервер вернул не массив:", data);
       return [];
@@ -53,15 +89,6 @@ export function getPhotos() {
   });
 }
 
-/*export function uploadPhoto(file) {
-  const formData = new FormData();
-  formData.append("photo", file);
-
-  return axios.post(`${API_URL}/api/upload`, formData);
-}*/
-
-
-
 export function uploadPhoto(file, onProgress) {
   const formData = new FormData();
   formData.append("photo", file);
@@ -71,22 +98,16 @@ export function uploadPhoto(file, onProgress) {
       headers: {
         "Content-Type": "multipart/form-data"
       },
-
       onUploadProgress: (progressEvent) => {
-        if (onProgress) {
-          const percent = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           onProgress(percent);
         }
       }
     })
-    .then(res => res.data)
-
-    .catch(err => {
-
+    .then((res) => res.data)
+    .catch((err) => {
       if (err.response) {
-
         if (err.response.status === 413) {
           throw new Error("Файл слишком большой (макс 10MB)");
         }
@@ -98,9 +119,6 @@ export function uploadPhoto(file, onProgress) {
     });
 }
 
-
-
-
 export function deletePhoto(name) {
   return axios.delete(`${API_URL}/api/photos/${name}`);
 }
@@ -109,13 +127,6 @@ export function getPhotoUrl(name) {
   return `${API_URL}/api/photos/${name}`;
 }
 
-
-// ==================== PROCESSING ====================
-
-/**
- * Запускает обработку фото на сервере
- * @param {string} id - уникальный id файла (filename)
- */
 export function processPhoto(id) {
   return axios
     .post(`${API_URL}/api/photos/${id}/process`)
@@ -124,14 +135,11 @@ export function processPhoto(id) {
       if (err.response) {
         throw new Error("Ошибка запуска обработки");
       }
+
       throw new Error("Сервер недоступен");
     });
 }
 
-/**
- * Получает информацию о фото после обработки
- * @param {string} id - уникальный id файла (filename)
- */
 export function getPhotoInfo(id) {
   return axios
     .get(`${API_URL}/api/photos/${id}/info`)
@@ -140,8 +148,7 @@ export function getPhotoInfo(id) {
       if (err.response) {
         throw new Error("Ошибка получения информации");
       }
+
       throw new Error("Сервер недоступен");
     });
 }
-
-

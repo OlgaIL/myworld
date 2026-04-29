@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { deletePhoto, getPhotos, uploadPhoto } from "../services/api";
 
-export function usePhotos() {
+export function usePhotos(enabled = true) {
   const [photos, setPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
 
   async function loadPhotos() {
+    if (!enabled) {
+      setPhotos([]);
+      setLoading(false);
+      return [];
+    }
+
     try {
       setLoading(true);
       const data = await getPhotos();
@@ -42,7 +48,7 @@ export function usePhotos() {
 
   useEffect(() => {
     loadPhotos();
-  }, []);
+  }, [enabled]);
 
   return {
     photos,

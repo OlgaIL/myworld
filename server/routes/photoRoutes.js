@@ -179,6 +179,19 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
     return res.status(404).json({ error: "Photo not found" });
   }
 
+  const alreadyProcessed =
+    photo.status === "processed" &&
+    (photo.title?.trim() || photo.summary?.trim() || (Array.isArray(photo.tags) && photo.tags.length > 0));
+
+  if (alreadyProcessed) {
+    return res.json({
+      status: photo.status,
+      title: photo.title || "",
+      summary: photo.summary || "",
+      tags: Array.isArray(photo.tags) ? photo.tags : []
+    });
+  }
+
   const guardError = getProcessingGuardError(req.user);
 
   if (guardError) {

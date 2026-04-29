@@ -13,6 +13,8 @@ export const YANDEX_OCR_ENABLED = process.env.YANDEX_OCR_ENABLED !== "false";
 export const YANDEX_AI_ENABLED = process.env.YANDEX_AI_ENABLED !== "false";
 export const OPENAI_ENABLED = process.env.OPENAI_ENABLED !== "false";
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+export const GUEST_DOCUMENT_LIMIT = Number(process.env.GUEST_DOCUMENT_LIMIT || 1);
+export const GUEST_DOCUMENT_TTL_HOURS = Number(process.env.GUEST_DOCUMENT_TTL_HOURS || 24);
 export const PROCESSING_ALLOWLIST_EMAILS = (process.env.PROCESSING_ALLOWLIST_EMAILS || "")
   .split(",")
   .map((email) => email.trim().toLowerCase())

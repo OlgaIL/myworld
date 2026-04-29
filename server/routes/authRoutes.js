@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { CLIENT_URL } from "../config/env.js";
+import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingGuardError, getUserProcessingAccess } from "../utils/photos.js";
 
 const router = Router();
@@ -13,7 +14,15 @@ router.get(
   (req, res, next) => {
     req.app.get("passport").authenticate("google", { failureRedirect: "/" })(req, res, next);
   },
-  (req, res) => res.redirect(CLIENT_URL)
+  async (req, res) => {
+    try {
+      await claimGuestDocumentForUser(req);
+    } catch (error) {
+      console.error("Guest claim after login failed:", error);
+    }
+
+    res.redirect(CLIENT_URL);
+  }
 );
 
 router.get("/api/me", (req, res) => {
