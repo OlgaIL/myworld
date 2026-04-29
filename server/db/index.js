@@ -1,8 +1,6 @@
-import dotenv from "dotenv";
 import fs from "fs";
 import pg from "pg";
-
-dotenv.config();
+import "../config/load-env.js";
 
 const { Pool } = pg;
 

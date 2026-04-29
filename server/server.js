@@ -1,5 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "./config/load-env.js";
 
 import express from "express";
 import session from "express-session";
@@ -10,7 +9,6 @@ import { CLIENT_URL, OCR_PROVIDER, AI_PROVIDER, PROCESSING_ALLOWLIST_EMAILS, PRO
 import { clientDistDir } from "./config/paths.js";
 import authRoutes from "./routes/authRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
-import { GOOGLE_APPLICATION_CREDENTIALS, OPENAI_API_KEY } from "./config/private-env.js";
 
 let databaseStatus = {
   configured: isDatabaseConfigured(),
@@ -18,9 +16,6 @@ let databaseStatus = {
   checkedAt: null,
   error: null
 };
-
-console.log("GOOGLE_APPLICATION_CREDENTIALS:", GOOGLE_APPLICATION_CREDENTIALS);
-console.log("OPENAI:", OPENAI_API_KEY);
 
 const app = express();
 
