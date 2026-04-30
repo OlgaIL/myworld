@@ -9,7 +9,7 @@ import { uploadsDir } from "../config/paths.js";
 import {
   createGuestDocument,
   findGuestDocumentById,
-  findLatestActiveGuestDocumentBySessionId,
+  findLatestGuestDocumentBySessionId,
   updateGuestDocumentProcessingResult,
   updateGuestDocumentStatus
 } from "../repositories/guestDocumentsRepository.js";
@@ -20,7 +20,7 @@ import {
   touchGuestSession
 } from "../repositories/guestSessionsRepository.js";
 import ocrService from "../services/ocrService.js";
-import { getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
+import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 
 const router = Router();
@@ -77,6 +77,13 @@ function buildGuestDocumentResponse(document) {
   };
 }
 
+function buildGuestStateResponse({ guestSession = null, guestDocument = null } = {}) {
+  return {
+    document: guestDocument ? buildGuestDocumentResponse(guestDocument) : null,
+    access: getGuestDocumentAccess(guestSession)
+  };
+}
+
 async function getOrCreateGuestSession(req, res) {
   const cookies = parseCookies(req.headers.cookie);
   const existingToken = cookies[GUEST_SESSION_COOKIE_NAME];
@@ -113,24 +120,24 @@ router.get("/api/guest/document", async (req, res) => {
     const sessionToken = cookies[GUEST_SESSION_COOKIE_NAME];
 
     if (!sessionToken) {
-      return res.send(null);
+      return res.json(buildGuestStateResponse());
     }
 
     const guestSession = await findGuestSessionByToken(sessionToken);
 
     if (!guestSession) {
-      return res.send(null);
+      return res.json(buildGuestStateResponse());
     }
 
     await touchGuestSession(guestSession.id);
 
-    const guestDocument = await findLatestActiveGuestDocumentBySessionId(guestSession.id);
+    const guestDocument = await findLatestGuestDocumentBySessionId(guestSession.id);
 
     if (!guestDocument || isGuestDocumentExpired(guestDocument)) {
-      return res.send(null);
+      return res.json(buildGuestStateResponse({ guestSession }));
     }
 
-    return res.json(buildGuestDocumentResponse(guestDocument));
+    return res.json(buildGuestStateResponse({ guestSession, guestDocument }));
   } catch (error) {
     console.error("Guest document fetch error:", error);
     return res.status(500).json({ error: "GUEST_DOCUMENT_FETCH_FAILED" });
@@ -231,8 +238,11 @@ router.post("/api/guest/upload", (req, res) => {
         const updatedDocument = await updateGuestDocumentStatus(guestDocument.id, "error", ocrResult.error);
 
         return res.status(200).json({
-          ...buildGuestDocumentResponse(updatedDocument),
-          error: ocrResult.error
+          ...buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }),
+          document: {
+            ...buildGuestDocumentResponse(updatedDocument),
+            error: ocrResult.error
+          }
         });
       }
 
@@ -246,7 +256,7 @@ router.post("/api/guest/upload", (req, res) => {
           processedAt: new Date()
         });
 
-        return res.status(200).json(buildGuestDocumentResponse(updatedDocument));
+        return res.status(200).json(buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }));
       }
 
       const updatedDocument = await updateGuestDocumentProcessingResult(guestDocument.id, {
@@ -256,7 +266,7 @@ router.post("/api/guest/upload", (req, res) => {
         processedAt: new Date()
       });
 
-      return res.status(200).json(buildGuestDocumentResponse(updatedDocument));
+      return res.status(200).json(buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }));
     } catch (error) {
       const filePath = req.file ? path.join(uploadsDir, req.file.filename) : null;
 
