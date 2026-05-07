@@ -39,11 +39,14 @@ function App() {
   const [activePhoto, setActivePhoto] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [pendingPhoto, setPendingPhoto] = useState(null);
   const [guestError, setGuestError] = useState("");
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
   const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новый документ, войдите в кабинет.";
+  const photosCount = Array.isArray(photos) ? photos.length : 0;
+  const showCabinetUploadButton = photosCount < 3;
 
   async function handleUpload(event) {
     const file = event.target.files[0];
@@ -52,14 +55,22 @@ function App() {
       return;
     }
 
+    const pendingUrl = URL.createObjectURL(file);
+    const pendingName = `pending-${Date.now()}-${file.name}`;
+
     try {
+      setPendingPhoto({
+        name: pendingName,
+        url: pendingUrl,
+        isPendingUpload: true
+      });
       setUploading(true);
-      setUploadMessage("Загрузка фото...");
+      setUploadMessage("Загрузка документа...");
 
       const uploadedPhoto = await addPhoto(file);
 
       if (user?.processingAllowed && uploadedPhoto?.filename) {
-        setUploadMessage("Фото загружено. Запускаем обработку...");
+        setUploadMessage("Документ загружен. Запускаем обработку...");
         await processPhoto(uploadedPhoto.filename);
         await Promise.all([reloadPhotos(), reloadUser()]);
       } else {
@@ -70,9 +81,11 @@ function App() {
       setUploadMessage("");
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Не удалось загрузить фото");
+      alert("Не удалось загрузить документ");
       setUploadMessage("");
     } finally {
+      URL.revokeObjectURL(pendingUrl);
+      setPendingPhoto(null);
       setUploading(false);
     }
   }
@@ -218,18 +231,38 @@ function App() {
 
       {user && (
         <>
-          {(uploadMessage || !user.processingAllowed) && (
-            <section className="upload-panel">
-              <p className="upload-panel__message">
-                {uploading ? uploadMessage : getProcessingHint(user)}
-              </p>
-            </section>
-          )}
+          <section className="upload-panel">
+            <div className="upload-panel__main">
+              <p className="upload-panel__message">Загружено документов: {photosCount}</p>
+              {!uploading && !user.processingAllowed && (
+                <p className="upload-panel__message">{getProcessingHint(user)}</p>
+              )}
+            </div>
 
-          {Array.isArray(photos) && photos.length > 0 ? (
-            <Gallery photos={photos} onOpen={setActivePhoto} onDelete={removePhoto} />
+            <div className="upload-panel__actions">
+              {showCabinetUploadButton && (
+                <button
+                  className="auth-button"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  Загрузить документ
+                </button>
+              )}
+            </div>
+          </section>
+
+          {photosCount > 0 || pendingPhoto ? (
+            <Gallery
+              photos={photos}
+              pendingPhoto={pendingPhoto}
+              onOpen={setActivePhoto}
+              onDelete={removePhoto}
+              uploadMessage={uploadMessage}
+            />
           ) : (
-            <p className="gallery__empty">Пока нет загруженных фотографий.</p>
+            <p className="gallery__empty">Пока нет загруженных документов.</p>
           )}
 
           <input
@@ -241,16 +274,18 @@ function App() {
             disabled={uploading}
           />
 
-          <button
-            className="fab-upload"
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            title="Добавить фото"
-            aria-label="Добавить фото"
-          >
-            <PlusIcon />
-          </button>
+          {!showCabinetUploadButton && (
+            <button
+              className="fab-upload"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              title="Добавить документ"
+              aria-label="Добавить документ"
+            >
+              <PlusIcon />
+            </button>
+          )}
         </>
       )}
 

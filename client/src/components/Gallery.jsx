@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import PhotoCard from "./PhotoCard";
 import { getPhotoInfo } from "../services/api";
 
-function Gallery({ photos, onOpen, onDelete }) {
+function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" }) {
   const [infoMap, setInfoMap] = useState({});
   const [expandedTextMap, setExpandedTextMap] = useState({});
   const [copiedMap, setCopiedMap] = useState({});
@@ -115,6 +115,22 @@ function Gallery({ photos, onOpen, onDelete }) {
   return (
     <>
       <section className="gallery">
+        {pendingPhoto && (
+          <PhotoCard
+            key={pendingPhoto.name}
+            photo={pendingPhoto}
+            info={null}
+            uploadMessage={uploadMessage}
+            isExpanded={false}
+            summaryCopied={false}
+            textCopied={false}
+            onOpen={onOpen}
+            onRequestDelete={setPendingDelete}
+            onToggleText={toggleText}
+            onCopy={handleCopy}
+          />
+        )}
+
         {photos.map((photo) => (
           <PhotoCard
             key={photo.name}

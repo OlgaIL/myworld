@@ -125,11 +125,28 @@ button {
 }
 
 .upload-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 24px;
   padding: 14px 16px;
   border: 1px solid #dfe5ef;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.9);
+}
+
+.upload-panel__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.upload-panel__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .upload-input {
@@ -415,6 +432,41 @@ button {
   transform: translateY(-2px);
   border-color: #d6dde9;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+.gallery__item--uploading {
+  border-style: dashed;
+  background: #f8fafc;
+}
+
+.gallery__item--uploading:hover {
+  transform: none;
+}
+
+.gallery__upload-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.gallery__upload-spinner {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 3px solid #dbe4f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .gallery__top {
@@ -815,6 +867,19 @@ button {
 
   .profile__logout,
   .auth-button {
+    width: 100%;
+  }
+
+  .upload-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .upload-panel__actions {
+    width: 100%;
+  }
+
+  .upload-panel__actions .auth-button {
     width: 100%;
   }
 

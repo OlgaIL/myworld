@@ -80,6 +80,7 @@ function IconButton({ className = "", label, title, onClick, children }) {
 function PhotoCard({
   photo,
   info,
+  uploadMessage = "",
   isExpanded,
   summaryCopied,
   textCopied,
@@ -92,17 +93,20 @@ function PhotoCard({
   const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
   const readableText = info?.cleanText || info?.text || "";
+  const isPendingUpload = Boolean(photo.isPendingUpload);
 
   return (
-    <article className="gallery__item">
-      <IconButton
-        className="gallery__delete-button"
-        label="Удалить фото"
-        title="Удалить фото"
-        onClick={() => onRequestDelete(photo.name)}
-      >
-        <CloseIcon />
-      </IconButton>
+    <article className={`gallery__item ${isPendingUpload ? "gallery__item--uploading" : ""}`}>
+      {!isPendingUpload && (
+        <IconButton
+          className="gallery__delete-button"
+          label="Удалить фото"
+          title="Удалить фото"
+          onClick={() => onRequestDelete(photo.name)}
+        >
+          <CloseIcon />
+        </IconButton>
+      )}
 
       <div className="gallery__top">
         <div className="gallery__preview">
@@ -110,17 +114,27 @@ function PhotoCard({
             src={photo.url}
             className="gallery__image"
             alt=""
-            onClick={() => onOpen(photo.name)}
+            onClick={() => !isPendingUpload && onOpen(photo.name)}
           />
-          <div className="gallery__preview-overlay" onClick={() => onOpen(photo.name)}>
-            <span className="gallery__preview-zoom" aria-hidden="true">
-              <ZoomIcon />
-            </span>
-          </div>
+          {isPendingUpload ? (
+            <div className="gallery__upload-overlay">
+              <div className="gallery__upload-spinner" aria-hidden="true" />
+            </div>
+          ) : (
+            <div className="gallery__preview-overlay" onClick={() => onOpen(photo.name)}>
+              <span className="gallery__preview-zoom" aria-hidden="true">
+                <ZoomIcon />
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="gallery__meta">
-          {statusMeta && (
+          {isPendingUpload ? (
+            <p className="gallery__status-badge gallery__status-badge--processing">
+              Загружается
+            </p>
+          ) : statusMeta && (
             <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
               {statusMeta.label}
             </p>
@@ -134,6 +148,13 @@ function PhotoCard({
       </div>
 
       <div className="gallery__content">
+        {isPendingUpload && (
+          <>
+            <h4>Новый документ</h4>
+            <p>{uploadMessage || "Документ загружается и обрабатывается..."}</p>
+          </>
+        )}
+
         {info?.status === "processed" && (
           <>
             <h4>{info.title}</h4>
@@ -191,9 +212,9 @@ function PhotoCard({
           </>
         )}
 
-        {info?.status === "no_text" && <p>Текст не найден.</p>}
+        {!isPendingUpload && info?.status === "no_text" && <p>Текст не найден.</p>}
 
-        {info?.status === "error" && (
+        {!isPendingUpload && info?.status === "error" && (
           <>
             <p>Ошибка обработки.</p>
             {info.error && <p>{info.error}</p>}
