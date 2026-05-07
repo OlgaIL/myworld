@@ -118,8 +118,9 @@ function App() {
         <div className="guest-hero">
           <h2 className="guest-hero__title">Загрузите документ</h2>
           <p className="guest-hero__text">
-            Просто загрузите скан или фото нужного текста. Прочитаем текст, обработаем и
-            сохраним результат.
+            Просто загрузите скан или фото нужного текста.
+            <br />
+            Прочитаем текст, обработаем и сохраним результат.
           </p>
 
           <div className="guest-hero__actions">
@@ -142,31 +143,31 @@ function App() {
           )}
 
           <p className="guest-hero__counter">Загружено документов без входа: {guestDocumentsUsed}</p>
-        </div>
 
-        {guestLoading ? (
-          <section className="guest-placeholder">
-            <p className="guest-placeholder__title">Проверяем документ...</p>
-          </section>
-        ) : guestDocument ? (
-          <GuestDocumentCard
-            document={guestDocument}
-            guestAccess={guestAccess}
-            onOpen={setActivePhoto}
-            onLogin={login}
-            onUploadAnother={() => fileInputRef.current?.click()}
-          />
-        ) : guestDocumentsUsed > 0 ? (
-          <section className="guest-placeholder">
-            <p className="guest-placeholder__title">Бесплатная загрузка без входа уже использована.</p>
-            <p className="guest-placeholder__text">
-              Чтобы попробовать еще раз и сохранить новые документы, войдите в кабинет.
-            </p>
-            <button className="auth-button" type="button" onClick={login}>
-              Войти в кабинет
-            </button>
-          </section>
-        ) : null}
+          {guestLoading ? (
+            <section className="guest-placeholder guest-placeholder--embedded">
+              <p className="guest-placeholder__title">Проверяем документ...</p>
+            </section>
+          ) : guestDocument ? (
+            <GuestDocumentCard
+              document={guestDocument}
+              guestAccess={guestAccess}
+              onOpen={setActivePhoto}
+              onLogin={login}
+              onUploadAnother={() => fileInputRef.current?.click()}
+            />
+          ) : guestDocumentsUsed > 0 ? (
+            <section className="guest-placeholder guest-placeholder--embedded">
+              <p className="guest-placeholder__title">Бесплатная загрузка без входа уже использована.</p>
+              <p className="guest-placeholder__text">
+                Чтобы попробовать еще раз и сохранить новые документы, войдите в кабинет.
+              </p>
+              <button className="auth-button" type="button" onClick={login}>
+                Войти в кабинет
+              </button>
+            </section>
+          ) : null}
+        </div>
       </section>
     );
   }

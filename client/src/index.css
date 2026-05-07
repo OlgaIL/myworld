@@ -4,7 +4,7 @@
 
 :root {
   color: #1f2937;
-  background: linear-gradient(180deg, #f5f7fb 0%, #eef3fb 100%);
+  background: #fff;
   font-family: Arial, sans-serif;
 }
 
@@ -37,12 +37,15 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin: -24px -24px 8px;
+  padding: 24px 24px 14px;
+  border-bottom: 1px solid #e4e7ec;
+  background: #f5f7fb;
 }
 
 .header__logo {
   margin: 0;
-  font-size: 30px;
+  font-size: 20px;
   line-height: 1.1;
 }
 
@@ -108,6 +111,19 @@ button {
   border-color: #f0c5c1;
 }
 
+.topbar > .auth-button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-color: #d0d5dd;
+  background: transparent;
+  color: #5f6675;
+}
+
+.topbar > .auth-button:hover {
+  background: #f8fafc;
+  border-color: #98a2b3;
+}
+
 .upload-panel {
   margin-bottom: 24px;
   padding: 14px 16px;
@@ -134,16 +150,24 @@ button {
 .guest-card,
 .guest-placeholder {
   padding: 20px;
-  border: 1px solid #dfe5ef;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.guest-placeholder--embedded {
+  margin-top: 18px;
+  padding: 18px 0 0;
+  border: 0;
+  border-top: 1px solid #d0d5dd;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .guest-hero {
-  background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 32%),
-    rgba(255, 255, 255, 0.94);
+  background: #fff;
 }
 
 .guest-hero__eyebrow {
@@ -215,6 +239,13 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: 18px;
+  padding: 18px 0 0;
+  border: 0;
+  border-top: 1px solid #d0d5dd;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .guest-card__top {
@@ -224,15 +255,23 @@ button {
   align-items: start;
 }
 
+.guest-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 116px;
+  gap: 16px;
+  align-items: end;
+}
+
 .guest-card__preview {
   display: block;
-  width: 168px;
-  height: 132px;
+  width: 116px;
+  height: 92px;
   padding: 0;
   border: 1px solid #dfe5ef;
-  border-radius: 16px;
+  border-radius: 12px;
   background: linear-gradient(180deg, #f8fafc 0%, #eef3fb 100%);
   overflow: hidden;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
 .guest-card__preview img {
@@ -243,7 +282,8 @@ button {
 
 .guest-card__meta {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
@@ -287,6 +327,28 @@ button {
   flex-direction: column;
   gap: 10px;
   align-items: flex-start;
+}
+
+.guest-card__primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid #111827;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.guest-card__primary-action:hover {
+  background: #374151;
+  border-color: #374151;
+}
+
+.guest-card__primary-action:active {
+  transform: translateY(1px);
 }
 
 .fab-upload {
@@ -699,6 +761,12 @@ button {
   }
 
   .topbar {
+    margin-right: -16px;
+    margin-left: -16px;
+    margin-top: -16px;
+    padding-top: 16px;
+    padding-right: 16px;
+    padding-left: 16px;
     flex-direction: column;
     align-items: flex-start;
   }
@@ -712,9 +780,15 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .guest-card__body {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
   .guest-card__preview {
     width: 100%;
-    max-width: 280px;
+    max-width: 240px;
+    height: 132px;
   }
 }
 
