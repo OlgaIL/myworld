@@ -205,6 +205,12 @@ button {
   margin: 0;
 }
 
+.guest-hero__counter {
+  margin: 16px 0 0;
+  color: #667085;
+  font-size: 14px;
+}
+
 .guest-card {
   display: flex;
   flex-direction: column;
@@ -254,6 +260,26 @@ button {
   background: #f5f7fb;
   white-space: pre-wrap;
   line-height: 1.5;
+}
+
+.guest-card__text p {
+  margin: 0;
+}
+
+.guest-card__text--preview {
+  position: relative;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.guest-card__text--preview::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 70px;
+  background: linear-gradient(180deg, rgba(245, 247, 251, 0), #f5f7fb 88%);
 }
 
 .guest-card__cta {
@@ -490,6 +516,26 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.gallery__ai-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gallery__ai-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #475467;
+  font-size: 13px;
+}
+
+.gallery__ai-note {
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .gallery__tags span {

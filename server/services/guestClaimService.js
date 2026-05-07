@@ -108,7 +108,11 @@ export async function claimGuestDocumentForUser(req) {
     ocrText: guestDocument.ocr_text || "",
     title: aiResult.title,
     summary: aiResult.summary,
+    category: aiResult.category,
     tags: aiResult.tags,
+    cleanText: aiResult.cleanText,
+    textQuality: aiResult.textQuality,
+    aiNotes: aiResult.notes,
     errorMessage: null,
     processedAt: new Date()
   });

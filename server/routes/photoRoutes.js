@@ -188,7 +188,11 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       status: photo.status,
       title: photo.title || "",
       summary: photo.summary || "",
-      tags: Array.isArray(photo.tags) ? photo.tags : []
+      category: photo.category || "",
+      tags: Array.isArray(photo.tags) ? photo.tags : [],
+      cleanText: photo.clean_text || "",
+      textQuality: photo.text_quality || "",
+      notes: photo.ai_notes || ""
     });
   }
 
@@ -276,7 +280,11 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       ocrText: text,
       title: aiResult.title,
       summary: aiResult.summary,
+      category: aiResult.category,
       tags: aiResult.tags,
+      cleanText: aiResult.cleanText,
+      textQuality: aiResult.textQuality,
+      aiNotes: aiResult.notes,
       errorMessage: null,
       processedAt: new Date()
     });
@@ -285,7 +293,11 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       status: updatedPhoto.status,
       title: updatedPhoto.title,
       summary: updatedPhoto.summary,
-      tags: Array.isArray(updatedPhoto.tags) ? updatedPhoto.tags : []
+      category: updatedPhoto.category || "",
+      tags: Array.isArray(updatedPhoto.tags) ? updatedPhoto.tags : [],
+      cleanText: updatedPhoto.clean_text || "",
+      textQuality: updatedPhoto.text_quality || "",
+      notes: updatedPhoto.ai_notes || ""
     });
   } catch (err) {
     console.error("PROCESS ERROR:", err);

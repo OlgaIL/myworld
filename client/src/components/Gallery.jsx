@@ -41,8 +41,12 @@ function Gallery({ photos, onOpen, onDelete }) {
               status: info.status,
               title: info.title || "",
               summary: info.summary || "",
+              category: info.category || "",
               text: info.text || "",
+              cleanText: info.cleanText || "",
               tags: Array.isArray(info.tags) ? info.tags : [],
+              textQuality: info.textQuality || "",
+              notes: info.notes || "",
               error: info.error || null,
               createdAt: info.createdAt || null
             }

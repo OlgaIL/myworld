@@ -15,9 +15,13 @@ export function mapPhotoInfo(photo) {
     filename: photo.filename,
     status: photo.status,
     text: photo.ocr_text || "",
+    cleanText: photo.clean_text || "",
     title: photo.title || "",
     summary: photo.summary || "",
+    category: photo.category || "",
     tags: Array.isArray(photo.tags) ? photo.tags : [],
+    textQuality: photo.text_quality || "",
+    notes: photo.ai_notes || "",
     error: photo.error_message || null,
     createdAt: photo.created_at
   };

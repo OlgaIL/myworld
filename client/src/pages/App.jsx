@@ -43,7 +43,7 @@ function App() {
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
-  const guestLimitMessage = "Вы уже загрузили документ. Чтобы сохранить его и продолжить, войдите через Google.";
+  const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новый документ, войдите в кабинет.";
 
   async function handleUpload(event) {
     const file = event.target.files[0];
@@ -116,16 +116,13 @@ function App() {
     return (
       <section className="guest-shell">
         <div className="guest-hero">
-          <h2 className="guest-hero__title">Загрузите фото документа</h2>
+          <h2 className="guest-hero__title">Загрузите документ</h2>
           <p className="guest-hero__text">
-            Просто загрузите скан или фото нужного текста. Прочитаем текст, обработаем,
-            сохраним.
+            Просто загрузите скан или фото нужного текста. Прочитаем текст, обработаем и
+            сохраним результат.
           </p>
 
           <div className="guest-hero__actions">
-            <button className="auth-button" type="button" onClick={login}>
-              Войти через Google
-            </button>
             {guestUploadAllowed && (
               <button
                 className="guest-upload-button"
@@ -144,11 +141,7 @@ function App() {
             </div>
           )}
 
-          {guestDocumentsUsed > 0 && (
-            <div className="guest-hero__notice">
-              <p>Без входа уже загружено документов: {guestDocumentsUsed}</p>
-            </div>
-          )}
+          <p className="guest-hero__counter">Загружено документов без входа: {guestDocumentsUsed}</p>
         </div>
 
         {guestLoading ? (
@@ -156,27 +149,24 @@ function App() {
             <p className="guest-placeholder__title">Проверяем документ...</p>
           </section>
         ) : guestDocument ? (
-          <GuestDocumentCard document={guestDocument} onOpen={setActivePhoto} onLogin={login} />
-        ) : (
+          <GuestDocumentCard
+            document={guestDocument}
+            guestAccess={guestAccess}
+            onOpen={setActivePhoto}
+            onLogin={login}
+            onUploadAnother={() => fileInputRef.current?.click()}
+          />
+        ) : guestDocumentsUsed > 0 ? (
           <section className="guest-placeholder">
-            {guestDocumentsUsed > 0 ? (
-              <>
-                <p className="guest-placeholder__title">Документ уже был перенесен в аккаунт</p>
-                <p className="guest-placeholder__text">
-                  Без входа уже загружено документов: {guestDocumentsUsed}. Войдите через Google,
-                  чтобы увидеть сохраненный документ в списке.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="guest-placeholder__title">Документ еще не загружен</p>
-                <p className="guest-placeholder__text">
-                  Загрузите одно фото, чтобы сразу увидеть извлеченный текст.
-                </p>
-              </>
-            )}
+            <p className="guest-placeholder__title">Бесплатная загрузка без входа уже использована.</p>
+            <p className="guest-placeholder__text">
+              Чтобы попробовать еще раз и сохранить новые документы, войдите в кабинет.
+            </p>
+            <button className="auth-button" type="button" onClick={login}>
+              Войти в кабинет
+            </button>
           </section>
-        )}
+        ) : null}
       </section>
     );
   }

@@ -15,10 +15,17 @@ function formatCreatedAt(value) {
     .replace(".", "");
 }
 
-function GuestDocumentCard({ document, onOpen, onLogin }) {
+function GuestDocumentCard({ document, guestAccess, onOpen, onLogin, onUploadAnother }) {
   const statusMeta = getGuestDocumentStatusMeta(document.status);
   const fileUrl = getGuestDocumentFileUrl(document.id);
   const createdAtLabel = formatCreatedAt(document.createdAt);
+  const isTextPreviewLimited = document.status === "processed" || document.status === "claimed";
+  const canUploadAnother = document.status === "no_text" || document.status === "error";
+  const handleCtaClick = canUploadAnother ? onUploadAnother : onLogin;
+  const ctaHint =
+    document.status === "claimed" && guestAccess?.uploadAllowed
+      ? "Документ сохранен в кабинете. Войдите, чтобы открыть его или загрузить новые документы."
+      : statusMeta.ctaHint;
 
   return (
     <article className="guest-card">
@@ -40,17 +47,17 @@ function GuestDocumentCard({ document, onOpen, onLogin }) {
       </div>
 
       <div className="guest-card__content">
-        <h3 className="guest-card__title">Результат OCR</h3>
-        <p className="guest-card__text">
-          {document.text || document.error || statusMeta.emptyText}
-        </p>
+        <h3 className="guest-card__title">Результат</h3>
+        <div className={`guest-card__text ${isTextPreviewLimited ? "guest-card__text--preview" : ""}`}>
+          <p>{document.text || document.error || statusMeta.emptyText}</p>
+        </div>
       </div>
 
       <div className="guest-card__cta">
-        <button className="auth-button" type="button" onClick={onLogin}>
+        <button className="auth-button" type="button" onClick={handleCtaClick}>
           {statusMeta.ctaLabel}
         </button>
-        <p className="guest-card__hint">{statusMeta.ctaHint}</p>
+        <p className="guest-card__hint">{ctaHint}</p>
       </div>
     </article>
   );

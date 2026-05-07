@@ -14,32 +14,32 @@ export const GUEST_DOCUMENT_STATUS_META = {
     ctaHint: "После входа документ сохранится в вашем списке."
   },
   processed: {
-    label: "Текст извлечен",
+    label: "✓ Текст найден",
     badgeClassName: "gallery__status-badge--processed",
     emptyText: "Текст не найден.",
-    ctaLabel: "Войти, чтобы получить описание",
-    ctaHint: "Не потеряйте документ. Создайте аккаунт — и он всегда будет под рукой."
+    ctaLabel: "Войти и сохранить",
+    ctaHint: "Текст найден. Войдите, чтобы увидеть текст целиком и сохранить документ."
   },
   no_text: {
     label: "Текст не найден",
     badgeClassName: "gallery__status-badge--warning",
     emptyText: "Текст не найден.",
-    ctaLabel: "Войти через Google",
-    ctaHint: "После входа документ сохранится в вашем списке."
+    ctaLabel: "Загрузить другой документ",
+    ctaHint: "Попробуйте загрузить другое фото или скан, где текст виден четче."
   },
   error: {
     label: "Ошибка OCR",
     badgeClassName: "gallery__status-badge--error",
-    emptyText: "Не удалось прочитать текст.",
-    ctaLabel: "Войти через Google",
-    ctaHint: "После входа документ сохранится в вашем списке."
+    emptyText: "Не получилось прочитать документ.",
+    ctaLabel: "Загрузить другой документ",
+    ctaHint: "Сервис временно недоступен. Попробуйте загрузить другое фото или повторите попытку чуть позже."
   },
   claimed: {
-    label: "В аккаунте",
+    label: "✓ Сохранено",
     badgeClassName: "gallery__status-badge--processed",
     emptyText: "Текст не найден.",
-    ctaLabel: "Войти и открыть документ",
-    ctaHint: "Этот документ уже сохранен в аккаунте. Войдите через Google, чтобы открыть его в списке."
+    ctaLabel: "Войти в кабинет",
+    ctaHint: "Бесплатная загрузка без входа уже использована. Документ сохранен в кабинете. Войдите, чтобы открыть его или загрузить новые документы."
   }
 };
 
@@ -72,4 +72,23 @@ export const PHOTO_STATUS_META = {
 
 export function getPhotoStatusMeta(status) {
   return PHOTO_STATUS_META[status] || null;
+}
+
+export const TEXT_QUALITY_META = {
+  full_text: {
+    label: "Цельный текст"
+  },
+  fragment: {
+    label: "Фрагмент"
+  },
+  low_confidence: {
+    label: "Нужно проверить"
+  },
+  no_meaningful_text: {
+    label: "Нет понятного текста"
+  }
+};
+
+export function getTextQualityMeta(textQuality) {
+  return TEXT_QUALITY_META[textQuality] || null;
 }

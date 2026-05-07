@@ -203,18 +203,6 @@ router.post("/api/guest/upload", (req, res) => {
         return res.status(409).json({ error: guardError });
       }
 
-      const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
-
-      if (!consumedSession) {
-        const filePath = path.join(uploadsDir, req.file.filename);
-
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-
-        return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
-      }
-
       const guestDocument = await createGuestDocument({
         guestSessionId: guestSession.id,
         filename: req.file.filename,
@@ -238,7 +226,7 @@ router.post("/api/guest/upload", (req, res) => {
         const updatedDocument = await updateGuestDocumentStatus(guestDocument.id, "error", ocrResult.error);
 
         return res.status(200).json({
-          ...buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }),
+          ...buildGuestStateResponse({ guestSession, guestDocument: updatedDocument }),
           document: {
             ...buildGuestDocumentResponse(updatedDocument),
             error: ocrResult.error
@@ -256,7 +244,20 @@ router.post("/api/guest/upload", (req, res) => {
           processedAt: new Date()
         });
 
-        return res.status(200).json(buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }));
+        return res.status(200).json(buildGuestStateResponse({ guestSession, guestDocument: updatedDocument }));
+      }
+
+      const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
+
+      if (!consumedSession) {
+        const filePath = path.join(uploadsDir, req.file.filename);
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+
+        await updateGuestDocumentStatus(guestDocument.id, "error", "GUEST_LIMIT_REACHED");
+        return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
       }
 
       const updatedDocument = await updateGuestDocumentProcessingResult(guestDocument.id, {

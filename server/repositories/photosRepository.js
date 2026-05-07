@@ -12,7 +12,11 @@ export async function createPhoto({
   ocrText = "",
   title = "",
   summary = "",
+  category = "",
   tags = [],
+  cleanText = "",
+  textQuality = "",
+  aiNotes = "",
   errorMessage = null,
   processedAt = null
 }) {
@@ -30,11 +34,15 @@ export async function createPhoto({
         ocr_text,
         title,
         summary,
+        category,
         tags,
+        clean_text,
+        text_quality,
+        ai_notes,
         error_message,
         processed_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       returning *
     `,
     [
@@ -49,7 +57,11 @@ export async function createPhoto({
       ocrText,
       title,
       summary,
+      category,
       JSON.stringify(Array.isArray(tags) ? tags : []),
+      cleanText,
+      textQuality,
+      aiNotes,
       errorMessage,
       processedAt
     ]
@@ -114,7 +126,11 @@ export async function updatePhotoProcessingResult(id, updates) {
     ocrText,
     title,
     summary,
+    category,
     tags,
+    cleanText,
+    textQuality,
+    aiNotes,
     errorMessage,
     processedAt = null
   } = updates;
@@ -127,14 +143,31 @@ export async function updatePhotoProcessingResult(id, updates) {
         ocr_text = coalesce($3, ocr_text),
         title = coalesce($4, title),
         summary = coalesce($5, summary),
-        tags = coalesce($6, tags),
-        error_message = $7,
-        processed_at = $8,
+        category = coalesce($6, category),
+        tags = coalesce($7, tags),
+        clean_text = coalesce($8, clean_text),
+        text_quality = coalesce($9, text_quality),
+        ai_notes = coalesce($10, ai_notes),
+        error_message = $11,
+        processed_at = $12,
         updated_at = now()
       where id = $1
       returning *
     `,
-    [id, status, ocrText, title, summary, tags ? JSON.stringify(tags) : null, errorMessage, processedAt]
+    [
+      id,
+      status,
+      ocrText,
+      title,
+      summary,
+      category,
+      tags ? JSON.stringify(tags) : null,
+      cleanText,
+      textQuality,
+      aiNotes,
+      errorMessage,
+      processedAt
+    ]
   );
 
   return result.rows[0] || null;

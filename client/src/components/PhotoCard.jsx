@@ -1,4 +1,4 @@
-import { getPhotoStatusMeta } from "../constants/documentStatuses";
+import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 
 function CloseIcon() {
   return (
@@ -89,7 +89,9 @@ function PhotoCard({
   onCopy
 }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
+  const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
+  const readableText = info?.cleanText || info?.text || "";
 
   return (
     <article className="gallery__item">
@@ -149,13 +151,22 @@ function PhotoCard({
               )}
             </div>
 
+            {(info.category || textQualityMeta) && (
+              <div className="gallery__ai-meta">
+                {info.category && <span>{info.category}</span>}
+                {textQualityMeta && <span>{textQualityMeta.label}</span>}
+              </div>
+            )}
+
+            {info.notes && <p className="gallery__ai-note">{info.notes}</p>}
+
             <div className="gallery__tags">
               {info.tags.map((tag) => (
                 <span key={tag}>#{tag}</span>
               ))}
             </div>
 
-            {info.text && (
+            {readableText && (
               <div className="gallery__text-section">
                 <div className="gallery__text-actions">
                   <IconButton
@@ -169,7 +180,7 @@ function PhotoCard({
                     <IconButton
                       label={textCopied ? "Текст скопирован" : "Скопировать текст"}
                       title={textCopied ? "Текст скопирован" : "Скопировать текст"}
-                      onClick={() => onCopy(`${photo.name}-text`, info.text)}
+                      onClick={() => onCopy(`${photo.name}-text`, readableText)}
                     >
                       <CopyIcon />
                     </IconButton>
@@ -190,8 +201,8 @@ function PhotoCard({
         )}
       </div>
 
-      {info?.status === "processed" && isExpanded && (
-        <p className="gallery__text-block">{info.text}</p>
+      {info?.status === "processed" && isExpanded && readableText && (
+        <p className="gallery__text-block">{readableText}</p>
       )}
     </article>
   );

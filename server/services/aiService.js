@@ -1,5 +1,11 @@
 import axios from "axios";
 import OpenAI from "openai";
+import {
+  AI_CATEGORIES,
+  AI_SYSTEM_PROMPT,
+  AI_TEXT_QUALITY_VALUES,
+  buildPrompt
+} from "./aiPrompt.js";
 
 export async function process(text, options) {
   const { provider } = options;
@@ -34,12 +40,12 @@ async function processYandex(text, { apiKey, folderId }) {
         completionOptions: {
           stream: false,
           temperature: 0.3,
-          maxTokens: 500
+          maxTokens: 2000
         },
         messages: [
           {
             role: "system",
-            text: "Analyze OCR text from an image and return JSON only."
+            text: AI_SYSTEM_PROMPT
           },
           {
             role: "user",
@@ -84,14 +90,14 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
     const response = await client.chat.completions.create({
       model,
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 2000,
       response_format: {
         type: "json_object"
       },
       messages: [
         {
           role: "system",
-          content: "You analyze OCR text from an image and return valid JSON only."
+          content: AI_SYSTEM_PROMPT
         },
         {
           role: "user",
@@ -116,21 +122,25 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
   }
 }
 
-function buildPrompt(text) {
-  return `
-Analyze the OCR text and return JSON in this format:
+const ALLOWED_CATEGORIES = new Set(AI_CATEGORIES);
+const ALLOWED_TEXT_QUALITY = new Set(AI_TEXT_QUALITY_VALUES);
 
-{
-  "title": "short title",
-  "summary": "short summary",
-  "tags": ["tag1", "tag2"]
+function normalizeCategory(value) {
+  if (typeof value !== "string") {
+    return "другое";
+  }
+
+  const category = value.trim().toLowerCase();
+  return ALLOWED_CATEGORIES.has(category) ? category : "другое";
 }
 
-Return only valid JSON.
+function normalizeTextQuality(value) {
+  if (typeof value !== "string") {
+    return "low_confidence";
+  }
 
-OCR text:
-${text}
-`;
+  const textQuality = value.trim();
+  return ALLOWED_TEXT_QUALITY.has(textQuality) ? textQuality : "low_confidence";
 }
 
 function parseAIResponse(raw) {
@@ -148,7 +158,11 @@ function parseAIResponse(raw) {
     return {
       title: typeof parsed.title === "string" ? parsed.title : "",
       summary: typeof parsed.summary === "string" ? parsed.summary : "",
-      tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === "string") : []
+      category: normalizeCategory(parsed.category),
+      tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === "string").slice(0, 7) : [],
+      cleanText: typeof parsed.cleanText === "string" ? parsed.cleanText : "",
+      textQuality: normalizeTextQuality(parsed.textQuality),
+      notes: typeof parsed.notes === "string" ? parsed.notes : ""
     };
   } catch (error) {
     console.error("AI PARSE ERROR:", error.message);
@@ -160,7 +174,11 @@ function errorResult(message) {
   return {
     title: "",
     summary: "",
+    category: "",
     tags: [],
+    cleanText: "",
+    textQuality: "",
+    notes: "",
     error: message
   };
 }
