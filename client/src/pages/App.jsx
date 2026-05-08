@@ -67,14 +67,14 @@ function App() {
       setUploading(true);
       setUploadMessage("Загрузка документа...");
 
-      const uploadedPhoto = await addPhoto(file);
+      const uploadedPhoto = await addPhoto(file, { reload: false });
 
       if (user?.processingAllowed && uploadedPhoto?.filename) {
         setUploadMessage("Документ загружен. Запускаем обработку...");
         await processPhoto(uploadedPhoto.filename);
         await Promise.all([reloadPhotos(), reloadUser()]);
       } else {
-        await reloadUser();
+        await Promise.all([reloadPhotos(), reloadUser()]);
       }
 
       event.target.value = "";
@@ -231,26 +231,23 @@ function App() {
 
       {user && (
         <>
-          <section className="upload-panel">
-            <div className="upload-panel__main">
-              <p className="upload-panel__message">Загружено документов: {photosCount}</p>
-              {!uploading && !user.processingAllowed && (
-                <p className="upload-panel__message">{getProcessingHint(user)}</p>
-              )}
-            </div>
-
-            <div className="upload-panel__actions">
-              {showCabinetUploadButton && (
-                <button
-                  className="auth-button"
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  Загрузить документ
-                </button>
-              )}
-            </div>
+          <section className="upload-panel upload-panel--cabinet">
+            {showCabinetUploadButton && (
+              <button
+                className="guest-upload-button"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                Загрузить документ
+              </button>
+            )}
+            <p className="guest-hero__counter upload-panel__counter">
+              Загружено документов: {photosCount}
+            </p>
+            {!uploading && !user.processingAllowed && (
+              <p className="upload-panel__message">{getProcessingHint(user)}</p>
+            )}
           </section>
 
           {photosCount > 0 || pendingPhoto ? (
@@ -262,7 +259,7 @@ function App() {
               uploadMessage={uploadMessage}
             />
           ) : (
-            <p className="gallery__empty">Пока нет загруженных документов.</p>
+            <p className="gallery__empty gallery__empty--cabinet">Пока нет загруженных документов.</p>
           )}
 
           <input

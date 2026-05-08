@@ -108,7 +108,99 @@ function PhotoCard({
         </IconButton>
       )}
 
-      <div className="gallery__top">
+      <div className="gallery__meta">
+        {createdAtLabel && (
+          <p className="gallery__date" title={`Загружено: ${createdAtLabel}`}>
+            {createdAtLabel}
+          </p>
+        )}
+        {isPendingUpload ? (
+          <p className="gallery__status-badge gallery__status-badge--processing">
+            Загружается
+          </p>
+        ) : statusMeta && (
+          <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
+            {statusMeta.label}
+          </p>
+        )}
+      </div>
+
+      <div className="gallery__body">
+        <div className="gallery__content">
+          {isPendingUpload && (
+            <>
+              <h4>Новый документ</h4>
+              <p>{uploadMessage || "Документ загружается и обрабатывается..."}</p>
+            </>
+          )}
+
+          {info?.status === "processed" && (
+            <>
+              <h4>{info.title}</h4>
+
+              <div className="gallery__summary-row">
+                <p>{info.summary}</p>
+                {info.summary && (
+                  <IconButton
+                    label={summaryCopied ? "Summary скопирован" : "Скопировать summary"}
+                    title={summaryCopied ? "Summary скопирован" : "Скопировать summary"}
+                    onClick={() => onCopy(`${photo.name}-summary`, info.summary)}
+                  >
+                    <CopyIcon />
+                  </IconButton>
+                )}
+              </div>
+
+              {(info.category || textQualityMeta) && (
+                <div className="gallery__ai-meta">
+                  {info.category && <span>{info.category}</span>}
+                  {textQualityMeta && <span>{textQualityMeta.label}</span>}
+                </div>
+              )}
+
+              {info.notes && <p className="gallery__ai-note">{info.notes}</p>}
+
+              <div className="gallery__tags">
+                {info.tags.map((tag) => (
+                  <span key={tag}>#{tag}</span>
+                ))}
+              </div>
+
+              {readableText && (
+                <div className="gallery__text-section">
+                  <div className="gallery__text-actions">
+                    <IconButton
+                      label={isExpanded ? "Скрыть текст" : "Показать текст"}
+                      title={isExpanded ? "Скрыть текст" : "Показать текст"}
+                      onClick={() => onToggleText(photo.name)}
+                    >
+                      {isExpanded ? <EyeOffIcon /> : <EyeIcon />}
+                    </IconButton>
+                    {isExpanded && (
+                      <IconButton
+                        label={textCopied ? "Текст скопирован" : "Скопировать текст"}
+                        title={textCopied ? "Текст скопирован" : "Скопировать текст"}
+                        onClick={() => onCopy(`${photo.name}-text`, readableText)}
+                      >
+                        <CopyIcon />
+                      </IconButton>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {!isPendingUpload && info?.status === "no_text" && <p>Текст не найден.</p>}
+
+          {!isPendingUpload && info?.status === "error" && (
+            <>
+              <p>Ошибка обработки.</p>
+              {info.error && <p>{info.error}</p>}
+            </>
+          )}
+        </div>
+
         <div className="gallery__preview">
           <img
             src={photo.url}
@@ -128,98 +220,6 @@ function PhotoCard({
             </div>
           )}
         </div>
-
-        <div className="gallery__meta">
-          {isPendingUpload ? (
-            <p className="gallery__status-badge gallery__status-badge--processing">
-              Загружается
-            </p>
-          ) : statusMeta && (
-            <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
-              {statusMeta.label}
-            </p>
-          )}
-          {createdAtLabel && (
-            <p className="gallery__date" title={`Загружено: ${createdAtLabel}`}>
-              {createdAtLabel}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="gallery__content">
-        {isPendingUpload && (
-          <>
-            <h4>Новый документ</h4>
-            <p>{uploadMessage || "Документ загружается и обрабатывается..."}</p>
-          </>
-        )}
-
-        {info?.status === "processed" && (
-          <>
-            <h4>{info.title}</h4>
-
-            <div className="gallery__summary-row">
-              <p>{info.summary}</p>
-              {info.summary && (
-                <IconButton
-                  label={summaryCopied ? "Summary скопирован" : "Скопировать summary"}
-                  title={summaryCopied ? "Summary скопирован" : "Скопировать summary"}
-                  onClick={() => onCopy(`${photo.name}-summary`, info.summary)}
-                >
-                  <CopyIcon />
-                </IconButton>
-              )}
-            </div>
-
-            {(info.category || textQualityMeta) && (
-              <div className="gallery__ai-meta">
-                {info.category && <span>{info.category}</span>}
-                {textQualityMeta && <span>{textQualityMeta.label}</span>}
-              </div>
-            )}
-
-            {info.notes && <p className="gallery__ai-note">{info.notes}</p>}
-
-            <div className="gallery__tags">
-              {info.tags.map((tag) => (
-                <span key={tag}>#{tag}</span>
-              ))}
-            </div>
-
-            {readableText && (
-              <div className="gallery__text-section">
-                <div className="gallery__text-actions">
-                  <IconButton
-                    label={isExpanded ? "Скрыть текст" : "Показать текст"}
-                    title={isExpanded ? "Скрыть текст" : "Показать текст"}
-                    onClick={() => onToggleText(photo.name)}
-                  >
-                    {isExpanded ? <EyeOffIcon /> : <EyeIcon />}
-                  </IconButton>
-                  {isExpanded && (
-                    <IconButton
-                      label={textCopied ? "Текст скопирован" : "Скопировать текст"}
-                      title={textCopied ? "Текст скопирован" : "Скопировать текст"}
-                      onClick={() => onCopy(`${photo.name}-text`, readableText)}
-                    >
-                      <CopyIcon />
-                    </IconButton>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {!isPendingUpload && info?.status === "no_text" && <p>Текст не найден.</p>}
-
-        {!isPendingUpload && info?.status === "error" && (
-          <>
-            <p>Ошибка обработки.</p>
-            {info.error && <p>{info.error}</p>}
-          </>
-        )}
       </div>
 
       {info?.status === "processed" && isExpanded && readableText && (

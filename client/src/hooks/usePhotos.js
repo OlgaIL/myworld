@@ -26,10 +26,16 @@ export function usePhotos(enabled = true) {
     }
   }
 
-  async function addPhoto(file) {
+  async function addPhoto(file, options = {}) {
+    const { reload = true } = options;
+
     try {
       const uploadedPhoto = await uploadPhoto(file);
-      await loadPhotos();
+
+      if (reload) {
+        await loadPhotos();
+      }
+
       return uploadedPhoto;
     } catch (error) {
       console.error("Ошибка загрузки фото:", error);

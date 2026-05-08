@@ -126,27 +126,14 @@ button {
 
 .upload-panel {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 14px 16px;
-  border: 1px solid #dfe5ef;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.upload-panel__main {
-  display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.upload-panel__actions {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 0;
+  padding: 20px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
 }
 
 .upload-input {
@@ -156,6 +143,17 @@ button {
 .upload-panel__message {
   margin: 0;
   color: #5b6476;
+}
+
+.upload-panel__counter {
+  width: 100%;
+  margin-top: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #d0d5dd;
+}
+
+.upload-panel__counter:first-child {
+  margin-top: 0;
 }
 
 .guest-shell {
@@ -413,34 +411,29 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  padding: 0 20px;
 }
 
 .gallery__item {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
   padding: 16px;
   border: 1px solid #e4e8f0;
   border-radius: 16px;
   background: #fff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
 .gallery__item:hover {
-  transform: translateY(-2px);
   border-color: #d6dde9;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  background: #eef2f7;
 }
 
 .gallery__item--uploading {
   border-style: dashed;
   background: #f8fafc;
-}
-
-.gallery__item--uploading:hover {
-  transform: none;
 }
 
 .gallery__upload-overlay {
@@ -469,21 +462,21 @@ button {
   }
 }
 
-.gallery__top {
+.gallery__body {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 116px;
   gap: 16px;
-  align-items: start;
+  align-items: end;
 }
 
 .gallery__preview {
   position: relative;
   display: flex;
   justify-content: flex-start;
-  width: 120px;
-  height: 104px;
+  width: 116px;
+  height: 92px;
   border: 1px solid #dfe5ef;
-  border-radius: 14px;
+  border-radius: 12px;
   background: linear-gradient(180deg, #f8fafc 0%, #eef3fb 100%);
   overflow: hidden;
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
@@ -495,9 +488,9 @@ button {
 }
 
 .gallery__image {
-  width: 120px;
+  width: 116px;
   max-width: 100%;
-  height: 104px;
+  height: 92px;
   object-fit: cover;
   cursor: pointer;
   border-radius: 12px;
@@ -528,7 +521,6 @@ button {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: #1f2937;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
 }
 
 .gallery__preview-zoom svg {
@@ -550,6 +542,11 @@ button {
 
 .gallery__empty {
   color: #667085;
+}
+
+.gallery__empty--cabinet {
+  margin: 0;
+  padding: 0 20px;
 }
 
 .gallery__status-badge {
@@ -590,8 +587,9 @@ button {
 
 .gallery__meta {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -837,30 +835,25 @@ button {
     align-items: start;
   }
 
-  .guest-card__preview {
+  .gallery__body {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .guest-card__preview,
+  .gallery__preview {
     width: 100%;
     max-width: 240px;
+    height: 132px;
+  }
+
+  .gallery__image {
+    width: 100%;
     height: 132px;
   }
 }
 
 @media (max-width: 320px) {
-  .gallery__top {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .gallery__preview {
-    justify-content: flex-start;
-    width: 120px;
-    height: 104px;
-  }
-
-  .gallery__image {
-    width: 120px;
-    height: 104px;
-  }
-
   .profile {
     align-items: flex-start;
   }
@@ -871,16 +864,15 @@ button {
   }
 
   .upload-panel {
-    align-items: stretch;
-    flex-direction: column;
+    padding: 18px 0;
   }
 
-  .upload-panel__actions {
-    width: 100%;
+  .gallery {
+    padding: 0;
   }
 
-  .upload-panel__actions .auth-button {
-    width: 100%;
+  .gallery__empty--cabinet {
+    padding: 0;
   }
 
   .fab-upload {
