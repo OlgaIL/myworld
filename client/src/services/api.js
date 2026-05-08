@@ -59,7 +59,7 @@ export function getGuestDocumentFileUrl(id) {
 }
 
 export function getPhotos() {
-  return axios.get(`${API_URL}/api/photos`).then((res) => {
+  return axios.get(`${API_URL}/api/photos-metadata`).then((res) => {
     const data = res.data;
 
     if (!Array.isArray(data)) {
@@ -76,10 +76,13 @@ export function getPhotos() {
           };
         }
 
-        if (item && typeof item === "object" && typeof item.name === "string") {
+        if (item && typeof item === "object" && (typeof item.name === "string" || typeof item.filename === "string")) {
+          const name = item.name || item.filename;
+
           return {
             ...item,
-            url: item.url || getPhotoUrl(item.name)
+            name,
+            url: item.url || getPhotoUrl(name)
           };
         }
 

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 
 function CloseIcon() {
@@ -229,4 +230,21 @@ function PhotoCard({
   );
 }
 
-export default PhotoCard;
+function arePhotoCardPropsEqual(prev, next) {
+  return (
+    prev.photo?.name === next.photo?.name &&
+    prev.photo?.url === next.photo?.url &&
+    prev.photo?.isPendingUpload === next.photo?.isPendingUpload &&
+    prev.info === next.info &&
+    prev.uploadMessage === next.uploadMessage &&
+    prev.isExpanded === next.isExpanded &&
+    prev.summaryCopied === next.summaryCopied &&
+    prev.textCopied === next.textCopied &&
+    prev.onOpen === next.onOpen &&
+    prev.onRequestDelete === next.onRequestDelete &&
+    prev.onToggleText === next.onToggleText &&
+    prev.onCopy === next.onCopy
+  );
+}
+
+export default memo(PhotoCard, arePhotoCardPropsEqual);

@@ -1,6 +1,26 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PhotoCard from "./PhotoCard";
 import { getPhotoInfo } from "../services/api";
+
+function getPhotoListInfo(photo) {
+  if (!photo?.status) {
+    return null;
+  }
+
+  return {
+    status: photo.status,
+    title: photo.title || "",
+    summary: photo.summary || "",
+    category: photo.category || "",
+    text: photo.text || "",
+    cleanText: photo.cleanText || "",
+    tags: Array.isArray(photo.tags) ? photo.tags : [],
+    textQuality: photo.textQuality || "",
+    notes: photo.notes || "",
+    error: photo.error || null,
+    createdAt: photo.createdAt || null
+  };
+}
 
 function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" }) {
   const [infoMap, setInfoMap] = useState({});
@@ -14,7 +34,7 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
 
     async function hydratePhotoInfo() {
       const photosToRefresh = photos.filter((photo) => {
-        const info = infoMap[photo.name];
+        const info = infoMap[photo.name] || getPhotoListInfo(photo);
 
         if (!info) {
           return true;
@@ -75,7 +95,7 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
     };
   }, [photos, infoMap]);
 
-  async function handleCopy(key, text) {
+  const handleCopy = useCallback(async function handleCopy(key, text) {
     if (!text) {
       return;
     }
@@ -90,7 +110,7 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
       console.error("Copy failed:", error);
       alert("Не удалось скопировать текст");
     }
-  }
+  }, []);
 
   async function confirmDelete() {
     if (!pendingDelete) {
@@ -101,14 +121,14 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
     setPendingDelete(null);
   }
 
-  function toggleText(name) {
+  const toggleText = useCallback(function toggleText(name) {
     setExpandedTextMap((prev) => ({
       ...prev,
       [name]: !prev[name]
     }));
-  }
+  }, []);
 
-  if (photos.length === 0) {
+  if (photos.length === 0 && !pendingPhoto) {
     return <p className="gallery__empty">Пока тут пусто. Загрузите ваши фото.</p>;
   }
 
@@ -135,7 +155,7 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
           <PhotoCard
             key={photo.name}
             photo={photo}
-            info={infoMap[photo.name]}
+            info={infoMap[photo.name] || getPhotoListInfo(photo)}
             isExpanded={Boolean(expandedTextMap[photo.name])}
             summaryCopied={Boolean(copiedMap[`${photo.name}-summary`])}
             textCopied={Boolean(copiedMap[`${photo.name}-text`])}
