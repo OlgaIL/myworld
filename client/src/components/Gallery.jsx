@@ -22,10 +22,8 @@ function getPhotoListInfo(photo) {
   };
 }
 
-function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" }) {
+function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploadMessage = "" }) {
   const [infoMap, setInfoMap] = useState({});
-  const [expandedTextMap, setExpandedTextMap] = useState({});
-  const [copiedMap, setCopiedMap] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
@@ -95,23 +93,6 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
     };
   }, [photos, infoMap]);
 
-  const handleCopy = useCallback(async function handleCopy(key, text) {
-    if (!text) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedMap((prev) => ({ ...prev, [key]: true }));
-      setTimeout(() => {
-        setCopiedMap((prev) => ({ ...prev, [key]: false }));
-      }, 1500);
-    } catch (error) {
-      console.error("Copy failed:", error);
-      alert("Не удалось скопировать текст");
-    }
-  }, []);
-
   async function confirmDelete() {
     if (!pendingDelete) {
       return;
@@ -120,13 +101,6 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
     await onDelete(pendingDelete);
     setPendingDelete(null);
   }
-
-  const toggleText = useCallback(function toggleText(name) {
-    setExpandedTextMap((prev) => ({
-      ...prev,
-      [name]: !prev[name]
-    }));
-  }, []);
 
   if (photos.length === 0 && !pendingPhoto) {
     return <p className="gallery__empty">Пока тут пусто. Загрузите ваши фото.</p>;
@@ -141,13 +115,9 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
             photo={pendingPhoto}
             info={null}
             uploadMessage={uploadMessage}
-            isExpanded={false}
-            summaryCopied={false}
-            textCopied={false}
             onOpen={onOpen}
+            onOpenDocument={onOpenDocument}
             onRequestDelete={setPendingDelete}
-            onToggleText={toggleText}
-            onCopy={handleCopy}
           />
         )}
 
@@ -156,13 +126,9 @@ function Gallery({ photos, pendingPhoto, onOpen, onDelete, uploadMessage = "" })
             key={photo.name}
             photo={photo}
             info={infoMap[photo.name] || getPhotoListInfo(photo)}
-            isExpanded={Boolean(expandedTextMap[photo.name])}
-            summaryCopied={Boolean(copiedMap[`${photo.name}-summary`])}
-            textCopied={Boolean(copiedMap[`${photo.name}-text`])}
             onOpen={onOpen}
+            onOpenDocument={onOpenDocument}
             onRequestDelete={setPendingDelete}
-            onToggleText={toggleText}
-            onCopy={handleCopy}
           />
         ))}
       </section>

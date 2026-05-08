@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import DocumentPage from "../components/DocumentPage";
 import Gallery from "../components/Gallery";
 import GuestDocumentCard from "../components/GuestDocumentCard";
 import Modal from "../components/Modal";
@@ -37,6 +38,8 @@ function App() {
   const { guestDocument, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
   const [activePhoto, setActivePhoto] = useState(null);
+  const [activeDocument, setActiveDocument] = useState(null);
+  const [documentCopiedMap, setDocumentCopiedMap] = useState({});
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [pendingPhoto, setPendingPhoto] = useState(null);
@@ -46,6 +49,28 @@ function App() {
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
   const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новый документ, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
+
+  const openDocument = useCallback(function openDocument(photo, info) {
+    setActiveDocument({ photo, info });
+    setDocumentCopiedMap({});
+  }, []);
+
+  const handleDocumentCopy = useCallback(async function handleDocumentCopy(key, text) {
+    if (!text) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setDocumentCopiedMap((prev) => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setDocumentCopiedMap((prev) => ({ ...prev, [key]: false }));
+      }, 1500);
+    } catch (error) {
+      console.error("Copy failed:", error);
+      alert("Не удалось скопировать текст");
+    }
+  }, []);
 
   async function handleUpload(event) {
     const file = event.target.files[0];
@@ -230,33 +255,47 @@ function App() {
 
       {user && (
         <>
-          <section className="upload-panel upload-panel--cabinet">
-            <button
-              className="guest-upload-button"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              Загрузить документ
-            </button>
-            <p className="guest-hero__counter upload-panel__counter">
-              Загружено документов: {photosCount}
-            </p>
-            {!uploading && !user.processingAllowed && (
-              <p className="upload-panel__message">{getProcessingHint(user)}</p>
-            )}
-          </section>
-
-          {photosCount > 0 || pendingPhoto ? (
-            <Gallery
-              photos={photos}
-              pendingPhoto={pendingPhoto}
-              onOpen={setActivePhoto}
-              onDelete={removePhoto}
-              uploadMessage={uploadMessage}
+          {activeDocument ? (
+            <DocumentPage
+              photo={activeDocument.photo}
+              info={activeDocument.info}
+              copiedMap={documentCopiedMap}
+              onBack={() => setActiveDocument(null)}
+              onOpenImage={setActivePhoto}
+              onCopy={handleDocumentCopy}
             />
           ) : (
-            <p className="gallery__empty gallery__empty--cabinet">Пока нет загруженных документов.</p>
+            <>
+              <section className="upload-panel upload-panel--cabinet">
+                <button
+                  className="guest-upload-button"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  Загрузить документ
+                </button>
+                <p className="guest-hero__counter upload-panel__counter">
+                  Загружено документов: {photosCount}
+                </p>
+                {!uploading && !user.processingAllowed && (
+                  <p className="upload-panel__message">{getProcessingHint(user)}</p>
+                )}
+              </section>
+
+              {photosCount > 0 || pendingPhoto ? (
+                <Gallery
+                  photos={photos}
+                  pendingPhoto={pendingPhoto}
+                  onOpen={setActivePhoto}
+                  onOpenDocument={openDocument}
+                  onDelete={removePhoto}
+                  uploadMessage={uploadMessage}
+                />
+              ) : (
+                <p className="gallery__empty gallery__empty--cabinet">Пока нет загруженных документов.</p>
+              )}
+            </>
           )}
 
           <input
@@ -272,7 +311,7 @@ function App() {
             className="fab-upload"
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || Boolean(activeDocument)}
             title="Добавить документ"
             aria-label="Добавить документ"
           >

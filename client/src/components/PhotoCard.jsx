@@ -10,35 +10,6 @@ function CloseIcon() {
   );
 }
 
-function CopyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="9" y="9" width="10" height="10" rx="2" ry="2" />
-      <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 3l18 18" />
-      <path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6.5 0 10 6 10 6a18 18 0 0 1-4.2 4.7" />
-      <path d="M6.7 6.7A18 18 0 0 0 2 12s3.5 6 10 6a10.7 10.7 0 0 0 5.2-1.3" />
-      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
-    </svg>
-  );
-}
-
 function ZoomIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -82,28 +53,39 @@ function PhotoCard({
   photo,
   info,
   uploadMessage = "",
-  isExpanded,
-  summaryCopied,
-  textCopied,
   onOpen,
+  onOpenDocument,
   onRequestDelete,
-  onToggleText,
-  onCopy
 }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
   const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
   const readableText = info?.cleanText || info?.text || "";
   const isPendingUpload = Boolean(photo.isPendingUpload);
+  const hasReadableText = Boolean(readableText.trim());
+  const canOpenDocument = !isPendingUpload && Boolean(info) && hasReadableText;
+  const canDeleteFromContent = !isPendingUpload && (info?.status === "no_text" || info?.status === "error");
+
+  function handleCardClick() {
+    if (canOpenDocument) {
+      onOpenDocument(photo, info);
+    }
+  }
 
   return (
-    <article className={`gallery__item ${isPendingUpload ? "gallery__item--uploading" : ""}`}>
+    <article
+      className={`gallery__item ${isPendingUpload ? "gallery__item--uploading" : ""} ${canOpenDocument ? "gallery__item--clickable" : ""}`}
+      onClick={handleCardClick}
+    >
       {!isPendingUpload && (
         <IconButton
           className="gallery__delete-button"
           label="Удалить фото"
           title="Удалить фото"
-          onClick={() => onRequestDelete(photo.name)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRequestDelete(photo.name);
+          }}
         >
           <CloseIcon />
         </IconButton>
@@ -141,15 +123,6 @@ function PhotoCard({
 
               <div className="gallery__summary-row">
                 <p>{info.summary}</p>
-                {info.summary && (
-                  <IconButton
-                    label={summaryCopied ? "Summary скопирован" : "Скопировать summary"}
-                    title={summaryCopied ? "Summary скопирован" : "Скопировать summary"}
-                    onClick={() => onCopy(`${photo.name}-summary`, info.summary)}
-                  >
-                    <CopyIcon />
-                  </IconButton>
-                )}
               </div>
 
               {(info.category || textQualityMeta) && (
@@ -167,38 +140,59 @@ function PhotoCard({
                 ))}
               </div>
 
-              {readableText && (
-                <div className="gallery__text-section">
-                  <div className="gallery__text-actions">
-                    <IconButton
-                      label={isExpanded ? "Скрыть текст" : "Показать текст"}
-                      title={isExpanded ? "Скрыть текст" : "Показать текст"}
-                      onClick={() => onToggleText(photo.name)}
-                    >
-                      {isExpanded ? <EyeOffIcon /> : <EyeIcon />}
-                    </IconButton>
-                    {isExpanded && (
-                      <IconButton
-                        label={textCopied ? "Текст скопирован" : "Скопировать текст"}
-                        title={textCopied ? "Текст скопирован" : "Скопировать текст"}
-                        onClick={() => onCopy(`${photo.name}-text`, readableText)}
-                      >
-                        <CopyIcon />
-                      </IconButton>
-                    )}
-                  </div>
-                </div>
-              )}
             </>
           )}
 
-          {!isPendingUpload && info?.status === "no_text" && <p>Текст не найден.</p>}
+          {!isPendingUpload && info?.status === "no_text" && (
+            <>
+              <p>
+                Текст не найден.
+                <br />
+                Можно удалить и загрузить другой документ.
+              </p>
+            </>
+          )}
 
           {!isPendingUpload && info?.status === "error" && (
             <>
-              <p>Ошибка обработки.</p>
+              <p>
+                Ошибка обработки.
+                <br />
+                Можно удалить и загрузить другой документ.
+              </p>
               {info.error && <p>{info.error}</p>}
             </>
+          )}
+
+          {(hasReadableText || canDeleteFromContent) && (
+            <div className="gallery__text-section">
+              <div className="gallery__text-actions">
+                {hasReadableText && (
+                  <button
+                    className="gallery__open-document"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenDocument(photo, info);
+                    }}
+                  >
+                    Открыть текст
+                  </button>
+                )}
+                {canDeleteFromContent && (
+                  <button
+                    className="gallery__open-document"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onRequestDelete(photo.name);
+                    }}
+                  >
+                    Удалить
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
@@ -207,14 +201,25 @@ function PhotoCard({
             src={photo.url}
             className="gallery__image"
             alt=""
-            onClick={() => !isPendingUpload && onOpen(photo.name)}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (!isPendingUpload) {
+                onOpen(photo.name);
+              }
+            }}
           />
           {isPendingUpload ? (
             <div className="gallery__upload-overlay">
               <div className="gallery__upload-spinner" aria-hidden="true" />
             </div>
           ) : (
-            <div className="gallery__preview-overlay" onClick={() => onOpen(photo.name)}>
+            <div
+              className="gallery__preview-overlay"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpen(photo.name);
+              }}
+            >
               <span className="gallery__preview-zoom" aria-hidden="true">
                 <ZoomIcon />
               </span>
@@ -223,9 +228,6 @@ function PhotoCard({
         </div>
       </div>
 
-      {info?.status === "processed" && isExpanded && readableText && (
-        <p className="gallery__text-block">{readableText}</p>
-      )}
     </article>
   );
 }
@@ -237,13 +239,9 @@ function arePhotoCardPropsEqual(prev, next) {
     prev.photo?.isPendingUpload === next.photo?.isPendingUpload &&
     prev.info === next.info &&
     prev.uploadMessage === next.uploadMessage &&
-    prev.isExpanded === next.isExpanded &&
-    prev.summaryCopied === next.summaryCopied &&
-    prev.textCopied === next.textCopied &&
     prev.onOpen === next.onOpen &&
-    prev.onRequestDelete === next.onRequestDelete &&
-    prev.onToggleText === next.onToggleText &&
-    prev.onCopy === next.onCopy
+    prev.onOpenDocument === next.onOpenDocument &&
+    prev.onRequestDelete === next.onRequestDelete
   );
 }
 
