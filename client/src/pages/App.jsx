@@ -46,7 +46,6 @@ function App() {
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
   const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новый документ, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
-  const showCabinetUploadButton = photosCount < 3;
 
   async function handleUpload(event) {
     const file = event.target.files[0];
@@ -232,16 +231,14 @@ function App() {
       {user && (
         <>
           <section className="upload-panel upload-panel--cabinet">
-            {showCabinetUploadButton && (
-              <button
-                className="guest-upload-button"
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                Загрузить документ
-              </button>
-            )}
+            <button
+              className="guest-upload-button"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              Загрузить документ
+            </button>
             <p className="guest-hero__counter upload-panel__counter">
               Загружено документов: {photosCount}
             </p>
@@ -271,18 +268,16 @@ function App() {
             disabled={uploading}
           />
 
-          {!showCabinetUploadButton && (
-            <button
-              className="fab-upload"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              title="Добавить документ"
-              aria-label="Добавить документ"
-            >
-              <PlusIcon />
-            </button>
-          )}
+          <button
+            className="fab-upload"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="Добавить документ"
+            aria-label="Добавить документ"
+          >
+            <PlusIcon />
+          </button>
         </>
       )}
 
