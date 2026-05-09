@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
+import { getPhotoStatusMeta } from "../constants/documentStatuses";
 
 function CloseIcon() {
   return (
@@ -58,7 +58,6 @@ function PhotoCard({
   onRequestDelete,
 }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
-  const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
   const readableText = info?.cleanText || info?.text || "";
   const isPendingUpload = Boolean(photo.isPendingUpload);
@@ -125,10 +124,9 @@ function PhotoCard({
                 <p>{info.summary}</p>
               </div>
 
-              {(info.category || textQualityMeta) && (
+              {info.category && (
                 <div className="gallery__ai-meta">
-                  {info.category && <span>{info.category}</span>}
-                  {textQualityMeta && <span>{textQualityMeta.label}</span>}
+                  <span>{info.category}</span>
                 </div>
               )}
 

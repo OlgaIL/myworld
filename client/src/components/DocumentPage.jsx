@@ -99,10 +99,9 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
             </div>
           )}
 
-          {(info?.category || textQualityMeta) && (
+          {info?.category && (
             <div className="gallery__ai-meta">
-              {info.category && <span>{info.category}</span>}
-              {textQualityMeta && <span>{textQualityMeta.label}</span>}
+              <span>{info.category}</span>
             </div>
           )}
 
@@ -128,6 +127,11 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
               )}
             </div>
             <p>{readableText || "Текст пока не загружен."}</p>
+            {textQualityMeta && (
+              <p className="document-page__quality">
+                Пометка: {textQualityMeta.label.toLowerCase()}
+              </p>
+            )}
           </section>
         </section>
 

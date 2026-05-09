@@ -807,6 +807,11 @@ button {
   white-space: pre-wrap;
 }
 
+.document-page__quality {
+  color: #98a2b3;
+  font-size: 12px;
+}
+
 .document-page__preview {
   position: relative;
   display: block;
