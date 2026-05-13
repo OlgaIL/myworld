@@ -55,6 +55,17 @@ function CopyButton({ label, copied, onClick }) {
 }
 
 function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
+  if (!photo || !info) {
+    return (
+      <main className="document-page">
+        <button className="document-page__back" type="button" onClick={onBack}>
+          Назад к списку
+        </button>
+        <p className="document-page__empty">Документ не найден или еще загружается.</p>
+      </main>
+    );
+  }
+
   const statusMeta = getPhotoStatusMeta(info?.status);
   const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import DocumentPage from "../components/DocumentPage";
 import Gallery from "../components/Gallery";
 import GuestDocumentCard from "../components/GuestDocumentCard";
@@ -34,11 +35,12 @@ function PlusIcon() {
 }
 
 function App() {
+  const navigate = useNavigate();
+  const { documentName } = useParams();
   const { user, authLoading, login, logout, reloadUser } = useAuth();
   const { guestDocument, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
   const [activePhoto, setActivePhoto] = useState(null);
-  const [activeDocument, setActiveDocument] = useState(null);
   const [documentCopiedMap, setDocumentCopiedMap] = useState({});
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
@@ -49,11 +51,20 @@ function App() {
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
   const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новый документ, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
+  const activeDocumentPhoto = user && documentName
+    ? photos.find((photo) => photo.name === documentName)
+    : null;
+  const activeDocumentInfo = activeDocumentPhoto || null;
 
   const openDocument = useCallback(function openDocument(photo, info) {
-    setActiveDocument({ photo, info });
     setDocumentCopiedMap({});
-  }, []);
+    navigate(`/documents/${encodeURIComponent(photo.name)}`);
+  }, [navigate]);
+
+  const closeDocument = useCallback(function closeDocument() {
+    setDocumentCopiedMap({});
+    navigate("/");
+  }, [navigate]);
 
   const handleDocumentCopy = useCallback(async function handleDocumentCopy(key, text) {
     if (!text) {
@@ -255,12 +266,12 @@ function App() {
 
       {user && (
         <>
-          {activeDocument ? (
+          {documentName ? (
             <DocumentPage
-              photo={activeDocument.photo}
-              info={activeDocument.info}
+              photo={activeDocumentPhoto}
+              info={activeDocumentInfo}
               copiedMap={documentCopiedMap}
-              onBack={() => setActiveDocument(null)}
+              onBack={closeDocument}
               onOpenImage={setActivePhoto}
               onCopy={handleDocumentCopy}
             />
@@ -311,7 +322,7 @@ function App() {
             className="fab-upload"
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || Boolean(activeDocument)}
+            disabled={uploading || Boolean(documentName)}
             title="Добавить документ"
             aria-label="Добавить документ"
           >

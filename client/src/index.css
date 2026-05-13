@@ -724,6 +724,11 @@ button {
   margin-top: 18px;
 }
 
+.document-page__empty {
+  margin: 18px 0 0;
+  color: #667085;
+}
+
 .document-page__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 240px;
