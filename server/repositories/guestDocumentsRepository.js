@@ -39,10 +39,13 @@ export async function findGuestDocumentById(id) {
 export async function findLatestGuestDocumentBySessionId(guestSessionId) {
   const result = await query(
     `
-      select *
-      from guest_documents
-      where guest_session_id = $1
-      order by created_at desc
+      select
+        gd.*,
+        (p.id is not null) as claimed_photo_exists
+      from guest_documents gd
+      left join photos p on p.id = gd.claimed_photo_id
+      where gd.guest_session_id = $1
+      order by gd.created_at desc
       limit 1
     `,
     [guestSessionId]
@@ -111,18 +114,19 @@ export async function updateGuestDocumentProcessingResult(id, updates) {
   return result.rows[0] || null;
 }
 
-export async function markGuestDocumentClaimed(id) {
+export async function markGuestDocumentClaimed(id, claimedPhotoId = null) {
   const result = await query(
     `
       update guest_documents
       set
         status = 'claimed',
+        claimed_photo_id = $2,
         claimed_at = now(),
         updated_at = now()
       where id = $1
       returning *
     `,
-    [id]
+    [id, claimedPhotoId]
   );
 
   return result.rows[0] || null;

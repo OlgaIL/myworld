@@ -204,13 +204,13 @@ function App() {
               onLogin={login}
               onUploadAnother={() => fileInputRef.current?.click()}
             />
-          ) : guestDocumentsUsed > 0 ? (
+          ) : !guestUploadAllowed ? (
             <section className="guest-placeholder guest-placeholder--embedded">
               <p className="guest-placeholder__title">Бесплатная загрузка без входа уже использована.</p>
               <p className="guest-placeholder__text">
                 Чтобы попробовать еще раз и сохранить новые документы, войдите в кабинет.
               </p>
-              <button className="auth-button" type="button" onClick={login}>
+              <button className="guest-card__primary-action" type="button" onClick={login}>
                 Войти в кабинет
               </button>
             </section>
@@ -227,7 +227,7 @@ function App() {
   return (
     <div className="page">
       <header className="topbar">
-        <h1 className="header__logo">Твой мир 1.1</h1>
+        <h1 className="header__logo">Word2you</h1>
 
         {!user ? (
           <button className="auth-button" type="button" onClick={login}>

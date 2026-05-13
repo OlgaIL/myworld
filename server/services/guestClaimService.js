@@ -71,7 +71,7 @@ export async function claimGuestDocumentForUser(req) {
     processedAt: guestDocument.processed_at || null
   });
 
-  await markGuestDocumentClaimed(guestDocument.id);
+  await markGuestDocumentClaimed(guestDocument.id, claimedPhoto.id);
   await markGuestSessionConverted(guestSession.id, userId);
 
   const freshUser = await findUserById(userId);

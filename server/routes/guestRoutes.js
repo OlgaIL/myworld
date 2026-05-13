@@ -137,6 +137,10 @@ router.get("/api/guest/document", async (req, res) => {
       return res.json(buildGuestStateResponse({ guestSession }));
     }
 
+    if (guestDocument.status === "claimed" && !guestDocument.claimed_photo_exists) {
+      return res.json(buildGuestStateResponse({ guestSession }));
+    }
+
     return res.json(buildGuestStateResponse({ guestSession, guestDocument }));
   } catch (error) {
     console.error("Guest document fetch error:", error);
