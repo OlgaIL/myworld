@@ -22,6 +22,7 @@ import {
 import ocrService from "../services/ocrService.js";
 import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
+import { createRequestTimer } from "../utils/performanceLog.js";
 
 const router = Router();
 
@@ -182,19 +183,37 @@ router.get("/api/guest/documents/:id/file", async (req, res) => {
 });
 
 router.post("/api/guest/upload", (req, res) => {
+  const timer = createRequestTimer("guest-upload");
+
   upload.single("photo")(req, res, async function (err) {
     if (err) {
+      timer.log("multer_error", {
+        errorCode: err.code || err.message
+      });
+
       if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "FILE_TOO_LARGE" });
       if (err.message === "INVALID_FILE_TYPE") return res.status(400).json({ error: "INVALID_FILE_TYPE" });
       return res.status(500).json({ error: "UPLOAD_ERROR" });
     }
 
     if (!req.file) {
+      timer.log("no_file");
       return res.status(400).json({ error: "NO_FILE" });
     }
 
+    timer.log("file_received", {
+      filename: req.file.filename,
+      mimeType: req.file.mimetype,
+      sizeBytes: req.file.size
+    });
+
     try {
       const guestSession = await getOrCreateGuestSession(req, res);
+      timer.log("guest_session_ready", {
+        documentsUsed: guestSession.documents_used,
+        documentLimit: GUEST_DOCUMENT_LIMIT
+      });
+
       const guardError = getGuestUploadGuardError(guestSession);
 
       if (guardError) {
@@ -203,6 +222,10 @@ router.post("/api/guest/upload", (req, res) => {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
+
+        timer.log("limit_rejected", {
+          error: guardError
+        });
 
         return res.status(409).json({ error: guardError });
       }
@@ -218,16 +241,28 @@ router.post("/api/guest/upload", (req, res) => {
         expiresAt: getGuestDocumentExpiryDate()
       });
 
+      timer.log("document_created", {
+        documentId: guestDocument.id
+      });
+
       const rawOcrResult = await ocrService.recognize(guestDocument.storage_path, {
         provider: OCR_PROVIDER,
         apiKey: YANDEX_API_KEY,
         folderId: YANDEX_FOLDER_ID
       });
 
+      timer.log("ocr_finished", {
+        provider: OCR_PROVIDER
+      });
+
       const ocrResult = normalizeOcrResult(rawOcrResult);
 
       if (ocrResult.error) {
         const updatedDocument = await updateGuestDocumentStatus(guestDocument.id, "error", ocrResult.error);
+        timer.log("response_error", {
+          status: "error",
+          error: ocrResult.error
+        });
 
         return res.status(200).json({
           ...buildGuestStateResponse({ guestSession, guestDocument: updatedDocument }),
@@ -248,6 +283,10 @@ router.post("/api/guest/upload", (req, res) => {
           processedAt: new Date()
         });
 
+        timer.log("response_no_text", {
+          textLength: text.trim().length
+        });
+
         return res.status(200).json(buildGuestStateResponse({ guestSession, guestDocument: updatedDocument }));
       }
 
@@ -261,14 +300,24 @@ router.post("/api/guest/upload", (req, res) => {
         }
 
         await updateGuestDocumentStatus(guestDocument.id, "error", "GUEST_LIMIT_REACHED");
+        timer.log("limit_rejected_after_ocr");
         return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
       }
+
+      timer.log("guest_slot_consumed", {
+        documentsUsed: consumedSession.documents_used,
+        documentLimit: GUEST_DOCUMENT_LIMIT
+      });
 
       const updatedDocument = await updateGuestDocumentProcessingResult(guestDocument.id, {
         status: "processed",
         ocrText: text,
         errorMessage: null,
         processedAt: new Date()
+      });
+
+      timer.log("response_processed", {
+        textLength: text.trim().length
       });
 
       return res.status(200).json(buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }));
@@ -279,6 +328,9 @@ router.post("/api/guest/upload", (req, res) => {
         fs.unlinkSync(filePath);
       }
 
+      timer.log("response_failed", {
+        error: error.message
+      });
       console.error("Guest upload error:", error);
       return res.status(500).json({ error: "GUEST_UPLOAD_FAILED" });
     }

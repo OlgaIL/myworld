@@ -18,6 +18,7 @@ import { consumeProcessingAccess } from "../repositories/usersRepository.js";
 import * as aiService from "../services/aiService.js";
 import ocrService from "../services/ocrService.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
+import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, mapPhotoInfo } from "../utils/photos.js";
 
 const router = Router();
@@ -50,16 +51,29 @@ const upload = multer({
 });
 
 router.post("/api/upload", requireAuthenticatedUser, (req, res) => {
+  const timer = createRequestTimer("photo-upload");
+
   upload.single("photo")(req, res, async function (err) {
     if (err) {
+      timer.log("multer_error", {
+        errorCode: err.code || err.message
+      });
+
       if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "FILE_TOO_LARGE" });
       if (err.message === "INVALID_FILE_TYPE") return res.status(400).json({ error: "INVALID_FILE_TYPE" });
       return res.status(500).json({ error: "UPLOAD_ERROR" });
     }
 
     if (!req.file) {
+      timer.log("no_file");
       return res.status(400).json({ error: "NO_FILE" });
     }
+
+    timer.log("file_received", {
+      filename: req.file.filename,
+      mimeType: req.file.mimetype,
+      sizeBytes: req.file.size
+    });
 
     try {
       await createPhoto({
@@ -73,6 +87,7 @@ router.post("/api/upload", requireAuthenticatedUser, (req, res) => {
         aiProvider: AI_PROVIDER
       });
 
+      timer.log("photo_created");
       res.json({ id: req.file.filename, filename: req.file.filename });
     } catch (error) {
       const filePath = path.join(uploadsDir, req.file.filename);
@@ -81,6 +96,9 @@ router.post("/api/upload", requireAuthenticatedUser, (req, res) => {
         fs.unlinkSync(filePath);
       }
 
+      timer.log("response_failed", {
+        error: error.message
+      });
       console.error("DB create photo error:", error);
       res.status(500).json({ error: "PHOTO_CREATE_FAILED" });
     }
@@ -173,17 +191,28 @@ router.get("/api/photos/:id/info", requireAuthenticatedUser, async (req, res) =>
 });
 
 router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res) => {
+  const timer = createRequestTimer("photo-process");
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
 
   if (!photo) {
+    timer.log("photo_not_found", {
+      filename: req.params.id
+    });
     return res.status(404).json({ error: "Photo not found" });
   }
+
+  timer.log("photo_loaded", {
+    filename: photo.filename,
+    status: photo.status,
+    sizeBytes: photo.size_bytes
+  });
 
   const alreadyProcessed =
     photo.status === "processed" &&
     (photo.title?.trim() || photo.summary?.trim() || (Array.isArray(photo.tags) && photo.tags.length > 0));
 
   if (alreadyProcessed) {
+    timer.log("already_processed");
     return res.json({
       status: photo.status,
       title: photo.title || "",
@@ -199,6 +228,9 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
   const guardError = getProcessingGuardError(req.user);
 
   if (guardError) {
+    timer.log("guard_rejected", {
+      error: guardError
+    });
     return res.status(403).json({
       status: "error",
       error: guardError
@@ -209,14 +241,23 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
     const accessSnapshot = await consumeProcessingAccess(req.user.id);
 
     if (!accessSnapshot) {
+      timer.log("access_rejected");
       return res.status(403).json({
         status: "error",
         error: "PROCESSING_NOT_AVAILABLE_FOR_USER"
       });
     }
 
+    timer.log("access_consumed", {
+      processingUsed: accessSnapshot.processing_used,
+      processingQuota: accessSnapshot.processing_quota
+    });
+
     await updatePhotoStatus(photo.id, "processing", null);
     const imagePath = photo.storage_path;
+    timer.log("ocr_started", {
+      provider: OCR_PROVIDER
+    });
 
     const rawOcrResult = await ocrService.recognize(imagePath, {
       provider: OCR_PROVIDER,
@@ -224,11 +265,18 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       folderId: YANDEX_FOLDER_ID
     });
 
+    timer.log("ocr_finished", {
+      provider: OCR_PROVIDER
+    });
+
     const ocrResult = normalizeOcrResult(rawOcrResult);
 
     if (ocrResult.error) {
       console.error("OCR ERROR:", ocrResult.error);
       await updatePhotoStatus(photo.id, "error", ocrResult.error);
+      timer.log("response_ocr_error", {
+        error: ocrResult.error
+      });
 
       return res.json({
         status: "error",
@@ -237,7 +285,6 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
     }
 
     const text = ocrResult.text || "";
-    console.log("OCR TEXT:", text.slice(0, 100));
 
     if (text.trim().length < 10) {
       await updatePhotoProcessingResult(photo.id, {
@@ -247,8 +294,17 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
         processedAt: new Date()
       });
 
+      timer.log("response_no_text", {
+        textLength: text.trim().length
+      });
+
       return res.json({ message: "No text detected", status: "no_text" });
     }
+
+    timer.log("ai_started", {
+      provider: AI_PROVIDER,
+      textLength: text.trim().length
+    });
 
     const aiResult = await aiService.process(text, {
       provider: AI_PROVIDER,
@@ -256,6 +312,10 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       folderId: YANDEX_FOLDER_ID,
       openAiApiKey: OPENAI_API_KEY,
       model: OPENAI_MODEL
+    });
+
+    timer.log("ai_finished", {
+      provider: AI_PROVIDER
     });
 
     if (aiResult.error) {
@@ -267,13 +327,15 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
         processedAt: new Date()
       });
 
+      timer.log("response_ai_error", {
+        error: aiResult.error
+      });
+
       return res.json({
         status: "error",
         error: aiResult.error
       });
     }
-
-    console.log("AI RESULT:", aiResult);
 
     const updatedPhoto = await updatePhotoProcessingResult(photo.id, {
       status: "processed",
@@ -287,6 +349,10 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       aiNotes: aiResult.notes,
       errorMessage: null,
       processedAt: new Date()
+    });
+
+    timer.log("response_processed", {
+      textLength: text.trim().length
     });
 
     return res.json({
@@ -313,6 +379,10 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
     }
 
     await updatePhotoStatus(photo.id, "error", errorMessage);
+
+    timer.log("response_failed", {
+      error: errorMessage
+    });
 
     res.status(200).json({
       id: photo.filename,
