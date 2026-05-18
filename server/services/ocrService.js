@@ -28,9 +28,6 @@ export default {
 // --- GOOGLE OCR (твой текущий код, НЕ ломаем) ---
 async function recognizeGoogle(imagePath) {
   try {
-    console.log("OCR provider: GOOGLE");
-    console.log("Image path:", imagePath);
-
     const [result] = await client.textDetection(imagePath);
 
     const detections = result.textAnnotations;
@@ -41,8 +38,6 @@ async function recognizeGoogle(imagePath) {
     }
 
     const text = detections[0].description || '';
-
-    console.log("OCR result:", text.substring(0, 100));
 
     return text;
 
@@ -94,8 +89,6 @@ async function recognizeYandex(imagePath, { apiKey, folderId }) {
         timeout: 10000
       }
     );
-
-    console.log("VISION RAW:", JSON.stringify(response.data, null, 2));
 
     const text = extractTextFromVision(response.data);
 
