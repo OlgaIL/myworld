@@ -8,6 +8,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { usePhotos } from "../hooks/usePhotos";
 import { getPhotoUrl, processPhoto } from "../services/api";
+import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
 function getProcessingHint(user) {
   if (!user) {
@@ -35,6 +36,7 @@ function PlusIcon() {
 }
 
 const UPLOAD_STAGE_MESSAGES = {
+  preparingImage: "Подготавливаем изображение...",
   uploading: "Загружаем документ...",
   recognizing: "Распознаем текст...",
   preparing: "Готовим результат..."
@@ -96,20 +98,24 @@ function App() {
       return;
     }
 
-    const pendingUrl = URL.createObjectURL(file);
-    const pendingName = `pending-${Date.now()}-${file.name}`;
+    let pendingUrl = null;
     let preparingTimer = null;
 
     try {
+      setUploading(true);
+      setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
+      const uploadFile = await prepareImageForUpload(file);
+      pendingUrl = URL.createObjectURL(uploadFile);
+      const pendingName = `pending-${Date.now()}-${uploadFile.name}`;
+
       setPendingPhoto({
         name: pendingName,
         url: pendingUrl,
         isPendingUpload: true
       });
-      setUploading(true);
       setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
 
-      const uploadedPhoto = await addPhoto(file, { reload: false });
+      const uploadedPhoto = await addPhoto(uploadFile, { reload: false });
 
       if (user?.processingAllowed && uploadedPhoto?.filename) {
         setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
@@ -134,7 +140,9 @@ function App() {
       if (preparingTimer) {
         window.clearTimeout(preparingTimer);
       }
-      URL.revokeObjectURL(pendingUrl);
+      if (pendingUrl) {
+        URL.revokeObjectURL(pendingUrl);
+      }
       setPendingPhoto(null);
       setUploading(false);
     }
@@ -159,6 +167,8 @@ function App() {
     try {
       setUploading(true);
       setGuestError("");
+      setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
+      const uploadFile = await prepareImageForUpload(file);
       setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
       recognizingTimer = window.setTimeout(() => {
         setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
@@ -166,7 +176,7 @@ function App() {
       preparingTimer = window.setTimeout(() => {
         setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
       }, 4500);
-      await addGuestDocument(file);
+      await addGuestDocument(uploadFile);
       window.clearTimeout(recognizingTimer);
       window.clearTimeout(preparingTimer);
       recognizingTimer = null;
