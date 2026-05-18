@@ -34,6 +34,12 @@ function PlusIcon() {
   );
 }
 
+const UPLOAD_STAGE_MESSAGES = {
+  uploading: "Загружаем документ...",
+  recognizing: "Распознаем текст...",
+  preparing: "Готовим результат..."
+};
+
 function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
@@ -92,6 +98,7 @@ function App() {
 
     const pendingUrl = URL.createObjectURL(file);
     const pendingName = `pending-${Date.now()}-${file.name}`;
+    let preparingTimer = null;
 
     try {
       setPendingPhoto({
@@ -100,13 +107,18 @@ function App() {
         isPendingUpload: true
       });
       setUploading(true);
-      setUploadMessage("Загрузка документа...");
+      setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
 
       const uploadedPhoto = await addPhoto(file, { reload: false });
 
       if (user?.processingAllowed && uploadedPhoto?.filename) {
-        setUploadMessage("Документ загружен. Запускаем обработку...");
+        setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
+        preparingTimer = window.setTimeout(() => {
+          setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
+        }, 2500);
         await processPhoto(uploadedPhoto.filename);
+        window.clearTimeout(preparingTimer);
+        preparingTimer = null;
         await Promise.all([reloadPhotos(), reloadUser()]);
       } else {
         await Promise.all([reloadPhotos(), reloadUser()]);
@@ -119,6 +131,9 @@ function App() {
       alert("Не удалось загрузить документ");
       setUploadMessage("");
     } finally {
+      if (preparingTimer) {
+        window.clearTimeout(preparingTimer);
+      }
       URL.revokeObjectURL(pendingUrl);
       setPendingPhoto(null);
       setUploading(false);
@@ -138,11 +153,24 @@ function App() {
       return;
     }
 
+    let recognizingTimer = null;
+    let preparingTimer = null;
+
     try {
       setUploading(true);
       setGuestError("");
-      setUploadMessage("Загружаем документ и извлекаем текст...");
+      setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
+      recognizingTimer = window.setTimeout(() => {
+        setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
+      }, 1200);
+      preparingTimer = window.setTimeout(() => {
+        setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
+      }, 4500);
       await addGuestDocument(file);
+      window.clearTimeout(recognizingTimer);
+      window.clearTimeout(preparingTimer);
+      recognizingTimer = null;
+      preparingTimer = null;
       setUploadMessage("");
     } catch (error) {
       console.error("Guest upload error:", error);
@@ -155,6 +183,12 @@ function App() {
 
       setUploadMessage("");
     } finally {
+      if (recognizingTimer) {
+        window.clearTimeout(recognizingTimer);
+      }
+      if (preparingTimer) {
+        window.clearTimeout(preparingTimer);
+      }
       event.target.value = "";
       setUploading(false);
     }

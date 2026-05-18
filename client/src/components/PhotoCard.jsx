@@ -112,7 +112,7 @@ function PhotoCard({
           {isPendingUpload && (
             <>
               <h4>Новый документ</h4>
-              <p>{uploadMessage || "Документ загружается и обрабатывается..."}</p>
+              <p>{uploadMessage || "Загружаем документ..."}</p>
             </>
           )}
 
