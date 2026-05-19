@@ -5,19 +5,23 @@ export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadUser() {
+  async function loadUser({ showLoading = true } = {}) {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const currentUser = await getCurrentUser();
       setUser(currentUser);
       return currentUser;
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }
 
   useEffect(() => {
-    loadUser();
+    loadUser({ showLoading: true });
   }, []);
 
   return {
@@ -25,6 +29,6 @@ export function useAuth() {
     authLoading: loading,
     login: loginWithGoogle,
     logout,
-    reloadUser: loadUser
+    reloadUser: () => loadUser({ showLoading: false })
   };
 }
