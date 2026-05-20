@@ -812,6 +812,68 @@ button {
   white-space: pre-wrap;
 }
 
+.document-page__text-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.document-page__text-body p {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-page__ocr {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-page__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #98a2b3;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.document-page__toggle svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.document-page__toggle:hover {
+  color: #667085;
+}
+
+.document-page__ocr-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #dfe5ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.document-page__ocr-content p {
+  flex: 1;
+  min-width: 0;
+  color: #667085;
+  font-size: 14px;
+}
+
 .document-page__quality {
   color: #98a2b3;
   font-size: 12px;

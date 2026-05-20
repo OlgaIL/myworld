@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 
 function formatCreatedAt(value) {
@@ -40,6 +41,15 @@ function ZoomIcon() {
   );
 }
 
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 function CopyButton({ label, copied, onClick }) {
   return (
     <button
@@ -55,6 +65,8 @@ function CopyButton({ label, copied, onClick }) {
 }
 
 function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
+  const [showOcrText, setShowOcrText] = useState(false);
+
   if (!photo || !info) {
     return (
       <main className="document-page">
@@ -69,7 +81,10 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
   const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
-  const readableText = info?.cleanText || info?.text || "";
+  const processedText = info?.cleanText || "";
+  const ocrText = info?.text || "";
+  const readableText = processedText || ocrText;
+  const canShowOcrText = Boolean(ocrText.trim() && processedText.trim() && ocrText.trim() !== processedText.trim());
 
   return (
     <main className="document-page">
@@ -127,8 +142,8 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
           )}
 
           <section className="document-page__text">
-            <div className="document-page__field">
-              <h3>Текст</h3>
+            <div className="document-page__text-body">
+              <p>{readableText || "Текст пока не загружен."}</p>
               {readableText && (
                 <CopyButton
                   label="Скопировать текст"
@@ -137,11 +152,37 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
                 />
               )}
             </div>
-            <p>{readableText || "Текст пока не загружен."}</p>
+
             {textQualityMeta && (
               <p className="document-page__quality">
                 Пометка: {textQualityMeta.label.toLowerCase()}
               </p>
+            )}
+
+            {canShowOcrText && (
+              <div className="document-page__ocr">
+                <button
+                  className="document-page__toggle"
+                  type="button"
+                  onClick={() => setShowOcrText((current) => !current)}
+                >
+                  <EyeIcon />
+                  {showOcrText ? "Скрыть весь исходник в тексте" : "Весь исходник в тексте"}
+                </button>
+
+                {showOcrText && (
+                  <div className="document-page__ocr-content">
+                    <div className="document-page__field">
+                      <p>{ocrText}</p>
+                      <CopyButton
+                        label="Скопировать исходный OCR-текст"
+                        copied={Boolean(copiedMap?.ocrText)}
+                        onClick={() => onCopy("ocrText", ocrText)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </section>
         </section>
