@@ -22,7 +22,7 @@ function getPhotoListInfo(photo) {
   };
 }
 
-function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploadMessage = "" }) {
+function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploadMessage = "", emptyMessage = "Пока тут пусто. Загрузите ваши фото.", onSelectCategory, onSelectTag }) {
   const [infoMap, setInfoMap] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -103,7 +103,7 @@ function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploa
   }
 
   if (photos.length === 0 && !pendingPhoto) {
-    return <p className="gallery__empty">Пока тут пусто. Загрузите ваши фото.</p>;
+    return <p className="gallery__empty">{emptyMessage}</p>;
   }
 
   return (
@@ -118,6 +118,8 @@ function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploa
             onOpen={onOpen}
             onOpenDocument={onOpenDocument}
             onRequestDelete={setPendingDelete}
+            onSelectCategory={onSelectCategory}
+            onSelectTag={onSelectTag}
           />
         )}
 
@@ -129,6 +131,8 @@ function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploa
             onOpen={onOpen}
             onOpenDocument={onOpenDocument}
             onRequestDelete={setPendingDelete}
+            onSelectCategory={onSelectCategory}
+            onSelectTag={onSelectTag}
           />
         ))}
       </section>

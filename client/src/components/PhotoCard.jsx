@@ -56,6 +56,8 @@ function PhotoCard({
   onOpen,
   onOpenDocument,
   onRequestDelete,
+  onSelectCategory,
+  onSelectTag,
 }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
@@ -126,7 +128,16 @@ function PhotoCard({
 
               {info.category && (
                 <div className="gallery__ai-meta">
-                  <span>{info.category}</span>
+                  <button
+                    className="gallery__ai-meta-button"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelectCategory?.(info.category);
+                    }}
+                  >
+                    {info.category}
+                  </button>
                 </div>
               )}
 
@@ -134,7 +145,17 @@ function PhotoCard({
 
               <div className="gallery__tags">
                 {info.tags.map((tag) => (
-                  <span key={tag}>#{tag}</span>
+                  <button
+                    className="gallery__tag-button"
+                    type="button"
+                    key={tag}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelectTag?.(tag);
+                    }}
+                  >
+                    #{tag}
+                  </button>
                 ))}
               </div>
 
@@ -239,7 +260,9 @@ function arePhotoCardPropsEqual(prev, next) {
     prev.uploadMessage === next.uploadMessage &&
     prev.onOpen === next.onOpen &&
     prev.onOpenDocument === next.onOpenDocument &&
-    prev.onRequestDelete === next.onRequestDelete
+    prev.onRequestDelete === next.onRequestDelete &&
+    prev.onSelectCategory === next.onSelectCategory &&
+    prev.onSelectTag === next.onSelectTag
   );
 }
 

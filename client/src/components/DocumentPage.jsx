@@ -64,7 +64,7 @@ function CopyButton({ label, copied, onClick }) {
   );
 }
 
-function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
+function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onSelectCategory, onSelectTag }) {
   const [showOcrText, setShowOcrText] = useState(false);
 
   if (!photo || !info) {
@@ -85,6 +85,8 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
   const ocrText = info?.text || "";
   const readableText = processedText || ocrText;
   const canShowOcrText = Boolean(ocrText.trim() && processedText.trim() && ocrText.trim() !== processedText.trim());
+  const hasTags = Array.isArray(info?.tags) && info.tags.length > 0;
+  const hasSideMeta = Boolean(info?.category || hasTags);
 
   return (
     <main className="document-page">
@@ -125,21 +127,7 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
             </div>
           )}
 
-          {info?.category && (
-            <div className="gallery__ai-meta">
-              <span>{info.category}</span>
-            </div>
-          )}
-
           {info?.notes && <p className="gallery__ai-note">{info.notes}</p>}
-
-          {Array.isArray(info?.tags) && info.tags.length > 0 && (
-            <div className="gallery__tags">
-              {info.tags.map((tag) => (
-                <span key={tag}>#{tag}</span>
-              ))}
-            </div>
-          )}
 
           <section className="document-page__text">
             <div className="document-page__text-body">
@@ -187,16 +175,49 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy }) {
           </section>
         </section>
 
-        <button
-          className="document-page__preview"
-          type="button"
-          onClick={() => onOpenImage(photo.name)}
-        >
-          <img src={photo.url} alt="" />
-          <span className="document-page__preview-zoom" aria-hidden="true">
-            <ZoomIcon />
-          </span>
-        </button>
+        <aside className="document-page__side">
+          <button
+            className="document-page__preview"
+            type="button"
+            onClick={() => onOpenImage(photo.name)}
+          >
+            <img src={photo.url} alt="" />
+            <span className="document-page__preview-zoom" aria-hidden="true">
+              <ZoomIcon />
+            </span>
+          </button>
+
+          {hasSideMeta && (
+            <div className="document-page__side-meta">
+              {info?.category && (
+                <div className="gallery__ai-meta">
+                  <button
+                    className="gallery__ai-meta-button"
+                    type="button"
+                    onClick={() => onSelectCategory?.(info.category)}
+                  >
+                    {info.category}
+                  </button>
+                </div>
+              )}
+
+              {hasTags && (
+                <div className="gallery__tags">
+                  {info.tags.map((tag) => (
+                    <button
+                      className="gallery__tag-button"
+                      type="button"
+                      key={tag}
+                      onClick={() => onSelectTag?.(tag)}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </aside>
       </div>
     </main>
   );
