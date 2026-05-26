@@ -8,6 +8,7 @@ import { checkDatabaseConnection, isDatabaseConfigured } from "./db/index.js";
 import { CLIENT_URL, OCR_PROVIDER, AI_PROVIDER, PROCESSING_ALLOWLIST_EMAILS, PROCESSING_ENABLED, SESSION_SECRET } from "./config/env.js";
 import { clientDistDir } from "./config/paths.js";
 import authRoutes from "./routes/authRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
 
@@ -22,7 +23,20 @@ const app = express();
 
 app.set("passport", passport);
 
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+const allowedOrigins = new Set(
+  [CLIENT_URL, "http://localhost:5173", "http://127.0.0.1:5173"].filter(Boolean)
+);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, origin || true);
+    }
+
+    return callback(null, false);
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(session({ secret: SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
@@ -42,6 +56,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use(authRoutes);
+app.use(adminRoutes);
 app.use(guestRoutes);
 app.use(photoRoutes);
 

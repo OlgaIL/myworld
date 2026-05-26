@@ -15,6 +15,9 @@ export const OPENAI_ENABLED = process.env.OPENAI_ENABLED !== "false";
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 export const GUEST_DOCUMENT_LIMIT = Number(process.env.GUEST_DOCUMENT_LIMIT || 1);
 export const GUEST_DOCUMENT_TTL_HOURS = Number(process.env.GUEST_DOCUMENT_TTL_HOURS || 24);
+export const ADMIN_ENABLED = process.env.ADMIN_ENABLED === "true";
+export const ADMIN_LOGIN = process.env.ADMIN_LOGIN || "";
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 export const PROCESSING_ALLOWLIST_EMAILS = (process.env.PROCESSING_ALLOWLIST_EMAILS || "")
   .split(",")
   .map((email) => email.trim().toLowerCase())

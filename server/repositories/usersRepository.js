@@ -29,6 +29,76 @@ export async function findUserByGoogleId(googleId) {
   return result.rows[0] || null;
 }
 
+export async function listUsersForAdmin() {
+  const result = await query(
+    `
+      select
+        users.id,
+        users.email,
+        users.display_name,
+        users.avatar_url,
+        users.processing_enabled,
+        users.processing_quota,
+        users.processing_used,
+        users.created_at,
+        users.updated_at,
+        count(photos.id)::int as documents_count,
+        max(photos.created_at) as last_document_at
+      from users
+      left join photos on photos.user_id = users.id
+      group by users.id
+      order by users.created_at desc
+    `
+  );
+
+  return result.rows;
+}
+
+export async function findUserForAdmin(userId) {
+  const result = await query(
+    `
+      select
+        users.id,
+        users.email,
+        users.display_name,
+        users.avatar_url,
+        users.processing_enabled,
+        users.processing_quota,
+        users.processing_used,
+        users.created_at,
+        users.updated_at,
+        count(photos.id)::int as documents_count,
+        max(photos.created_at) as last_document_at
+      from users
+      left join photos on photos.user_id = users.id
+      where users.id = $1
+      group by users.id
+      limit 1
+    `,
+    [userId]
+  );
+
+  return result.rows[0] || null;
+}
+
+export async function updateUserProcessingAccess(userId, { processingEnabled, processingQuota, processingUsed }) {
+  const result = await query(
+    `
+      update users
+      set
+        processing_enabled = $2,
+        processing_quota = $3,
+        processing_used = $4,
+        updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [userId, processingEnabled, processingQuota, processingUsed]
+  );
+
+  return result.rows[0] || null;
+}
+
 export async function consumeProcessingAccess(userId) {
   return withTransaction(async (client) => {
     const result = await client.query("select * from users where id = $1 for update", [userId]);
