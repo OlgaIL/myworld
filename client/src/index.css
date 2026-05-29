@@ -44,9 +44,33 @@ button {
 }
 
 .header__logo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0;
   font-size: 20px;
   line-height: 1.1;
+}
+
+.header__logo-accent {
+  color: #333377;
+  font-family: "Segoe Print", "Segoe Script", cursive;
+  font-weight: 400;
+}
+
+@media (min-width: 721px) {
+  .header__logo {
+    position: relative;
+  }
+
+  .header__logo-accent {
+    position: relative;
+    top: 2px;
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1;
+    transform: rotate(-1deg);
+  }
 }
 
 .auth-button,
@@ -1558,6 +1582,16 @@ button {
   .cabinet-filter,
   .gallery {
     padding: 0;
+  }
+
+  .upload-panel {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .guest-hero {
+    padding-right: 0;
+    padding-left: 0;
   }
 
   .gallery__empty--cabinet {

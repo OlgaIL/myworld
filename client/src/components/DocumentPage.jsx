@@ -73,7 +73,7 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onS
         <button className="document-page__back" type="button" onClick={onBack}>
           Назад к списку
         </button>
-        <p className="document-page__empty">Документ не найден или еще загружается.</p>
+        <p className="document-page__empty">Запись не найдена или еще загружается.</p>
       </main>
     );
   }
@@ -106,7 +106,7 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onS
       <div className="document-page__layout">
         <section className="document-page__content">
           <div className="document-page__field">
-            <h2>{info?.title || "Документ"}</h2>
+            <h2>{info?.title || "Запись"}</h2>
             {info?.title && (
               <CopyButton
                 label="Скопировать название"

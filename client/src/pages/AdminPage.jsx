@@ -192,7 +192,7 @@ function AdminUserDetails({ user, onSaved }) {
 
       <div className="admin-stats">
         <div>
-          <span>Документы</span>
+          <span>Записи</span>
           <strong>{user.documentsCount}</strong>
         </div>
         <div>
@@ -200,7 +200,7 @@ function AdminUserDetails({ user, onSaved }) {
           <strong>{formatDate(user.createdAt)}</strong>
         </div>
         <div>
-          <span>Последний документ</span>
+          <span>Последняя запись</span>
           <strong>{formatDate(user.lastDocumentAt)}</strong>
         </div>
       </div>
@@ -359,7 +359,7 @@ function AdminDashboard({ onLogout }) {
           <strong>{usersCount}</strong>
         </div>
         <div>
-          <span>Документы</span>
+          <span>Записи</span>
           <strong>{documentsCount}</strong>
         </div>
       </section>

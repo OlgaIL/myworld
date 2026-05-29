@@ -24,7 +24,7 @@ function GuestDocumentCard({ document, guestAccess, onOpen, onLogin, onUploadAno
   const handleCtaClick = canUploadAnother ? onUploadAnother : onLogin;
   const ctaHint =
     document.status === "claimed" && guestAccess?.uploadAllowed
-      ? "Документ сохранен в кабинете. Войдите, чтобы открыть его или загрузить новые документы."
+      ? "Запись сохранена в кабинете. Войдите, чтобы открыть ее или загрузить новые записи."
       : statusMeta.ctaHint;
 
   return (

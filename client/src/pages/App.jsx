@@ -37,7 +37,7 @@ function PlusIcon() {
 
 const UPLOAD_STAGE_MESSAGES = {
   preparingImage: "Подготавливаем изображение...",
-  uploading: "Загружаем документ...",
+  uploading: "Загружаем запись...",
   recognizing: "Распознаем текст...",
   preparing: "Готовим результат..."
 };
@@ -100,7 +100,7 @@ function App() {
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
-  const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новый документ, войдите в кабинет.";
+  const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
@@ -222,7 +222,7 @@ function App() {
       setUploadMessage("");
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Не удалось загрузить документ");
+      alert("Не удалось загрузить запись");
       setUploadMessage("");
     } finally {
       if (preparingTimer) {
@@ -274,9 +274,9 @@ function App() {
       console.error("Guest upload error:", error);
 
       if (error.message === "GUEST_LIMIT_REACHED") {
-        setGuestError("Чтобы загрузить следующий документ, войдите через Google.");
+        setGuestError("Чтобы загрузить следующую запись, войдите через Google.");
       } else {
-        setGuestError(error.message || "Не удалось загрузить документ.");
+        setGuestError(error.message || "Не удалось загрузить запись.");
       }
 
       setUploadMessage("");
@@ -296,7 +296,7 @@ function App() {
     return (
       <section className="guest-shell">
         <div className="guest-hero">
-          <h2 className="guest-hero__title">Загрузите документ</h2>
+          <h2 className="guest-hero__title">Загрузите ваши записи</h2>
           <p className="guest-hero__text">
             Просто загрузите скан или фото нужного текста.
             <br />
@@ -311,7 +311,7 @@ function App() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
               >
-                {uploading ? "Загрузка..." : "Загрузить документ"}
+                {uploading ? "Загрузка..." : "Загрузить запись"}
               </button>
             )}
           </div>
@@ -322,11 +322,11 @@ function App() {
             </div>
           )}
 
-          <p className="guest-hero__counter">Загружено документов без входа: {guestDocumentsUsed}</p>
+          <p className="guest-hero__counter">Загружено записей без входа: {guestDocumentsUsed}</p>
 
           {guestLoading ? (
             <section className="guest-placeholder guest-placeholder--embedded">
-              <p className="guest-placeholder__title">Проверяем документ...</p>
+              <p className="guest-placeholder__title">Проверяем запись...</p>
             </section>
           ) : guestDocument ? (
             <GuestDocumentCard
@@ -340,7 +340,7 @@ function App() {
             <section className="guest-placeholder guest-placeholder--embedded">
               <p className="guest-placeholder__title">Бесплатная загрузка без входа уже использована.</p>
               <p className="guest-placeholder__text">
-                Чтобы попробовать еще раз и сохранить новые документы, войдите в кабинет.
+                Чтобы попробовать еще раз и сохранить новые записи, войдите в кабинет.
               </p>
               <button className="guest-card__primary-action" type="button" onClick={login}>
                 Войти в кабинет
@@ -359,7 +359,9 @@ function App() {
   return (
     <div className="page">
       <header className="topbar">
-        <h1 className="header__logo">Word2you</h1>
+        <h1 className="header__logo">
+          Word2you <span className="header__logo-accent">Записи</span>
+        </h1>
 
         {!user ? (
           <button className="auth-button" type="button" onClick={login}>
@@ -418,10 +420,10 @@ function App() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
-                  Загрузить документ
+                  Загрузить запись
                 </button>
                 <p className="guest-hero__counter upload-panel__counter">
-                  Загружено документов: {photosCount}
+                  Загружено записей: {photosCount}
                 </p>
                 {!uploading && !user.processingAllowed && (
                   <p className="upload-panel__message">{getProcessingHint(user)}</p>
@@ -436,8 +438,8 @@ function App() {
                       type="search"
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
-                      placeholder="Фильтр по документам"
-                      aria-label="Фильтр по документам"
+                      placeholder="Фильтр/поиск"
+                      aria-label="Фильтр/поиск"
                     />
                   </div>
 
@@ -516,7 +518,7 @@ function App() {
                   onSelectTag={selectTag}
                 />
               ) : (
-                <p className="gallery__empty gallery__empty--cabinet">Пока нет загруженных документов.</p>
+                <p className="gallery__empty gallery__empty--cabinet">Пока нет загруженных записей.</p>
               )}
             </>
           )}
@@ -535,8 +537,8 @@ function App() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || Boolean(documentName)}
-            title="Добавить документ"
-            aria-label="Добавить документ"
+            title="Добавить запись"
+            aria-label="Добавить запись"
           >
             <PlusIcon />
           </button>

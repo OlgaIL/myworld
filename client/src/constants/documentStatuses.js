@@ -4,34 +4,34 @@ export const GUEST_DOCUMENT_STATUS_META = {
     badgeClassName: "gallery__status-badge--processing",
     emptyText: "Текст еще обрабатывается.",
     ctaLabel: "Войти через Google",
-    ctaHint: "После входа документ сохранится в вашем списке."
+    ctaHint: "После входа запись сохранится в вашем списке."
   },
   processing: {
     label: "Обработка",
     badgeClassName: "gallery__status-badge--processing",
     emptyText: "Текст еще обрабатывается.",
     ctaLabel: "Войти через Google",
-    ctaHint: "После входа документ сохранится в вашем списке."
+    ctaHint: "После входа запись сохранится в вашем списке."
   },
   processed: {
     label: "✓ Текст найден",
     badgeClassName: "gallery__status-badge--processed",
     emptyText: "Текст не найден.",
     ctaLabel: "Войти и сохранить",
-    ctaHint: "Текст найден. Войдите, чтобы увидеть текст целиком и сохранить документ."
+    ctaHint: "Текст найден. Войдите, чтобы увидеть текст целиком и сохранить запись."
   },
   no_text: {
     label: "Текст не найден",
     badgeClassName: "gallery__status-badge--warning",
     emptyText: "Текст не найден.",
-    ctaLabel: "Загрузить другой документ",
+    ctaLabel: "Загрузить другую запись",
     ctaHint: "Попробуйте загрузить другое фото или скан, где текст виден четче."
   },
   error: {
     label: "Ошибка OCR",
     badgeClassName: "gallery__status-badge--error",
-    emptyText: "Не получилось прочитать документ.",
-    ctaLabel: "Загрузить другой документ",
+    emptyText: "Не получилось прочитать запись.",
+    ctaLabel: "Загрузить другую запись",
     ctaHint: "Сервис временно недоступен. Попробуйте загрузить другое фото или повторите попытку чуть позже."
   },
   claimed: {
@@ -39,7 +39,7 @@ export const GUEST_DOCUMENT_STATUS_META = {
     badgeClassName: "gallery__status-badge--processed",
     emptyText: "Текст не найден.",
     ctaLabel: "Войти в кабинет",
-    ctaHint: "Бесплатная загрузка без входа уже использована. Документ сохранен в кабинете. Войдите, чтобы открыть его или загрузить новые документы."
+    ctaHint: "Бесплатная загрузка без входа уже использована. Запись сохранена в кабинете. Войдите, чтобы открыть ее или загрузить новые записи."
   }
 };
 
