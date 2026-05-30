@@ -55,7 +55,12 @@ button {
 .header__logo-accent {
   color: #333377;
   font-family: "Segoe Print", "Segoe Script", cursive;
+  position: relative;
+  top: 2px;
+  font-size: 28px;
   font-weight: 400;
+  line-height: 1;
+  transform: rotate(-1deg);
 }
 
 @media (min-width: 721px) {
@@ -64,12 +69,9 @@ button {
   }
 
   .header__logo-accent {
-    position: relative;
-    top: 2px;
-    font-size: 28px;
-    font-weight: 400;
-    line-height: 1;
-    transform: rotate(-1deg);
+    top: 28px;
+    font-size: 58px;
+    line-height: 0.7;
   }
 }
 
