@@ -47,6 +47,10 @@ export function uploadGuestPhoto(file, onProgress) {
           throw new Error("Файл слишком большой (макс 10MB)");
         }
 
+        if (err.response.status === 409 && err.response.data?.error === "USER_RECORD_LIMIT_REACHED") {
+          throw new Error("USER_RECORD_LIMIT_REACHED");
+        }
+
         throw new Error("Ошибка загрузки файла");
       }
 

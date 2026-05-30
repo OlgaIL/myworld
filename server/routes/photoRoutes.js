@@ -8,18 +8,18 @@ import { uploadsDir } from "../config/paths.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import {
   createPhoto,
+  countPhotosByUser,
   deletePhoto,
   findPhotoByFilenameAndUser,
   listPhotosByUser,
   updatePhotoProcessingResult,
   updatePhotoStatus
 } from "../repositories/photosRepository.js";
-import { consumeProcessingAccess } from "../repositories/usersRepository.js";
 import * as aiService from "../services/aiService.js";
 import ocrService from "../services/ocrService.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
-import { getProcessingGuardError, mapPhotoInfo } from "../utils/photos.js";
+import { getProcessingGuardError, getUserRecordAccess, mapPhotoInfo } from "../utils/photos.js";
 
 const router = Router();
 
@@ -50,7 +50,27 @@ const upload = multer({
   }
 });
 
-router.post("/api/upload", requireAuthenticatedUser, (req, res) => {
+async function requireRecordUploadAccess(req, res, next) {
+  try {
+    const recordsUsed = await countPhotosByUser(req.user.id);
+    const access = getUserRecordAccess(recordsUsed);
+
+    if (!access.recordUploadAllowed) {
+      return res.status(409).json({
+        error: "USER_RECORD_LIMIT_REACHED",
+        access
+      });
+    }
+
+    req.recordAccess = access;
+    return next();
+  } catch (error) {
+    console.error("Record upload access check error:", error);
+    return res.status(500).json({ error: "RECORD_ACCESS_CHECK_FAILED" });
+  }
+}
+
+router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, (req, res) => {
   const timer = createRequestTimer("photo-upload");
 
   upload.single("photo")(req, res, async function (err) {
@@ -238,21 +258,6 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
   }
 
   try {
-    const accessSnapshot = await consumeProcessingAccess(req.user.id);
-
-    if (!accessSnapshot) {
-      timer.log("access_rejected");
-      return res.status(403).json({
-        status: "error",
-        error: "PROCESSING_NOT_AVAILABLE_FOR_USER"
-      });
-    }
-
-    timer.log("access_consumed", {
-      processingUsed: accessSnapshot.processing_used,
-      processingQuota: accessSnapshot.processing_quota
-    });
-
     await updatePhotoStatus(photo.id, "processing", null);
     const imagePath = photo.storage_path;
     timer.log("ocr_started", {

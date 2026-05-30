@@ -84,6 +84,11 @@ export async function listPhotosByUser(userId) {
   return result.rows;
 }
 
+export async function countPhotosByUser(userId) {
+  const result = await query("select count(*)::int as count from photos where user_id = $1", [userId]);
+  return Number(result.rows[0]?.count || 0);
+}
+
 export async function findPhotoById(id) {
   const result = await query("select * from photos where id = $1", [id]);
   return result.rows[0] || null;

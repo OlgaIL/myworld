@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { CLIENT_URL } from "../config/env.js";
+import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
-import { getProcessingGuardError, getUserProcessingAccess } from "../utils/photos.js";
+import { getProcessingGuardError, getUserProcessingAccess, getUserRecordAccess } from "../utils/photos.js";
 
 const router = Router();
 
@@ -25,12 +26,14 @@ router.get(
   }
 );
 
-router.get("/api/me", (req, res) => {
+router.get("/api/me", async (req, res) => {
   if (!req.user) {
     return res.send(null);
   }
 
   const processingAccess = getUserProcessingAccess(req.user);
+  const recordsUsed = await countPhotosByUser(req.user.id);
+  const recordAccess = getUserRecordAccess(recordsUsed);
 
   return res.send({
     ...req.user,
@@ -38,7 +41,8 @@ router.get("/api/me", (req, res) => {
     processingUnlimited: processingAccess.processingUnlimited,
     processingQuota: processingAccess.processingQuota,
     processingUsed: processingAccess.processingUsed,
-    processingRemaining: processingAccess.processingRemaining
+    processingRemaining: processingAccess.processingRemaining,
+    ...recordAccess
   });
 });
 router.get("/logout", (req, res) => {

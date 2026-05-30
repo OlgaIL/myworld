@@ -5,6 +5,7 @@ import {
   OPENAI_ENABLED,
   PROCESSING_ALLOWLIST_EMAILS,
   PROCESSING_ENABLED,
+  USER_RECORD_LIMIT,
   YANDEX_AI_ENABLED,
   YANDEX_OCR_ENABLED
 } from "../config/env.js";
@@ -39,6 +40,19 @@ export function getUserProcessingAccess(user) {
     processingUsed,
     processingRemaining,
     processingAllowedByAccount: processingUnlimited || processingRemaining > 0
+  };
+}
+
+export function getUserRecordAccess(recordsUsed) {
+  const limit = USER_RECORD_LIMIT;
+  const used = Number(recordsUsed || 0);
+  const remaining = Math.max(limit - used, 0);
+
+  return {
+    recordLimit: limit,
+    recordsUsed: used,
+    recordsRemaining: remaining,
+    recordUploadAllowed: remaining > 0
   };
 }
 
@@ -85,12 +99,6 @@ export function getProcessingGuardError(user) {
 
   if (!isCurrentAiProviderEnabled()) {
     return `${AI_PROVIDER.toUpperCase()}_AI_DISABLED`;
-  }
-
-  const access = getUserProcessingAccess(user);
-
-  if (!access.processingAllowedByAccount) {
-    return "PROCESSING_NOT_AVAILABLE_FOR_USER";
   }
 
   return null;

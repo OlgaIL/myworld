@@ -46,6 +46,7 @@ export function getGuestDocumentAccess(session) {
   const documentsRemaining = Math.max(GUEST_DOCUMENT_LIMIT - documentsUsed, 0);
 
   return {
+    documentLimit: GUEST_DOCUMENT_LIMIT,
     documentsUsed,
     documentsRemaining,
     uploadAllowed: documentsRemaining > 0

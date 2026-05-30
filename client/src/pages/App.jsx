@@ -10,20 +10,32 @@ import { usePhotos } from "../hooks/usePhotos";
 import { getPhotoUrl, processPhoto } from "../services/api";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
-function getProcessingHint(user) {
+function getAccessHint(user) {
   if (!user) {
     return "";
   }
 
-  if (!user.processingAllowed) {
-    return "Функция обработки фото вам недоступна.";
+  const limit = Number(user.recordLimit || 0);
+  const used = Number(user.recordsUsed || 0);
+  const remaining = Number(user.recordsRemaining || 0);
+
+  if (!limit) {
+    return "";
   }
 
-  if (user.processingUnlimited) {
-    return "Автообработка включена без лимита.";
+  if (remaining <= 0) {
+    return "Лимит бесплатного тарифа достигнут. Просмотр, поиск и удаление доступны, для новых загрузок нужно расширить доступ.";
   }
 
-  return `Осталось обработок: ${user.processingRemaining}`;
+  if (remaining <= 5) {
+    return `Осталось ${remaining} записей. После достижения лимита новые загрузки будут недоступны.`;
+  }
+
+  if (used >= 80) {
+    return `Вы сохранили ${used} из ${limit} записей. Если понадобится больше места, можно запросить расширение доступа.`;
+  }
+
+  return "";
 }
 
 function PlusIcon() {
@@ -100,8 +112,12 @@ function App() {
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
+  const guestDocumentLimit = Number(guestAccess?.documentLimit || 5);
   const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
+  const recordLimit = Number(user?.recordLimit || 100);
+  const recordsUsed = Number(user?.recordsUsed ?? photosCount);
+  const recordUploadAllowed = user?.recordUploadAllowed !== false;
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
     : null;
@@ -189,6 +205,12 @@ function App() {
     let pendingUrl = null;
     let preparingTimer = null;
 
+    if (!recordUploadAllowed) {
+      alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
+      event.target.value = "";
+      return;
+    }
+
     try {
       setUploading(true);
       setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
@@ -222,7 +244,11 @@ function App() {
       setUploadMessage("");
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Не удалось загрузить запись");
+      if (error.message === "USER_RECORD_LIMIT_REACHED") {
+        alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
+      } else {
+        alert("Не удалось загрузить запись");
+      }
       setUploadMessage("");
     } finally {
       if (preparingTimer) {
@@ -322,7 +348,7 @@ function App() {
             </div>
           )}
 
-          <p className="guest-hero__counter">Загружено записей без входа: {guestDocumentsUsed}</p>
+          <p className="guest-hero__counter">Гостевой режим · {guestDocumentsUsed}/{guestDocumentLimit} записей</p>
 
           {guestLoading ? (
             <section className="guest-placeholder guest-placeholder--embedded">
@@ -374,7 +400,7 @@ function App() {
             )}
             <div className="profile__meta">
               <span className="profile__name">{user.displayName}</span>
-              <span className="profile__hint">{getProcessingHint(user)}</span>
+              <span className="profile__hint">Бесплатный тариф · {recordsUsed}/{recordLimit} записей</span>
             </div>
             <button className="profile__logout" type="button" onClick={logout}>
               Выйти
@@ -418,15 +444,15 @@ function App() {
                   className="guest-upload-button"
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={uploading || !recordUploadAllowed}
                 >
                   Загрузить запись
                 </button>
                 <p className="guest-hero__counter upload-panel__counter">
-                  Загружено записей: {photosCount}
+                  Бесплатный тариф · {recordsUsed}/{recordLimit} записей
                 </p>
-                {!uploading && !user.processingAllowed && (
-                  <p className="upload-panel__message">{getProcessingHint(user)}</p>
+                {!uploading && getAccessHint(user) && (
+                  <p className="upload-panel__message">{getAccessHint(user)}</p>
                 )}
               </section>
 
@@ -529,14 +555,14 @@ function App() {
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleUpload}
-            disabled={uploading}
+            disabled={uploading || !recordUploadAllowed}
           />
 
           <button
             className="fab-upload"
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || Boolean(documentName)}
+            disabled={uploading || Boolean(documentName) || !recordUploadAllowed}
             title="Добавить запись"
             aria-label="Добавить запись"
           >
