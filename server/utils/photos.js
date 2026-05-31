@@ -103,3 +103,19 @@ export function getProcessingGuardError(user) {
 
   return null;
 }
+
+export function getProcessingServiceGuardError() {
+  if (!PROCESSING_ENABLED) {
+    return "PROCESSING_DISABLED";
+  }
+
+  if (!isCurrentOcrProviderEnabled()) {
+    return `${OCR_PROVIDER.toUpperCase()}_OCR_DISABLED`;
+  }
+
+  if (!isCurrentAiProviderEnabled()) {
+    return `${AI_PROVIDER.toUpperCase()}_AI_DISABLED`;
+  }
+
+  return null;
+}

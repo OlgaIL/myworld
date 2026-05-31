@@ -8,6 +8,7 @@ import { checkDatabaseConnection, isDatabaseConfigured } from "./db/index.js";
 import { CLIENT_URL, OCR_PROVIDER, AI_PROVIDER, PROCESSING_ALLOWLIST_EMAILS, PROCESSING_ENABLED, SESSION_SECRET } from "./config/env.js";
 import { clientDistDir } from "./config/paths.js";
 import authRoutes from "./routes/authRoutes.js";
+import accessRequestRoutes from "./routes/accessRequestRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
@@ -56,6 +57,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use(authRoutes);
+app.use(accessRequestRoutes);
 app.use(adminRoutes);
 app.use(guestRoutes);
 app.use(photoRoutes);

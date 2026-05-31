@@ -158,6 +158,7 @@ button {
   margin-bottom: 0;
   padding: 20px;
   border: 0;
+  border-bottom: 1px solid #d0d5dd;
   border-radius: 0;
   background: #fff;
 }
@@ -167,15 +168,50 @@ button {
 }
 
 .upload-panel__message {
-  margin: 0;
+  margin: 8px 0 0;
   color: #5b6476;
+}
+
+.access-request {
+  display: inline;
+}
+
+.access-request__error {
+  margin-left: 8px;
+  color: #b42318;
+}
+
+.access-request__link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #333377;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.access-request__link:hover {
+  color: #1f1f5f;
+}
+
+.access-request__link:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.access-request--sent {
+  color: #18794e;
+}
+
+.access-request__sent {
+  color: #18794e;
 }
 
 .upload-panel__counter {
   width: 100%;
   margin-top: 16px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid #d0d5dd;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .upload-panel__counter:first-child {
@@ -186,7 +222,7 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  margin: 0 0 18px;
+  margin: 18px 0;
   padding: 0 20px;
 }
 
@@ -373,6 +409,16 @@ button {
   margin: 0;
 }
 
+.guest-hero__notice-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .guest-hero__counter {
   margin: 16px 0 0;
   color: #667085;
@@ -493,6 +539,29 @@ button {
 
 .guest-card__primary-action:active {
   transform: translateY(1px);
+}
+
+.gallery.guest-documents-list {
+  margin-top: 15px;
+  padding: 22px 0 0;
+  border-top: 1px solid #d0d5dd;
+}
+
+.guest-login-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 22px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid #d0d5dd;
+}
+
+.guest-login-cta p {
+  margin: 0;
+  color: #475467;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .fab-upload {
@@ -1584,6 +1653,17 @@ button {
   .cabinet-filter,
   .gallery {
     padding: 0;
+  }
+
+  .gallery.guest-documents-list {
+    padding-top: 22px;
+  }
+
+  .guest-login-cta {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-right: 0;
+    margin-left: 0;
   }
 
   .upload-panel {

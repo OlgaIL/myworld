@@ -1,6 +1,15 @@
 import { getGuestDocumentStatusMeta } from "../constants/documentStatuses";
 import { getGuestDocumentFileUrl } from "../services/api";
 
+function ZoomIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="6" />
+      <path d="M20 20l-4.35-4.35" />
+    </svg>
+  );
+}
+
 function formatCreatedAt(value) {
   if (!value) {
     return "";
@@ -15,48 +24,147 @@ function formatCreatedAt(value) {
     .replace(".", "");
 }
 
-function GuestDocumentCard({ document, guestAccess, onOpen, onLogin, onUploadAnother }) {
+function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }) {
   const statusMeta = getGuestDocumentStatusMeta(document.status);
-  const fileUrl = getGuestDocumentFileUrl(document.id);
+  const fileUrl = getGuestDocumentFileUrl(document.id, document.updatedAt || document.filename);
   const createdAtLabel = formatCreatedAt(document.createdAt);
-  const isTextPreviewLimited = document.status === "processed" || document.status === "claimed";
+  const readableText = document.cleanText || document.text || "";
+  const hasReadableText = Boolean(readableText.trim());
+  const canOpenDocument = (document.status === "processed" || document.status === "claimed") && hasReadableText;
   const canUploadAnother = document.status === "no_text" || document.status === "error";
-  const handleCtaClick = canUploadAnother ? onUploadAnother : onLogin;
-  const ctaHint =
-    document.status === "claimed" && guestAccess?.uploadAllowed
-      ? "Запись сохранена в кабинете. Войдите, чтобы открыть ее или загрузить новые записи."
-      : statusMeta.ctaHint;
+  const hasTags = Array.isArray(document.tags) && document.tags.length > 0;
+
+  function handleCardClick() {
+    if (canOpenDocument) {
+      onOpenDocument(document);
+    }
+  }
 
   return (
-    <article className="guest-card">
-      <div className="guest-card__meta">
+    <article
+      className={`gallery__item ${canOpenDocument ? "gallery__item--clickable" : ""}`}
+      onClick={handleCardClick}
+    >
+      <div className="gallery__meta">
         {createdAtLabel && <p className="gallery__date">{createdAtLabel}</p>}
         <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
           {statusMeta.label}
         </p>
       </div>
 
-      <div className="guest-card__body">
-        <div className="guest-card__content">
-          <div className={`guest-card__text ${isTextPreviewLimited ? "guest-card__text--preview" : ""}`}>
-            <p>{document.text || document.error || statusMeta.emptyText}</p>
-          </div>
+      <div className="gallery__body">
+        <div className="gallery__content">
+          {(document.status === "processed" || document.status === "claimed") && (
+            <>
+              <h4>{document.title || "Запись"}</h4>
+
+              {document.summary ? (
+                <div className="gallery__summary-row">
+                  <p>{document.summary}</p>
+                </div>
+              ) : (
+                <p>{readableText || statusMeta.emptyText}</p>
+              )}
+
+              {document.category && (
+                <div className="gallery__ai-meta">
+                  <span className="gallery__ai-meta-button">{document.category}</span>
+                </div>
+              )}
+
+              {document.notes && <p className="gallery__ai-note">{document.notes}</p>}
+
+              {hasTags && (
+                <div className="gallery__tags">
+                  {document.tags.map((tag) => (
+                    <span className="gallery__tag-button" key={tag}>
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {document.status === "no_text" && (
+            <>
+              <p>
+                Текст не найден.
+                <br />
+                Можно загрузить другую запись.
+              </p>
+            </>
+          )}
+
+          {document.status === "error" && (
+            <>
+              <p>
+                Ошибка обработки.
+                <br />
+                Можно загрузить другую запись.
+              </p>
+              {document.error && <p>{document.error}</p>}
+            </>
+          )}
+
+          {hasReadableText && (
+            <div className="gallery__text-section">
+              <div className="gallery__text-actions">
+                <button
+                  className="gallery__open-document"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenDocument(document);
+                  }}
+                >
+                  Открыть текст
+                </button>
+              </div>
+            </div>
+          )}
+
+          {canUploadAnother && (
+            <div className="gallery__text-section">
+              <div className="gallery__text-actions">
+                <button
+                  className="gallery__open-document"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onUploadAnother(document.id);
+                  }}
+                >
+                  Загрузить другую
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        <button
-          type="button"
-          className="guest-card__preview"
-          onClick={() => onOpen(fileUrl)}
-        >
-          <img src={fileUrl} alt="" />
-        </button>
-      </div>
+        <div className="gallery__preview">
+          <img
+            src={fileUrl}
+            className="gallery__image"
+            alt=""
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen(fileUrl);
+            }}
+          />
 
-      <div className="guest-card__cta">
-        <button className="guest-card__primary-action" type="button" onClick={handleCtaClick}>
-          {statusMeta.ctaLabel}
-        </button>
-        <p className="guest-card__hint">{ctaHint}</p>
+          <div
+            className="gallery__preview-overlay"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen(fileUrl);
+            }}
+          >
+            <span className="gallery__preview-zoom" aria-hidden="true">
+              <ZoomIcon />
+            </span>
+          </div>
+        </div>
       </div>
     </article>
   );

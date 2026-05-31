@@ -7,35 +7,75 @@ import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { usePhotos } from "../hooks/usePhotos";
-import { getPhotoUrl, processPhoto } from "../services/api";
+import { createAccessRequest, getGuestDocumentFileUrl, getPhotoUrl, processPhoto } from "../services/api";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
-function getAccessHint(user) {
-  if (!user) {
-    return "";
+function AccessRequestForm() {
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  async function handleClick() {
+    try {
+      setStatus("sending");
+      setError("");
+      await createAccessRequest({ message: "" });
+      setStatus("sent");
+    } catch (requestError) {
+      setError(requestError.message || "Не удалось отправить заявку");
+      setStatus("idle");
+    }
   }
 
-  const limit = Number(user.recordLimit || 0);
-  const used = Number(user.recordsUsed || 0);
-  const remaining = Number(user.recordsRemaining || 0);
+  return (
+    <span className="access-request">
+      {status === "sent" ? (
+        <span className="access-request__sent">✓ Вы запросили продление доступа. Проверьте вашу почту</span>
+      ) : (
+        <>
+          <button className="access-request__link" type="button" onClick={handleClick} disabled={status === "sending"}>
+            {status === "sending" ? "отправляем запрос..." : "запросить продление доступа на 1 месяц"}
+          </button>
+          {error && <span className="access-request__error">{error}</span>}
+        </>
+      )}
+    </span>
+  );
+}
+
+function AccessLimitMessage({ user }) {
+  const limit = Number(user?.recordLimit || 0);
+  const used = Number(user?.recordsUsed || 0);
+  const remaining = Number(user?.recordsRemaining || 0);
 
   if (!limit) {
-    return "";
+    return null;
   }
 
   if (remaining <= 0) {
-    return "Лимит бесплатного тарифа достигнут. Просмотр, поиск и удаление доступны, для новых загрузок нужно расширить доступ.";
+    return (
+      <p className="upload-panel__message">
+        Лимит бесплатного тарифа достигнут, <AccessRequestForm />
+      </p>
+    );
   }
 
   if (remaining <= 5) {
-    return `Осталось ${remaining} записей. После достижения лимита новые загрузки будут недоступны.`;
+    return (
+      <p className="upload-panel__message">
+        Осталось {remaining} записей. После достижения лимита новые загрузки будут недоступны.
+      </p>
+    );
   }
 
   if (used >= 80) {
-    return `Вы сохранили ${used} из ${limit} записей. Если понадобится больше места, можно запросить расширение доступа.`;
+    return (
+      <p className="upload-panel__message">
+        Вы сохранили {used} из {limit} записей. Если понадобится больше места, можно запросить продление доступа.
+      </p>
+    );
   }
 
-  return "";
+  return null;
 }
 
 function PlusIcon() {
@@ -97,7 +137,7 @@ function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
   const { user, authLoading, login, logout, reloadUser } = useAuth();
-  const { guestDocument, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
+  const { guestDocuments, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
   const [activePhoto, setActivePhoto] = useState(null);
   const [documentCopiedMap, setDocumentCopiedMap] = useState({});
@@ -105,15 +145,17 @@ function App() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [guestError, setGuestError] = useState("");
+  const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [showTags, setShowTags] = useState(false);
   const fileInputRef = useRef(null);
+  const guestReplaceDocumentIdRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
   const guestDocumentLimit = Number(guestAccess?.documentLimit || 5);
-  const guestLimitMessage = "Бесплатная загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
+  const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
   const recordLimit = Number(user?.recordLimit || 100);
   const recordsUsed = Number(user?.recordsUsed ?? photosCount);
@@ -122,6 +164,27 @@ function App() {
     ? photos.find((photo) => photo.name === documentName)
     : null;
   const activeDocumentInfo = activeDocumentPhoto || null;
+  const activeGuestPhoto = activeGuestDocument
+    ? {
+      name: getGuestDocumentFileUrl(activeGuestDocument.id, activeGuestDocument.updatedAt || activeGuestDocument.filename),
+      url: getGuestDocumentFileUrl(activeGuestDocument.id, activeGuestDocument.updatedAt || activeGuestDocument.filename)
+    }
+    : null;
+  const activeGuestInfo = activeGuestDocument
+    ? {
+      status: activeGuestDocument.status,
+      title: activeGuestDocument.title || "Запись",
+      summary: activeGuestDocument.summary || "",
+      category: activeGuestDocument.category || "",
+      tags: Array.isArray(activeGuestDocument.tags) ? activeGuestDocument.tags : [],
+      text: activeGuestDocument.text || "",
+      cleanText: activeGuestDocument.cleanText || "",
+      textQuality: activeGuestDocument.textQuality || "",
+      notes: activeGuestDocument.notes || "",
+      error: activeGuestDocument.error || null,
+      createdAt: activeGuestDocument.createdAt || null
+    }
+    : null;
   const categoryOptions = useMemo(() => getCategoryOptions(photos), [photos]);
   const tagOptions = useMemo(() => getTagOptions(photos), [photos]);
   const normalizedSearchQuery = normalizeSearchValue(searchQuery);
@@ -194,6 +257,23 @@ function App() {
       alert("Не удалось скопировать текст");
     }
   }, []);
+
+  function openGuestUpload(replaceDocumentId = null) {
+    guestReplaceDocumentIdRef.current = replaceDocumentId;
+    fileInputRef.current?.click();
+  }
+
+  function renderGuestLimitNotice() {
+    return (
+      <>
+        Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись,{" "}
+        <button className="guest-hero__notice-link" type="button" onClick={login}>
+          войдите в кабинет
+        </button>
+        .
+      </>
+    );
+  }
 
   async function handleUpload(event) {
     const file = event.target.files[0];
@@ -281,6 +361,7 @@ function App() {
     try {
       setUploading(true);
       setGuestError("");
+      setActiveGuestDocument(null);
       setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
       const uploadFile = await prepareImageForUpload(file);
       setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
@@ -290,7 +371,9 @@ function App() {
       preparingTimer = window.setTimeout(() => {
         setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
       }, 4500);
-      await addGuestDocument(uploadFile);
+      await addGuestDocument(uploadFile, {
+        replaceDocumentId: guestReplaceDocumentIdRef.current
+      });
       window.clearTimeout(recognizingTimer);
       window.clearTimeout(preparingTimer);
       recognizingTimer = null;
@@ -314,11 +397,25 @@ function App() {
         window.clearTimeout(preparingTimer);
       }
       event.target.value = "";
+      guestReplaceDocumentIdRef.current = null;
       setUploading(false);
     }
   }
 
   function renderGuestState() {
+    if (activeGuestDocument) {
+      return (
+        <DocumentPage
+          photo={activeGuestPhoto}
+          info={activeGuestInfo}
+          copiedMap={documentCopiedMap}
+          onBack={() => setActiveGuestDocument(null)}
+          onOpenImage={setActivePhoto}
+          onCopy={handleDocumentCopy}
+        />
+      );
+    }
+
     return (
       <section className="guest-shell">
         <div className="guest-hero">
@@ -334,7 +431,7 @@ function App() {
               <button
                 className="guest-upload-button"
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => openGuestUpload()}
                 disabled={uploading}
               >
                 {uploading ? "Загрузка..." : "Загрузить запись"}
@@ -344,7 +441,7 @@ function App() {
 
           {(uploadMessage || guestError || !guestUploadAllowed) && (
             <div className="guest-hero__notice">
-              <p>{guestError || uploadMessage || guestLimitMessage}</p>
+              <p>{guestError || uploadMessage || renderGuestLimitNotice()}</p>
             </div>
           )}
 
@@ -354,19 +451,36 @@ function App() {
             <section className="guest-placeholder guest-placeholder--embedded">
               <p className="guest-placeholder__title">Проверяем запись...</p>
             </section>
-          ) : guestDocument ? (
-            <GuestDocumentCard
-              document={guestDocument}
-              guestAccess={guestAccess}
-              onOpen={setActivePhoto}
-              onLogin={login}
-              onUploadAnother={() => fileInputRef.current?.click()}
-            />
+          ) : guestDocuments.length > 0 ? (
+            <>
+              <section className="gallery guest-documents-list">
+                {guestDocuments.map((document) => (
+                  <GuestDocumentCard
+                    key={document.id}
+                  document={document}
+                  onOpen={setActivePhoto}
+                  onOpenDocument={setActiveGuestDocument}
+                  onUploadAnother={openGuestUpload}
+                />
+              ))}
+              </section>
+
+              <section className="guest-login-cta">
+                <p>Чтобы сохранить ваши записи и продолжить работу, войдите через Google.</p>
+                <button className="guest-card__primary-action" type="button" onClick={login}>
+                  Войти через Google
+                </button>
+              </section>
+            </>
           ) : !guestUploadAllowed ? (
             <section className="guest-placeholder guest-placeholder--embedded">
-              <p className="guest-placeholder__title">Бесплатная загрузка без входа уже использована.</p>
+              <p className="guest-placeholder__title">Гостевая загрузка без входа уже использована.</p>
               <p className="guest-placeholder__text">
-                Чтобы попробовать еще раз и сохранить новые записи, войдите в кабинет.
+                Чтобы попробовать еще раз и сохранить новые записи,{" "}
+                <button className="guest-hero__notice-link" type="button" onClick={login}>
+                  войдите в кабинет
+                </button>
+                .
               </p>
               <button className="guest-card__primary-action" type="button" onClick={login}>
                 Войти в кабинет
@@ -449,11 +563,9 @@ function App() {
                   Загрузить запись
                 </button>
                 <p className="guest-hero__counter upload-panel__counter">
-                  Бесплатный тариф · {recordsUsed}/{recordLimit} записей
+                  Загружено записей: {recordsUsed}
                 </p>
-                {!uploading && getAccessHint(user) && (
-                  <p className="upload-panel__message">{getAccessHint(user)}</p>
-                )}
+                {!uploading && <AccessLimitMessage user={user} />}
               </section>
 
               {photosCount > 0 && (

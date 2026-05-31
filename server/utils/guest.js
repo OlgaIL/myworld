@@ -27,8 +27,16 @@ export function mapGuestDocumentInfo(document) {
     filename: document.filename,
     status: document.status,
     text: document.ocr_text || "",
+    cleanText: document.clean_text || "",
+    title: document.title || "",
+    summary: document.summary || "",
+    category: document.category || "",
+    tags: Array.isArray(document.tags) ? document.tags : [],
+    textQuality: document.text_quality || "",
+    notes: document.ai_notes || "",
     error: document.error_message || null,
     createdAt: document.created_at,
+    updatedAt: document.updated_at,
     expiresAt: document.expires_at
   };
 }

@@ -3,13 +3,14 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { OCR_PROVIDER, GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS } from "../config/env.js";
-import { YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
+import { AI_PROVIDER, OCR_PROVIDER, GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS, OPENAI_MODEL } from "../config/env.js";
+import { OPENAI_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
 import { uploadsDir } from "../config/paths.js";
 import {
   createGuestDocument,
   findGuestDocumentById,
-  findLatestGuestDocumentBySessionId,
+  listGuestDocumentsBySessionId,
+  replaceGuestDocumentUpload,
   updateGuestDocumentProcessingResult,
   updateGuestDocumentStatus
 } from "../repositories/guestDocumentsRepository.js";
@@ -20,9 +21,11 @@ import {
   touchGuestSession
 } from "../repositories/guestSessionsRepository.js";
 import ocrService from "../services/ocrService.js";
+import * as aiService from "../services/aiService.js";
 import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
+import { getProcessingServiceGuardError } from "../utils/photos.js";
 
 const router = Router();
 
@@ -78,11 +81,99 @@ function buildGuestDocumentResponse(document) {
   };
 }
 
-function buildGuestStateResponse({ guestSession = null, guestDocument = null } = {}) {
+async function findReplaceableGuestDocument(req, guestSession) {
+  const replaceDocumentId = req.body?.replaceDocumentId;
+
+  if (!replaceDocumentId) {
+    return null;
+  }
+
+  const document = await findGuestDocumentById(replaceDocumentId);
+
+  if (
+    !document ||
+    document.guest_session_id !== guestSession.id ||
+    isGuestDocumentExpired(document) ||
+    !["no_text", "error"].includes(document.status)
+  ) {
+    return null;
+  }
+
+  return document;
+}
+
+async function enrichGuestDocumentWithAi({ text, timer }) {
+  const serviceGuardError = getProcessingServiceGuardError();
+
+  if (serviceGuardError) {
+    timer.log("ai_skipped", {
+      error: serviceGuardError
+    });
+
+    return {
+      title: "Запись",
+      summary: "",
+      category: "",
+      tags: [],
+      cleanText: text,
+      textQuality: "low_confidence",
+      notes: "Текст распознан, но краткое описание временно недоступно."
+    };
+  }
+
+  timer.log("ai_started", {
+    provider: AI_PROVIDER,
+    textLength: text.trim().length
+  });
+
+  const aiResult = await aiService.process(text, {
+    provider: AI_PROVIDER,
+    apiKey: YANDEX_API_KEY,
+    folderId: YANDEX_FOLDER_ID,
+    openAiApiKey: OPENAI_API_KEY,
+    model: OPENAI_MODEL
+  });
+
+  timer.log("ai_finished", {
+    provider: AI_PROVIDER
+  });
+
+  if (aiResult.error) {
+    timer.log("ai_failed", {
+      error: aiResult.error
+    });
+
+    return {
+      title: "Запись",
+      summary: "",
+      category: "",
+      tags: [],
+      cleanText: text,
+      textQuality: "low_confidence",
+      notes: "Текст распознан, но краткое описание временно недоступно."
+    };
+  }
+
+  return aiResult;
+}
+
+function buildGuestStateResponse({ guestSession = null, guestDocuments = [] } = {}) {
+  const documents = guestDocuments.map(buildGuestDocumentResponse);
+
   return {
-    document: guestDocument ? buildGuestDocumentResponse(guestDocument) : null,
+    document: documents[0] || null,
+    documents,
     access: getGuestDocumentAccess(guestSession)
   };
+}
+
+async function buildGuestStateForSession(guestSession) {
+  if (!guestSession) {
+    return buildGuestStateResponse();
+  }
+
+  const guestDocuments = await listGuestDocumentsBySessionId(guestSession.id);
+  return buildGuestStateResponse({ guestSession, guestDocuments });
 }
 
 async function getOrCreateGuestSession(req, res) {
@@ -132,17 +223,7 @@ router.get("/api/guest/document", async (req, res) => {
 
     await touchGuestSession(guestSession.id);
 
-    const guestDocument = await findLatestGuestDocumentBySessionId(guestSession.id);
-
-    if (!guestDocument || isGuestDocumentExpired(guestDocument)) {
-      return res.json(buildGuestStateResponse({ guestSession }));
-    }
-
-    if (guestDocument.status === "claimed" && !guestDocument.claimed_photo_exists) {
-      return res.json(buildGuestStateResponse({ guestSession }));
-    }
-
-    return res.json(buildGuestStateResponse({ guestSession, guestDocument }));
+    return res.json(await buildGuestStateForSession(guestSession));
   } catch (error) {
     console.error("Guest document fetch error:", error);
     return res.status(500).json({ error: "GUEST_DOCUMENT_FETCH_FAILED" });
@@ -230,19 +311,40 @@ router.post("/api/guest/upload", (req, res) => {
         return res.status(409).json({ error: guardError });
       }
 
-      const guestDocument = await createGuestDocument({
-        guestSessionId: guestSession.id,
-        filename: req.file.filename,
-        storagePath: path.join(uploadsDir, req.file.filename),
-        mimeType: req.file.mimetype,
-        sizeBytes: req.file.size,
-        status: "processing",
-        ocrProvider: OCR_PROVIDER,
-        expiresAt: getGuestDocumentExpiryDate()
-      });
+      const replacementDocument = await findReplaceableGuestDocument(req, guestSession);
+      const newStoragePath = path.join(uploadsDir, req.file.filename);
+      const guestDocument = replacementDocument
+        ? await replaceGuestDocumentUpload(replacementDocument.id, {
+          filename: req.file.filename,
+          storagePath: newStoragePath,
+          mimeType: req.file.mimetype,
+          sizeBytes: req.file.size,
+          status: "processing",
+          ocrProvider: OCR_PROVIDER,
+          expiresAt: getGuestDocumentExpiryDate()
+        })
+        : await createGuestDocument({
+          guestSessionId: guestSession.id,
+          filename: req.file.filename,
+          storagePath: newStoragePath,
+          mimeType: req.file.mimetype,
+          sizeBytes: req.file.size,
+          status: "processing",
+          ocrProvider: OCR_PROVIDER,
+          expiresAt: getGuestDocumentExpiryDate()
+        });
+
+      if (
+        replacementDocument?.storage_path &&
+        replacementDocument.storage_path !== newStoragePath &&
+        fs.existsSync(replacementDocument.storage_path)
+      ) {
+        fs.unlinkSync(replacementDocument.storage_path);
+      }
 
       timer.log("document_created", {
-        documentId: guestDocument.id
+        documentId: guestDocument.id,
+        replacedDocumentId: replacementDocument?.id || null
       });
 
       const rawOcrResult = await ocrService.recognize(guestDocument.storage_path, {
@@ -265,7 +367,7 @@ router.post("/api/guest/upload", (req, res) => {
         });
 
         return res.status(200).json({
-          ...buildGuestStateResponse({ guestSession, guestDocument: updatedDocument }),
+          ...(await buildGuestStateForSession(guestSession)),
           document: {
             ...buildGuestDocumentResponse(updatedDocument),
             error: ocrResult.error
@@ -287,7 +389,7 @@ router.post("/api/guest/upload", (req, res) => {
           textLength: text.trim().length
         });
 
-        return res.status(200).json(buildGuestStateResponse({ guestSession, guestDocument: updatedDocument }));
+        return res.status(200).json(await buildGuestStateForSession(guestSession));
       }
 
       const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
@@ -309,9 +411,22 @@ router.post("/api/guest/upload", (req, res) => {
         documentLimit: GUEST_DOCUMENT_LIMIT
       });
 
+      const aiResult = await enrichGuestDocumentWithAi({
+        text,
+        timer
+      });
+
       const updatedDocument = await updateGuestDocumentProcessingResult(guestDocument.id, {
         status: "processed",
         ocrText: text,
+        aiProvider: AI_PROVIDER,
+        title: aiResult.title,
+        summary: aiResult.summary,
+        category: aiResult.category,
+        tags: aiResult.tags,
+        cleanText: aiResult.cleanText,
+        textQuality: aiResult.textQuality,
+        aiNotes: aiResult.notes,
         errorMessage: null,
         processedAt: new Date()
       });
@@ -320,7 +435,7 @@ router.post("/api/guest/upload", (req, res) => {
         textLength: text.trim().length
       });
 
-      return res.status(200).json(buildGuestStateResponse({ guestSession: consumedSession, guestDocument: updatedDocument }));
+      return res.status(200).json(await buildGuestStateForSession(consumedSession));
     } catch (error) {
       const filePath = req.file ? path.join(uploadsDir, req.file.filename) : null;
 

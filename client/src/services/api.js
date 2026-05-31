@@ -20,9 +20,14 @@ export function getGuestDocument() {
   return axios.get(`${API_URL}/api/guest/document`).then((res) => res.data);
 }
 
-export function uploadGuestPhoto(file, onProgress) {
+export function uploadGuestPhoto(file, options = {}) {
+  const { onProgress, replaceDocumentId } = options;
   const formData = new FormData();
   formData.append("photo", file);
+
+  if (replaceDocumentId) {
+    formData.append("replaceDocumentId", replaceDocumentId);
+  }
 
   return axios
     .post(`${API_URL}/api/guest/upload`, formData, {
@@ -58,8 +63,9 @@ export function uploadGuestPhoto(file, onProgress) {
     });
 }
 
-export function getGuestDocumentFileUrl(id) {
-  return `${API_URL}/api/guest/documents/${id}/file`;
+export function getGuestDocumentFileUrl(id, version = "") {
+  const cacheKey = version ? `?v=${encodeURIComponent(version)}` : "";
+  return `${API_URL}/api/guest/documents/${id}/file${cacheKey}`;
 }
 
 export function getPhotos() {
@@ -154,6 +160,19 @@ export function getPhotoInfo(id) {
     .catch((err) => {
       if (err.response) {
         throw new Error("Ошибка получения информации");
+      }
+
+      throw new Error("Сервер недоступен");
+    });
+}
+
+export function createAccessRequest({ message }) {
+  return axios
+    .post(`${API_URL}/api/access-requests`, { message })
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err.response) {
+        throw new Error("Не удалось отправить заявку");
       }
 
       throw new Error("Сервер недоступен");

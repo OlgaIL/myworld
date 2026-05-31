@@ -28,7 +28,7 @@ export const GUEST_DOCUMENT_STATUS_META = {
     ctaHint: "Попробуйте загрузить другое фото или скан, где текст виден четче."
   },
   error: {
-    label: "Ошибка OCR",
+    label: "Ошибка",
     badgeClassName: "gallery__status-badge--error",
     emptyText: "Не получилось прочитать запись.",
     ctaLabel: "Загрузить другую запись",
@@ -39,7 +39,7 @@ export const GUEST_DOCUMENT_STATUS_META = {
     badgeClassName: "gallery__status-badge--processed",
     emptyText: "Текст не найден.",
     ctaLabel: "Войти в кабинет",
-    ctaHint: "Бесплатная загрузка без входа уже использована. Запись сохранена в кабинете. Войдите, чтобы открыть ее или загрузить новые записи."
+    ctaHint: "Гостевая загрузка без входа уже использована. Запись сохранена в кабинете. Войдите, чтобы открыть ее или загрузить новые записи."
   }
 };
 
