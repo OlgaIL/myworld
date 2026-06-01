@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { timingSafeEqual } from "crypto";
 import { ADMIN_ENABLED, ADMIN_LOGIN, ADMIN_PASSWORD } from "../config/env.js";
-import { findUserForAdmin, listUsersForAdmin, updateUserProcessingAccess } from "../repositories/usersRepository.js";
+import { listAccessRequestsForAdmin, updateAccessRequestStatus } from "../repositories/accessRequestsRepository.js";
+import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 
 const router = Router();
 
@@ -45,10 +46,26 @@ function mapAdminUser(user) {
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
+    accessExpiresAt: user.access_expires_at || null,
     documentsCount: Number(user.documents_count || 0),
     createdAt: user.created_at,
     updatedAt: user.updated_at,
     lastDocumentAt: user.last_document_at || null
+  };
+}
+
+function mapAdminAccessRequest(request) {
+  return {
+    id: request.id,
+    userId: request.user_id,
+    email: request.email || "",
+    displayName: request.display_name || "",
+    avatarUrl: request.avatar_url || "",
+    message: request.message || "",
+    status: request.status,
+    documentsCount: Number(request.documents_count || 0),
+    createdAt: request.created_at,
+    updatedAt: request.updated_at
   };
 }
 
@@ -87,6 +104,30 @@ router.get("/admin-api/users", requireAdmin, async (req, res) => {
   return res.json(users.map(mapAdminUser));
 });
 
+router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {
+  const requests = await listAccessRequestsForAdmin();
+  return res.json(requests.map(mapAdminAccessRequest));
+});
+
+router.patch("/admin-api/access-requests/:id/status", requireAdmin, async (req, res) => {
+  const allowedStatuses = new Set(["new", "reviewed", "approved", "rejected"]);
+  const status = String(req.body?.status || "");
+
+  if (!allowedStatuses.has(status)) {
+    return res.status(400).json({ error: "INVALID_STATUS" });
+  }
+
+  const request = await updateAccessRequestStatus(req.params.id, status);
+
+  if (!request) {
+    return res.status(404).json({ error: "ACCESS_REQUEST_NOT_FOUND" });
+  }
+
+  const requests = await listAccessRequestsForAdmin();
+  const updatedRequest = requests.find((item) => String(item.id) === String(request.id));
+  return res.json(mapAdminAccessRequest(updatedRequest || request));
+});
+
 router.get("/admin-api/users/:id", requireAdmin, async (req, res) => {
   const user = await findUserForAdmin(req.params.id);
 
@@ -101,10 +142,12 @@ router.patch("/admin-api/users/:id/processing-access", requireAdmin, async (req,
   const processingEnabled = Boolean(req.body?.processingEnabled);
   const processingQuota = Math.max(0, Number(req.body?.processingQuota || 0));
   const processingUsed = Math.max(0, Number(req.body?.processingUsed || 0));
-  const user = await updateUserProcessingAccess(req.params.id, {
+  const accessExpiresAt = req.body?.accessExpiresAt || null;
+  const user = await updateUserProductAccess(req.params.id, {
     processingEnabled,
     processingQuota,
-    processingUsed
+    processingUsed,
+    accessExpiresAt
   });
 
   if (!user) {

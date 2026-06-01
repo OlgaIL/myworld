@@ -40,6 +40,7 @@ export async function listUsersForAdmin() {
         users.processing_enabled,
         users.processing_quota,
         users.processing_used,
+        users.access_expires_at,
         users.created_at,
         users.updated_at,
         count(photos.id)::int as documents_count,
@@ -65,6 +66,7 @@ export async function findUserForAdmin(userId) {
         users.processing_enabled,
         users.processing_quota,
         users.processing_used,
+        users.access_expires_at,
         users.created_at,
         users.updated_at,
         count(photos.id)::int as documents_count,
@@ -94,6 +96,25 @@ export async function updateUserProcessingAccess(userId, { processingEnabled, pr
       returning *
     `,
     [userId, processingEnabled, processingQuota, processingUsed]
+  );
+
+  return result.rows[0] || null;
+}
+
+export async function updateUserProductAccess(userId, { processingEnabled, processingQuota, processingUsed, accessExpiresAt }) {
+  const result = await query(
+    `
+      update users
+      set
+        processing_enabled = $2,
+        processing_quota = $3,
+        processing_used = $4,
+        access_expires_at = $5,
+        updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [userId, processingEnabled, processingQuota, processingUsed, accessExpiresAt || null]
   );
 
   return result.rows[0] || null;
@@ -148,6 +169,7 @@ export function mapUserForSession(user) {
     avatarUrl: user.avatar_url,
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
-    processingUsed: Number(user.processing_used || 0)
+    processingUsed: Number(user.processing_used || 0),
+    accessExpiresAt: user.access_expires_at || null
   };
 }

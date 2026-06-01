@@ -20,10 +20,18 @@ export function getAdminUsers() {
   return axios.get(`${API_URL}/admin-api/users`).then((res) => res.data);
 }
 
+export function getAdminAccessRequests() {
+  return axios.get(`${API_URL}/admin-api/access-requests`).then((res) => res.data);
+}
+
 export function getAdminUser(id) {
   return axios.get(`${API_URL}/admin-api/users/${id}`).then((res) => res.data);
 }
 
 export function updateAdminUserProcessingAccess(id, access) {
   return axios.patch(`${API_URL}/admin-api/users/${id}/processing-access`, access).then((res) => res.data);
+}
+
+export function updateAdminAccessRequestStatus(id, status) {
+  return axios.patch(`${API_URL}/admin-api/access-requests/${id}/status`, { status }).then((res) => res.data);
 }

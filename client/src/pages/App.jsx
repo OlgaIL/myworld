@@ -43,6 +43,10 @@ function AccessRequestForm() {
 }
 
 function AccessLimitMessage({ user }) {
+  if (user?.unlimitedAccess || user?.extendedAccessActive) {
+    return null;
+  }
+
   const limit = Number(user?.recordLimit || 0);
   const used = Number(user?.recordsUsed || 0);
   const remaining = Number(user?.recordsRemaining || 0);
@@ -76,6 +80,30 @@ function AccessLimitMessage({ user }) {
   }
 
   return null;
+}
+
+function formatShortAccessDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric"
+  }).format(new Date(value));
+}
+
+function getProfileAccessText(user, recordsUsed, recordLimit) {
+  if (user?.unlimitedAccess) {
+    return "Безлимитный доступ";
+  }
+
+  if (user?.extendedAccessActive && user?.accessExpiresAt) {
+    return `Без ограничений до ${formatShortAccessDate(user.accessExpiresAt)}`;
+  }
+
+  return `Бесплатный тариф · ${recordsUsed}/${recordLimit} записей`;
 }
 
 function PlusIcon() {
@@ -514,7 +542,7 @@ function App() {
             )}
             <div className="profile__meta">
               <span className="profile__name">{user.displayName}</span>
-              <span className="profile__hint">Бесплатный тариф · {recordsUsed}/{recordLimit} записей</span>
+              <span className="profile__hint">{getProfileAccessText(user, recordsUsed, recordLimit)}</span>
             </div>
             <button className="profile__logout" type="button" onClick={logout}>
               Выйти

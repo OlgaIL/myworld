@@ -2,7 +2,7 @@ import { Router } from "express";
 import { CLIENT_URL } from "../config/env.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
-import { getProcessingGuardError, getUserProcessingAccess, getUserRecordAccess } from "../utils/photos.js";
+import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess } from "../utils/photos.js";
 
 const router = Router();
 
@@ -33,7 +33,7 @@ router.get("/api/me", async (req, res) => {
 
   const processingAccess = getUserProcessingAccess(req.user);
   const recordsUsed = await countPhotosByUser(req.user.id);
-  const recordAccess = getUserRecordAccess(recordsUsed);
+  const recordAccess = getUserProductAccess(req.user, recordsUsed);
 
   return res.send({
     ...req.user,

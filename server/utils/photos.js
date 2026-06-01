@@ -56,6 +56,23 @@ export function getUserRecordAccess(recordsUsed) {
   };
 }
 
+export function getUserProductAccess(user, recordsUsed) {
+  const freeAccess = getUserRecordAccess(recordsUsed);
+  const unlimitedAccess = Boolean(user?.processingEnabled ?? user?.processing_enabled);
+  const accessExpiresAt = user?.accessExpiresAt ?? user?.access_expires_at ?? null;
+  const expiresAtTime = accessExpiresAt ? new Date(accessExpiresAt).getTime() : 0;
+  const extendedAccessActive = Boolean(expiresAtTime && expiresAtTime > Date.now());
+  const recordUploadAllowed = unlimitedAccess || extendedAccessActive || freeAccess.recordUploadAllowed;
+
+  return {
+    ...freeAccess,
+    recordUploadAllowed,
+    unlimitedAccess,
+    accessExpiresAt,
+    extendedAccessActive
+  };
+}
+
 function isCurrentOcrProviderEnabled() {
   if (OCR_PROVIDER === "google") {
     return GOOGLE_OCR_ENABLED;

@@ -19,7 +19,7 @@ import * as aiService from "../services/aiService.js";
 import ocrService from "../services/ocrService.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
-import { getProcessingGuardError, getUserRecordAccess, mapPhotoInfo } from "../utils/photos.js";
+import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
 
 const router = Router();
 
@@ -53,7 +53,7 @@ const upload = multer({
 async function requireRecordUploadAccess(req, res, next) {
   try {
     const recordsUsed = await countPhotosByUser(req.user.id);
-    const access = getUserRecordAccess(recordsUsed);
+    const access = getUserProductAccess(req.user, recordsUsed);
 
     if (!access.recordUploadAllowed) {
       return res.status(409).json({
