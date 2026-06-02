@@ -26,6 +26,12 @@ button {
   padding: 24px;
 }
 
+.page-footer {
+  margin-top: 48px;
+  padding-top: 18px;
+  border-top: 1px solid #e4e7ec;
+}
+
 .page--centered {
   display: flex;
   align-items: center;

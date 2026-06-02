@@ -552,9 +552,6 @@ function App() {
             <button className="profile__logout" type="button" onClick={logout}>
               Выйти
             </button>
-            <Link className="topbar__link" to="/about">
-              О проекте
-            </Link>
           </div>
         )}
       </header>
@@ -720,6 +717,12 @@ function App() {
       )}
 
       {activePhoto && <Modal src={activePhoto.startsWith("http") ? activePhoto : getPhotoUrl(activePhoto)} onClose={() => setActivePhoto(null)} />}
+
+      <footer className="page-footer">
+        <Link className="topbar__link" to="/about">
+          О проекте
+        </Link>
+      </footer>
     </div>
   );
 }
