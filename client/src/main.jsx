@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import App from "./pages/App";
+import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./index.css";
@@ -13,6 +14,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <AnalyticsTracker />
       <Routes>
         <Route path="/admin-control" element={<AdminPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route
           path="/"
           element={

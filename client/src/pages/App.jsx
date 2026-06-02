@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import DocumentPage from "../components/DocumentPage";
 import Gallery from "../components/Gallery";
 import GuestDocumentCard from "../components/GuestDocumentCard";
@@ -532,9 +532,14 @@ function App() {
         </h1>
 
         {!user ? (
-          <button className="auth-button" type="button" onClick={login}>
-            Войти через Google
-          </button>
+          <div className="topbar__actions">
+            <Link className="topbar__link" to="/about">
+              О проекте
+            </Link>
+            <button className="auth-button" type="button" onClick={login}>
+              Войти через Google
+            </button>
+          </div>
         ) : (
           <div className="profile">
             {user.avatarUrl && (
@@ -547,6 +552,9 @@ function App() {
             <button className="profile__logout" type="button" onClick={logout}>
               Выйти
             </button>
+            <Link className="topbar__link" to="/about">
+              О проекте
+            </Link>
           </div>
         )}
       </header>
