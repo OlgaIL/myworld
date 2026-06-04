@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import AppHeader from "../components/AppHeader";
 import DocumentPage from "../components/DocumentPage";
 import Gallery from "../components/Gallery";
 import GuestDocumentCard from "../components/GuestDocumentCard";
@@ -82,36 +83,25 @@ function AccessLimitMessage({ user }) {
   return null;
 }
 
-function formatShortAccessDate(value) {
-  if (!value) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric"
-  }).format(new Date(value));
-}
-
-function getProfileAccessText(user, recordsUsed, recordLimit) {
-  if (user?.unlimitedAccess) {
-    return "Безлимитный доступ";
-  }
-
-  if (user?.extendedAccessActive && user?.accessExpiresAt) {
-    return `Без ограничений до ${formatShortAccessDate(user.accessExpiresAt)}`;
-  }
-
-  return `Бесплатный тариф · ${recordsUsed}/${recordLimit} записей`;
-}
-
 function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 5v14" />
       <path d="M5 12h14" />
     </svg>
+  );
+}
+
+function CabinetEmptyState() {
+  return (
+    <section className="cabinet-empty-state">
+      <h2>Загрузите ваши записи</h2>
+      <p>
+        Просто загрузите скан или фото нужного текста.
+        <br />
+        Прочитаем текст, обработаем и сохраним результат.
+      </p>
+    </section>
   );
 }
 
@@ -526,35 +516,13 @@ function App() {
 
   return (
     <div className="page">
-      <header className="topbar">
-        <h1 className="header__logo">
-          Word2you <span className="header__logo-accent">Записи</span>
-        </h1>
-
-        {!user ? (
-          <div className="topbar__actions">
-            <Link className="topbar__link" to="/about">
-              О проекте
-            </Link>
-            <button className="auth-button" type="button" onClick={login}>
-              Войти через Google
-            </button>
-          </div>
-        ) : (
-          <div className="profile">
-            {user.avatarUrl && (
-              <img className="profile__avatar" src={user.avatarUrl} alt={user.displayName} />
-            )}
-            <div className="profile__meta">
-              <span className="profile__name">{user.displayName}</span>
-              <span className="profile__hint">{getProfileAccessText(user, recordsUsed, recordLimit)}</span>
-            </div>
-            <button className="profile__logout" type="button" onClick={logout}>
-              Выйти
-            </button>
-          </div>
-        )}
-      </header>
+      <AppHeader
+        user={user}
+        recordsUsed={recordsUsed}
+        recordLimit={recordLimit}
+        onLogin={login}
+        onLogout={logout}
+      />
 
       {!user && (
         <>
@@ -689,7 +657,7 @@ function App() {
                   onSelectTag={selectTag}
                 />
               ) : (
-                <p className="gallery__empty gallery__empty--cabinet">Пока нет загруженных записей.</p>
+                <CabinetEmptyState />
               )}
             </>
           )}
@@ -703,16 +671,18 @@ function App() {
             disabled={uploading || !recordUploadAllowed}
           />
 
-          <button
-            className="fab-upload"
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || Boolean(documentName) || !recordUploadAllowed}
-            title="Добавить запись"
-            aria-label="Добавить запись"
-          >
-            <PlusIcon />
-          </button>
+          {photosCount >= 5 && (
+            <button
+              className="fab-upload"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || Boolean(documentName) || !recordUploadAllowed}
+              title="Добавить запись"
+              aria-label="Добавить запись"
+            >
+              <PlusIcon />
+            </button>
+          )}
         </>
       )}
 
