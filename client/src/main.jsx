@@ -5,6 +5,7 @@ import AnalyticsTracker from "./components/AnalyticsTracker";
 import App from "./pages/App";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
+import RequisitesPage from "./pages/RequisitesPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./index.css";
 
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <Routes>
         <Route path="/admin-control" element={<AdminPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/requisites" element={<RequisitesPage />} />
         <Route
           path="/"
           element={
