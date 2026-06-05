@@ -161,7 +161,7 @@ function App() {
   const [documentCopiedMap, setDocumentCopiedMap] = useState({});
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [pendingPhotos, setPendingPhotos] = useState([]);
   const [guestError, setGuestError] = useState("");
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -293,15 +293,22 @@ function App() {
     );
   }
 
-  async function handleUpload(event) {
-    const file = event.target.files[0];
+  function updatePendingPhoto(name, updates) {
+    setPendingPhotos((current) => current.map((photo) => (
+      photo.name === name ? { ...photo, ...updates } : photo
+    )));
+  }
 
-    if (!file) {
+  function removePendingPhoto(name) {
+    setPendingPhotos((current) => current.filter((photo) => photo.name !== name));
+  }
+
+  async function handleUpload(event) {
+    const files = Array.from(event.target.files || []);
+
+    if (files.length === 0) {
       return;
     }
-
-    let pendingUrl = null;
-    let preparingTimer = null;
 
     if (!recordUploadAllowed) {
       alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
@@ -309,53 +316,91 @@ function App() {
       return;
     }
 
+    const queuedPhotos = files.map((file, index) => ({
+      name: `pending-${Date.now()}-${index}-${file.name}`,
+      url: URL.createObjectURL(file),
+      sourceFile: file,
+      isPendingUpload: true,
+      uploadMessage: index === 0 ? UPLOAD_STAGE_MESSAGES.preparingImage : "Ожидает загрузки..."
+    }));
+    const queuedNames = new Set(queuedPhotos.map((photo) => photo.name));
+    const revokedUrls = new Set();
+
+    function revokePendingUrl(url) {
+      if (!revokedUrls.has(url)) {
+        URL.revokeObjectURL(url);
+        revokedUrls.add(url);
+      }
+    }
+
     try {
       setUploading(true);
-      setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
-      const uploadFile = await prepareImageForUpload(file);
-      pendingUrl = URL.createObjectURL(uploadFile);
-      const pendingName = `pending-${Date.now()}-${uploadFile.name}`;
+      setPendingPhotos((current) => [...queuedPhotos, ...current]);
 
-      setPendingPhoto({
-        name: pendingName,
-        url: pendingUrl,
-        isPendingUpload: true
-      });
-      setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
+      for (const pendingPhoto of queuedPhotos) {
+        let preparingTimer = null;
 
-      const uploadedPhoto = await addPhoto(uploadFile, { reload: false });
+        try {
+          setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
+          updatePendingPhoto(pendingPhoto.name, {
+            uploadMessage: UPLOAD_STAGE_MESSAGES.preparingImage
+          });
 
-      if (user?.processingAllowed && uploadedPhoto?.filename) {
-        setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
-        preparingTimer = window.setTimeout(() => {
-          setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
-        }, 2500);
-        await processPhoto(uploadedPhoto.filename);
-        window.clearTimeout(preparingTimer);
-        preparingTimer = null;
-        await Promise.all([reloadPhotos(), reloadUser()]);
-      } else {
-        await Promise.all([reloadPhotos(), reloadUser()]);
+          const uploadFile = await prepareImageForUpload(pendingPhoto.sourceFile);
+
+          setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
+          updatePendingPhoto(pendingPhoto.name, {
+            uploadMessage: UPLOAD_STAGE_MESSAGES.uploading
+          });
+
+          const uploadedPhoto = await addPhoto(uploadFile, { reload: false });
+
+          if (user?.processingAllowed && uploadedPhoto?.filename) {
+            setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
+            updatePendingPhoto(pendingPhoto.name, {
+              uploadMessage: UPLOAD_STAGE_MESSAGES.recognizing
+            });
+
+            preparingTimer = window.setTimeout(() => {
+              setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
+              updatePendingPhoto(pendingPhoto.name, {
+                uploadMessage: UPLOAD_STAGE_MESSAGES.preparing
+              });
+            }, 2500);
+
+            await processPhoto(uploadedPhoto.filename);
+            window.clearTimeout(preparingTimer);
+            preparingTimer = null;
+          }
+
+          await Promise.all([reloadPhotos(), reloadUser()]);
+        } catch (error) {
+          console.error("Upload error:", error);
+
+          if (error.message === "USER_RECORD_LIMIT_REACHED") {
+            alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
+          } else {
+            alert("Не удалось загрузить запись");
+          }
+
+          break;
+        } finally {
+          if (preparingTimer) {
+            window.clearTimeout(preparingTimer);
+          }
+
+          removePendingPhoto(pendingPhoto.name);
+          revokePendingUrl(pendingPhoto.url);
+        }
       }
 
       event.target.value = "";
       setUploadMessage("");
-    } catch (error) {
-      console.error("Upload error:", error);
-      if (error.message === "USER_RECORD_LIMIT_REACHED") {
-        alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
-      } else {
-        alert("Не удалось загрузить запись");
-      }
-      setUploadMessage("");
     } finally {
-      if (preparingTimer) {
-        window.clearTimeout(preparingTimer);
-      }
-      if (pendingUrl) {
-        URL.revokeObjectURL(pendingUrl);
-      }
-      setPendingPhoto(null);
+      setPendingPhotos((current) => current.filter((photo) => !queuedNames.has(photo.name)));
+      queuedPhotos.forEach((photo) => revokePendingUrl(photo.url));
+      event.target.value = "";
+      setUploadMessage("");
       setUploading(false);
     }
   }
@@ -644,10 +689,10 @@ function App() {
                 </section>
               )}
 
-              {photosCount > 0 || pendingPhoto ? (
+              {photosCount > 0 || pendingPhotos.length > 0 ? (
                 <Gallery
                   photos={filteredPhotos}
-                  pendingPhoto={pendingPhoto}
+                  pendingPhotos={pendingPhotos}
                   onOpen={setActivePhoto}
                   onOpenDocument={openDocument}
                   onDelete={removePhoto}
@@ -667,6 +712,7 @@ function App() {
             className="upload-input"
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            multiple
             onChange={handleUpload}
             disabled={uploading || !recordUploadAllowed}
           />

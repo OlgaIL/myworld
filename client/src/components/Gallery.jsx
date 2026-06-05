@@ -22,9 +22,10 @@ function getPhotoListInfo(photo) {
   };
 }
 
-function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploadMessage = "", emptyMessage = "Пока тут пусто. Загрузите ваши фото.", onSelectCategory, onSelectTag }) {
+function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocument, onDelete, uploadMessage = "", emptyMessage = "Пока тут пусто. Загрузите ваши фото.", onSelectCategory, onSelectTag }) {
   const [infoMap, setInfoMap] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
+  const pendingQueue = pendingPhotos.length > 0 ? pendingPhotos : (pendingPhoto ? [pendingPhoto] : []);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,26 +103,26 @@ function Gallery({ photos, pendingPhoto, onOpen, onOpenDocument, onDelete, uploa
     setPendingDelete(null);
   }
 
-  if (photos.length === 0 && !pendingPhoto) {
+  if (photos.length === 0 && pendingQueue.length === 0) {
     return <p className="gallery__empty">{emptyMessage}</p>;
   }
 
   return (
     <>
       <section className="gallery">
-        {pendingPhoto && (
+        {pendingQueue.map((photo) => (
           <PhotoCard
-            key={pendingPhoto.name}
-            photo={pendingPhoto}
+            key={photo.name}
+            photo={photo}
             info={null}
-            uploadMessage={uploadMessage}
+            uploadMessage={photo.uploadMessage || uploadMessage}
             onOpen={onOpen}
             onOpenDocument={onOpenDocument}
             onRequestDelete={setPendingDelete}
             onSelectCategory={onSelectCategory}
             onSelectTag={onSelectTag}
           />
-        )}
+        ))}
 
         {photos.map((photo) => (
           <PhotoCard
