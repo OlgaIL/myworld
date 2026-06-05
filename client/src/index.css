@@ -493,6 +493,97 @@ button {
   max-width: 620px;
 }
 
+.requisites-page {
+  min-height: 100vh;
+  background: #f4f6fa;
+  color: #0f172a;
+}
+
+.requisites-topbar {
+  display: flex;
+  align-items: center;
+  min-height: 82px;
+  padding: 24px 32px;
+  border-bottom: 1px solid #dbe1ea;
+  background: #eef2f7;
+}
+
+.requisites-hero,
+.requisites-layout {
+  width: min(900px, calc(100% - 64px));
+  margin: 0 auto;
+}
+
+.requisites-hero {
+  padding: 48px 0 24px;
+}
+
+.requisites-eyebrow {
+  margin: 0 0 8px;
+  color: #667085;
+  font-size: 15px;
+}
+
+.requisites-hero h1 {
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.1;
+}
+
+.requisites-layout {
+  display: grid;
+  gap: 18px;
+  padding-bottom: 56px;
+}
+
+.requisites-card {
+  padding: 28px;
+  border: 1px solid #dbe1ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.requisites-card h2 {
+  margin: 0 0 22px;
+  font-size: 22px;
+}
+
+.requisites-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.requisites-list__row {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.35fr) 1fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+.requisites-list__row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.requisites-list__row:last-child {
+  padding-bottom: 0;
+}
+
+.requisites-list dt {
+  color: #667085;
+  font-size: 15px;
+}
+
+.requisites-list dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 .upload-panel {
   display: flex;
   flex-direction: column;
@@ -2228,6 +2319,32 @@ button {
   .about-final {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .requisites-topbar {
+    padding: 20px 16px;
+  }
+
+  .requisites-hero,
+  .requisites-layout {
+    width: calc(100% - 32px);
+  }
+
+  .requisites-hero {
+    padding: 36px 0 20px;
+  }
+
+  .requisites-hero h1 {
+    font-size: 36px;
+  }
+
+  .requisites-card {
+    padding: 22px;
+  }
+
+  .requisites-list__row {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .guest-card__top {
