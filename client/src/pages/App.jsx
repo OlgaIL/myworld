@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import DocumentPage from "../components/DocumentPage";
 import Gallery from "../components/Gallery";
-import GuestDocumentCard from "../components/GuestDocumentCard";
+import GuestHome from "../components/GuestHome";
 import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
 import { UPLOAD_STAGE_MESSAGES, useCabinetUpload } from "../hooks/useCabinetUpload";
@@ -164,8 +164,6 @@ function App() {
   const fileInputRef = useRef(null);
   const guestReplaceDocumentIdRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
-  const guestDocumentsUsed = Number(guestAccess?.documentsUsed || 0);
-  const guestDocumentLimit = Number(guestAccess?.documentLimit || 5);
   const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
   const recordLimit = Number(user?.recordLimit || 100);
@@ -288,18 +286,6 @@ function App() {
     fileInputRef.current?.click();
   }
 
-  function renderGuestLimitNotice() {
-    return (
-      <>
-        Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись,{" "}
-        <button className="guest-hero__notice-link" type="button" onClick={login}>
-          войдите в кабинет
-        </button>
-        .
-      </>
-    );
-  }
-
   async function handleGuestUpload(event) {
     if (!guestUploadAllowed) {
       setGuestError(guestLimitMessage);
@@ -375,78 +361,19 @@ function App() {
     }
 
     return (
-      <section className="guest-shell">
-        <div className="guest-hero">
-          <h2 className="guest-hero__title">Загрузите ваши записи</h2>
-          <p className="guest-hero__text">
-            Просто загрузите скан или фото нужного текста.
-            <br />
-            Прочитаем текст, обработаем и сохраним результат.
-          </p>
-
-          <div className="guest-hero__actions">
-            {guestUploadAllowed && (
-              <button
-                className="guest-upload-button"
-                type="button"
-                onClick={() => openGuestUpload()}
-                disabled={uploading}
-              >
-                {uploading ? "Загрузка..." : "Загрузить запись"}
-              </button>
-            )}
-          </div>
-
-          {(uploadMessage || guestError || !guestUploadAllowed) && (
-            <div className="guest-hero__notice">
-              <p>{guestError || uploadMessage || renderGuestLimitNotice()}</p>
-            </div>
-          )}
-
-          <p className="guest-hero__counter">Гостевой режим · {guestDocumentsUsed}/{guestDocumentLimit} записей</p>
-
-          {guestLoading ? (
-            <section className="guest-placeholder guest-placeholder--embedded">
-              <p className="guest-placeholder__title">Проверяем запись...</p>
-            </section>
-          ) : guestDocuments.length > 0 ? (
-            <>
-              <section className="gallery guest-documents-list">
-                {guestDocuments.map((document) => (
-                  <GuestDocumentCard
-                    key={document.id}
-                  document={document}
-                  onOpen={setActivePhoto}
-                  onOpenDocument={setActiveGuestDocument}
-                  onUploadAnother={openGuestUpload}
-                />
-              ))}
-              </section>
-
-              <section className="guest-login-cta">
-                <p>Чтобы сохранить ваши записи и продолжить работу, войдите через Google.</p>
-                <button className="guest-card__primary-action" type="button" onClick={login}>
-                  Войти через Google
-                </button>
-              </section>
-            </>
-          ) : !guestUploadAllowed ? (
-            <section className="guest-placeholder guest-placeholder--embedded">
-              <p className="guest-placeholder__title">Гостевая загрузка без входа уже использована.</p>
-              <p className="guest-placeholder__text">
-                Чтобы попробовать еще раз и сохранить новые записи,{" "}
-                <button className="guest-hero__notice-link" type="button" onClick={login}>
-                  войдите в кабинет
-                </button>
-                .
-              </p>
-              <button className="guest-card__primary-action" type="button" onClick={login}>
-                Войти в кабинет
-              </button>
-            </section>
-          ) : null}
-        </div>
-      </section>
+      <GuestHome
+        documents={guestDocuments}
+        access={guestAccess}
+        loading={guestLoading}
+        uploading={uploading}
+        uploadMessage={uploadMessage}
+        error={guestError}
+        onUpload={openGuestUpload}
+        onOpenImage={setActivePhoto}
+        onOpenDocument={setActiveGuestDocument}
+        onUploadAnother={openGuestUpload}
+        onLogin={login}
+      />
     );
   }
 
