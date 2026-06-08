@@ -6,9 +6,10 @@ import Gallery from "../components/Gallery";
 import GuestDocumentCard from "../components/GuestDocumentCard";
 import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
+import { UPLOAD_STAGE_MESSAGES, useCabinetUpload } from "../hooks/useCabinetUpload";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { usePhotos } from "../hooks/usePhotos";
-import { createAccessRequest, getGuestDocumentFileUrl, getPhotoUrl, processPhoto } from "../services/api";
+import { createAccessRequest, getGuestDocumentFileUrl, getPhotoUrl } from "../services/api";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
 function AccessRequestForm() {
@@ -105,13 +106,6 @@ function CabinetEmptyState() {
   );
 }
 
-const UPLOAD_STAGE_MESSAGES = {
-  preparingImage: "Подготавливаем изображение...",
-  uploading: "Загружаем запись...",
-  recognizing: "Распознаем текст...",
-  preparing: "Готовим результат..."
-};
-
 function normalizeSearchValue(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -159,9 +153,8 @@ function App() {
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
   const [activePhoto, setActivePhoto] = useState(null);
   const [documentCopiedMap, setDocumentCopiedMap] = useState({});
-  const [uploading, setUploading] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState("");
-  const [pendingPhotos, setPendingPhotos] = useState([]);
+  const [guestUploading, setGuestUploading] = useState(false);
+  const [guestUploadMessage, setGuestUploadMessage] = useState("");
   const [guestError, setGuestError] = useState("");
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -178,6 +171,20 @@ function App() {
   const recordLimit = Number(user?.recordLimit || 100);
   const recordsUsed = Number(user?.recordsUsed ?? photosCount);
   const recordUploadAllowed = user?.recordUploadAllowed !== false;
+  const {
+    uploading: cabinetUploading,
+    uploadMessage: cabinetUploadMessage,
+    pendingPhotos,
+    handleUpload
+  } = useCabinetUpload({
+    user,
+    addPhoto,
+    reloadPhotos,
+    reloadUser,
+    recordUploadAllowed
+  });
+  const uploading = user ? cabinetUploading : guestUploading;
+  const uploadMessage = user ? cabinetUploadMessage : guestUploadMessage;
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
     : null;
@@ -224,7 +231,7 @@ function App() {
     });
   }, [photos, activeCategory, activeTag, normalizedSearchQuery]);
 
-  const openDocument = useCallback(function openDocument(photo, info) {
+  const openDocument = useCallback(function openDocument(photo) {
     setDocumentCopiedMap({});
     navigate(`/documents/${encodeURIComponent(photo.name)}`);
   }, [navigate]);
@@ -293,118 +300,6 @@ function App() {
     );
   }
 
-  function updatePendingPhoto(name, updates) {
-    setPendingPhotos((current) => current.map((photo) => (
-      photo.name === name ? { ...photo, ...updates } : photo
-    )));
-  }
-
-  function removePendingPhoto(name) {
-    setPendingPhotos((current) => current.filter((photo) => photo.name !== name));
-  }
-
-  async function handleUpload(event) {
-    const files = Array.from(event.target.files || []);
-
-    if (files.length === 0) {
-      return;
-    }
-
-    if (!recordUploadAllowed) {
-      alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
-      event.target.value = "";
-      return;
-    }
-
-    const queuedPhotos = files.map((file, index) => ({
-      name: `pending-${Date.now()}-${index}-${file.name}`,
-      url: URL.createObjectURL(file),
-      sourceFile: file,
-      isPendingUpload: true,
-      uploadMessage: index === 0 ? UPLOAD_STAGE_MESSAGES.preparingImage : "Ожидает загрузки..."
-    }));
-    const queuedNames = new Set(queuedPhotos.map((photo) => photo.name));
-    const revokedUrls = new Set();
-
-    function revokePendingUrl(url) {
-      if (!revokedUrls.has(url)) {
-        URL.revokeObjectURL(url);
-        revokedUrls.add(url);
-      }
-    }
-
-    try {
-      setUploading(true);
-      setPendingPhotos((current) => [...queuedPhotos, ...current]);
-
-      for (const pendingPhoto of queuedPhotos) {
-        let preparingTimer = null;
-
-        try {
-          setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
-          updatePendingPhoto(pendingPhoto.name, {
-            uploadMessage: UPLOAD_STAGE_MESSAGES.preparingImage
-          });
-
-          const uploadFile = await prepareImageForUpload(pendingPhoto.sourceFile);
-
-          setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
-          updatePendingPhoto(pendingPhoto.name, {
-            uploadMessage: UPLOAD_STAGE_MESSAGES.uploading
-          });
-
-          const uploadedPhoto = await addPhoto(uploadFile, { reload: false });
-
-          if (user?.processingAllowed && uploadedPhoto?.filename) {
-            setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
-            updatePendingPhoto(pendingPhoto.name, {
-              uploadMessage: UPLOAD_STAGE_MESSAGES.recognizing
-            });
-
-            preparingTimer = window.setTimeout(() => {
-              setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
-              updatePendingPhoto(pendingPhoto.name, {
-                uploadMessage: UPLOAD_STAGE_MESSAGES.preparing
-              });
-            }, 2500);
-
-            await processPhoto(uploadedPhoto.filename);
-            window.clearTimeout(preparingTimer);
-            preparingTimer = null;
-          }
-
-          await Promise.all([reloadPhotos(), reloadUser()]);
-        } catch (error) {
-          console.error("Upload error:", error);
-
-          if (error.message === "USER_RECORD_LIMIT_REACHED") {
-            alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
-          } else {
-            alert("Не удалось загрузить запись");
-          }
-
-          break;
-        } finally {
-          if (preparingTimer) {
-            window.clearTimeout(preparingTimer);
-          }
-
-          removePendingPhoto(pendingPhoto.name);
-          revokePendingUrl(pendingPhoto.url);
-        }
-      }
-
-      event.target.value = "";
-      setUploadMessage("");
-    } finally {
-      setPendingPhotos((current) => current.filter((photo) => !queuedNames.has(photo.name)));
-      queuedPhotos.forEach((photo) => revokePendingUrl(photo.url));
-      event.target.value = "";
-      setUploadMessage("");
-      setUploading(false);
-    }
-  }
-
   async function handleGuestUpload(event) {
     if (!guestUploadAllowed) {
       setGuestError(guestLimitMessage);
@@ -422,17 +317,17 @@ function App() {
     let preparingTimer = null;
 
     try {
-      setUploading(true);
+      setGuestUploading(true);
       setGuestError("");
       setActiveGuestDocument(null);
-      setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
+      setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
       const uploadFile = await prepareImageForUpload(file);
-      setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
+      setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
       recognizingTimer = window.setTimeout(() => {
-        setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
+        setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
       }, 1200);
       preparingTimer = window.setTimeout(() => {
-        setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
+        setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
       }, 4500);
       await addGuestDocument(uploadFile, {
         replaceDocumentId: guestReplaceDocumentIdRef.current
@@ -441,7 +336,7 @@ function App() {
       window.clearTimeout(preparingTimer);
       recognizingTimer = null;
       preparingTimer = null;
-      setUploadMessage("");
+      setGuestUploadMessage("");
     } catch (error) {
       console.error("Guest upload error:", error);
 
@@ -451,7 +346,7 @@ function App() {
         setGuestError(error.message || "Не удалось загрузить запись.");
       }
 
-      setUploadMessage("");
+      setGuestUploadMessage("");
     } finally {
       if (recognizingTimer) {
         window.clearTimeout(recognizingTimer);
@@ -461,7 +356,7 @@ function App() {
       }
       event.target.value = "";
       guestReplaceDocumentIdRef.current = null;
-      setUploading(false);
+      setGuestUploading(false);
     }
   }
 
