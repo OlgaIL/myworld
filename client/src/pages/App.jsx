@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import DocumentPage from "../components/DocumentPage";
@@ -6,6 +6,7 @@ import Gallery from "../components/Gallery";
 import GuestHome from "../components/GuestHome";
 import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
+import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { UPLOAD_STAGE_MESSAGES, useCabinetUpload } from "../hooks/useCabinetUpload";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { usePhotos } from "../hooks/usePhotos";
@@ -106,45 +107,6 @@ function CabinetEmptyState() {
   );
 }
 
-function normalizeSearchValue(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function getPhotoSearchText(photo) {
-  return [
-    photo?.title,
-    photo?.summary,
-    photo?.category,
-    Array.isArray(photo?.tags) ? photo.tags.join(" ") : "",
-    photo?.cleanText,
-    photo?.text
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-function getCategoryOptions(photos) {
-  return Array.from(
-    new Set(
-      photos
-        .map((photo) => String(photo?.category || "").trim())
-        .filter(Boolean)
-    )
-  ).sort((a, b) => a.localeCompare(b, "ru"));
-}
-
-function getTagOptions(photos) {
-  return Array.from(
-    new Set(
-      photos
-        .flatMap((photo) => (Array.isArray(photo?.tags) ? photo.tags : []))
-        .map((tag) => String(tag || "").trim())
-        .filter(Boolean)
-    )
-  ).sort((a, b) => a.localeCompare(b, "ru"));
-}
-
 function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
@@ -157,10 +119,6 @@ function App() {
   const [guestUploadMessage, setGuestUploadMessage] = useState("");
   const [guestError, setGuestError] = useState("");
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("");
-  const [activeTag, setActiveTag] = useState("");
-  const [showTags, setShowTags] = useState(false);
   const fileInputRef = useRef(null);
   const guestReplaceDocumentIdRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
@@ -208,26 +166,21 @@ function App() {
       createdAt: activeGuestDocument.createdAt || null
     }
     : null;
-  const categoryOptions = useMemo(() => getCategoryOptions(photos), [photos]);
-  const tagOptions = useMemo(() => getTagOptions(photos), [photos]);
-  const normalizedSearchQuery = normalizeSearchValue(searchQuery);
-  const filteredPhotos = useMemo(() => {
-    return photos.filter((photo) => {
-      if (activeCategory && photo.category !== activeCategory) {
-        return false;
-      }
-
-      if (activeTag && !photo.tags?.includes(activeTag)) {
-        return false;
-      }
-
-      if (!normalizedSearchQuery) {
-        return true;
-      }
-
-      return getPhotoSearchText(photo).includes(normalizedSearchQuery);
-    });
-  }, [photos, activeCategory, activeTag, normalizedSearchQuery]);
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeCategory,
+    activeTag,
+    showTags,
+    categoryOptions,
+    tagOptions,
+    filteredPhotos,
+    resetCategory,
+    selectCategory: applyCategoryFilter,
+    resetTag,
+    selectTag: applyTagFilter,
+    toggleTags
+  } = useCabinetFilters(photos);
 
   const openDocument = useCallback(function openDocument(photo) {
     setDocumentCopiedMap({});
@@ -240,29 +193,16 @@ function App() {
   }, [navigate]);
 
   const selectCategory = useCallback(function selectCategory(category) {
-    setSearchQuery("");
-    setActiveCategory(category);
+    applyCategoryFilter(category);
     setDocumentCopiedMap({});
     navigate("/");
-  }, [navigate]);
+  }, [applyCategoryFilter, navigate]);
 
   const selectTag = useCallback(function selectTag(tag) {
-    setSearchQuery("");
-    setActiveTag(tag);
-    setShowTags(true);
+    applyTagFilter(tag);
     setDocumentCopiedMap({});
     navigate("/");
-  }, [navigate]);
-
-  function toggleTags() {
-    setShowTags((current) => {
-      if (current) {
-        setActiveTag("");
-      }
-
-      return !current;
-    });
-  }
+  }, [applyTagFilter, navigate]);
 
   const handleDocumentCopy = useCallback(async function handleDocumentCopy(key, text) {
     if (!text) {
@@ -454,7 +394,7 @@ function App() {
                       <button
                         className={`cabinet-categories__button ${!activeCategory ? "cabinet-categories__button--active" : ""}`}
                         type="button"
-                        onClick={() => setActiveCategory("")}
+                        onClick={resetCategory}
                       >
                         Все
                       </button>
@@ -463,7 +403,7 @@ function App() {
                           className={`cabinet-categories__button ${activeCategory === category ? "cabinet-categories__button--active" : ""}`}
                           type="button"
                           key={category}
-                          onClick={() => setActiveCategory(category)}
+                          onClick={() => applyCategoryFilter(category)}
                         >
                           {category}
                         </button>
@@ -489,7 +429,7 @@ function App() {
                             <button
                               className="cabinet-categories__button"
                               type="button"
-                              onClick={() => setActiveTag("")}
+                              onClick={resetTag}
                             >
                               Все теги
                             </button>
@@ -499,7 +439,7 @@ function App() {
                               className={`cabinet-categories__button ${activeTag === tag ? "cabinet-categories__button--active" : ""}`}
                               type="button"
                               key={tag}
-                              onClick={() => setActiveTag(tag)}
+                              onClick={() => applyTagFilter(tag)}
                             >
                               #{tag}
                             </button>
