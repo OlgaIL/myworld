@@ -1,10 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import AccessLimitMessage from "../components/AccessLimitMessage";
 import AppHeader from "../components/AppHeader";
-import CabinetEmptyState from "../components/CabinetEmptyState";
+import CabinetHome from "../components/CabinetHome";
 import DocumentPage from "../components/DocumentPage";
-import Gallery from "../components/Gallery";
 import GuestHome from "../components/GuestHome";
 import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
@@ -14,15 +12,6 @@ import { useGuestDocument } from "../hooks/useGuestDocument";
 import { useGuestUpload } from "../hooks/useGuestUpload";
 import { usePhotos } from "../hooks/usePhotos";
 import { getGuestDocumentFileUrl, getPhotoUrl } from "../services/api";
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  );
-}
 
 function App() {
   const navigate = useNavigate();
@@ -223,136 +212,35 @@ function App() {
               onSelectTag={selectTag}
             />
           ) : (
-            <>
-              <section className="upload-panel upload-panel--cabinet">
-                <button
-                  className="guest-upload-button"
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || !recordUploadAllowed}
-                >
-                  Загрузить запись
-                </button>
-                <p className="guest-hero__counter upload-panel__counter">
-                  Загружено записей: {recordsUsed}
-                </p>
-                {!uploading && <AccessLimitMessage user={user} />}
-              </section>
-
-              {photosCount > 0 && (
-                <section className="cabinet-filter">
-                  <div className="cabinet-search">
-                    <input
-                      className="cabinet-search__input"
-                      type="search"
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                      placeholder="Фильтр/поиск"
-                      aria-label="Фильтр/поиск"
-                    />
-                  </div>
-
-                  {categoryOptions.length > 0 && (
-                    <div className="cabinet-categories" aria-label="Фильтр по рубрикам">
-                      <button
-                        className={`cabinet-categories__button ${!activeCategory ? "cabinet-categories__button--active" : ""}`}
-                        type="button"
-                        onClick={resetCategory}
-                      >
-                        Все
-                      </button>
-                      {categoryOptions.map((category) => (
-                        <button
-                          className={`cabinet-categories__button ${activeCategory === category ? "cabinet-categories__button--active" : ""}`}
-                          type="button"
-                          key={category}
-                          onClick={() => applyCategoryFilter(category)}
-                        >
-                          {category}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {tagOptions.length > 0 && (
-                    <div className="cabinet-tags">
-                      <button
-                        className="cabinet-tags__toggle"
-                        type="button"
-                        onClick={toggleTags}
-                        aria-expanded={showTags}
-                      >
-                        Ваши теги
-                        <span className="cabinet-tags__chevron" aria-hidden="true" />
-                      </button>
-
-                      {(showTags || activeTag) && (
-                        <div className="cabinet-tags__list" aria-label="Фильтр по тегам">
-                          {activeTag && (
-                            <button
-                              className="cabinet-categories__button"
-                              type="button"
-                              onClick={resetTag}
-                            >
-                              Все теги
-                            </button>
-                          )}
-                          {tagOptions.map((tag) => (
-                            <button
-                              className={`cabinet-categories__button ${activeTag === tag ? "cabinet-categories__button--active" : ""}`}
-                              type="button"
-                              key={tag}
-                              onClick={() => applyTagFilter(tag)}
-                            >
-                              #{tag}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {photosCount > 0 || pendingPhotos.length > 0 ? (
-                <Gallery
-                  photos={filteredPhotos}
-                  pendingPhotos={pendingPhotos}
-                  onOpen={setActivePhoto}
-                  onOpenDocument={openDocument}
-                  onDelete={removePhoto}
-                  uploadMessage={uploadMessage}
-                  emptyMessage="Ничего не найдено."
-                  onSelectCategory={selectCategory}
-                  onSelectTag={selectTag}
-                />
-              ) : (
-                <CabinetEmptyState />
-              )}
-            </>
-          )}
-
-          <input
-            ref={fileInputRef}
-            className="upload-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            onChange={handleUpload}
-            disabled={uploading || !recordUploadAllowed}
-          />
-
-          {photosCount >= 5 && (
-            <button
-              className="fab-upload"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading || Boolean(documentName) || !recordUploadAllowed}
-              title="Добавить запись"
-              aria-label="Добавить запись"
-            >
-              <PlusIcon />
-            </button>
+            <CabinetHome
+              user={user}
+              recordsUsed={recordsUsed}
+              photosCount={photosCount}
+              pendingPhotos={pendingPhotos}
+              filteredPhotos={filteredPhotos}
+              uploadMessage={uploadMessage}
+              uploading={uploading}
+              recordUploadAllowed={recordUploadAllowed}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              activeCategory={activeCategory}
+              activeTag={activeTag}
+              showTags={showTags}
+              categoryOptions={categoryOptions}
+              tagOptions={tagOptions}
+              resetCategory={resetCategory}
+              applyCategoryFilter={applyCategoryFilter}
+              resetTag={resetTag}
+              applyTagFilter={applyTagFilter}
+              toggleTags={toggleTags}
+              fileInputRef={fileInputRef}
+              handleUpload={handleUpload}
+              onOpenImage={setActivePhoto}
+              onOpenDocument={openDocument}
+              onDelete={removePhoto}
+              onSelectCategory={selectCategory}
+              onSelectTag={selectTag}
+            />
           )}
         </>
       )}
