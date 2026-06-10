@@ -1091,6 +1091,17 @@ button {
   background: #f8fafc;
 }
 
+.gallery__item--disabled {
+  background: #f3f5f8;
+  color: #667085;
+  pointer-events: none;
+}
+
+.gallery__item--disabled .gallery__image {
+  filter: grayscale(0.15);
+  opacity: 0.64;
+}
+
 .gallery__upload-overlay {
   position: absolute;
   inset: 0;
@@ -1363,6 +1374,13 @@ button {
 .gallery__open-document:hover {
   background: #f5f7fb;
   border-color: #b8c1d1;
+}
+
+.gallery__open-document:disabled {
+  border-color: #d7dce5;
+  background: #eef2f7;
+  color: #98a2b3;
+  cursor: not-allowed;
 }
 
 .gallery__text-block {

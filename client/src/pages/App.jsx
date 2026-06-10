@@ -9,11 +9,11 @@ import GuestHome from "../components/GuestHome";
 import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
 import { useCabinetFilters } from "../hooks/useCabinetFilters";
-import { UPLOAD_STAGE_MESSAGES, useCabinetUpload } from "../hooks/useCabinetUpload";
+import { useCabinetUpload } from "../hooks/useCabinetUpload";
 import { useGuestDocument } from "../hooks/useGuestDocument";
+import { useGuestUpload } from "../hooks/useGuestUpload";
 import { usePhotos } from "../hooks/usePhotos";
 import { getGuestDocumentFileUrl, getPhotoUrl } from "../services/api";
-import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
 function PlusIcon() {
   return (
@@ -32,12 +32,8 @@ function App() {
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
   const [activePhoto, setActivePhoto] = useState(null);
   const [documentCopiedMap, setDocumentCopiedMap] = useState({});
-  const [guestUploading, setGuestUploading] = useState(false);
-  const [guestUploadMessage, setGuestUploadMessage] = useState("");
-  const [guestError, setGuestError] = useState("");
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const fileInputRef = useRef(null);
-  const guestReplaceDocumentIdRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
@@ -55,6 +51,20 @@ function App() {
     reloadPhotos,
     reloadUser,
     recordUploadAllowed
+  });
+  const {
+    uploading: guestUploading,
+    uploadMessage: guestUploadMessage,
+    error: guestError,
+    replacingDocumentId,
+    openUpload: openGuestUpload,
+    handleUpload: handleGuestUpload
+  } = useGuestUpload({
+    uploadAllowed: guestUploadAllowed,
+    limitMessage: guestLimitMessage,
+    addGuestDocument,
+    onUploadStart: () => setActiveGuestDocument(null),
+    fileInputRef
   });
   const uploading = user ? cabinetUploading : guestUploading;
   const uploadMessage = user ? cabinetUploadMessage : guestUploadMessage;
@@ -138,71 +148,6 @@ function App() {
     }
   }, []);
 
-  function openGuestUpload(replaceDocumentId = null) {
-    guestReplaceDocumentIdRef.current = replaceDocumentId;
-    fileInputRef.current?.click();
-  }
-
-  async function handleGuestUpload(event) {
-    if (!guestUploadAllowed) {
-      setGuestError(guestLimitMessage);
-      event.target.value = "";
-      return;
-    }
-
-    const file = event.target.files[0];
-
-    if (!file) {
-      return;
-    }
-
-    let recognizingTimer = null;
-    let preparingTimer = null;
-
-    try {
-      setGuestUploading(true);
-      setGuestError("");
-      setActiveGuestDocument(null);
-      setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
-      const uploadFile = await prepareImageForUpload(file);
-      setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
-      recognizingTimer = window.setTimeout(() => {
-        setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
-      }, 1200);
-      preparingTimer = window.setTimeout(() => {
-        setGuestUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
-      }, 4500);
-      await addGuestDocument(uploadFile, {
-        replaceDocumentId: guestReplaceDocumentIdRef.current
-      });
-      window.clearTimeout(recognizingTimer);
-      window.clearTimeout(preparingTimer);
-      recognizingTimer = null;
-      preparingTimer = null;
-      setGuestUploadMessage("");
-    } catch (error) {
-      console.error("Guest upload error:", error);
-
-      if (error.message === "GUEST_LIMIT_REACHED") {
-        setGuestError("Чтобы загрузить следующую запись, войдите через Google.");
-      } else {
-        setGuestError(error.message || "Не удалось загрузить запись.");
-      }
-
-      setGuestUploadMessage("");
-    } finally {
-      if (recognizingTimer) {
-        window.clearTimeout(recognizingTimer);
-      }
-      if (preparingTimer) {
-        window.clearTimeout(preparingTimer);
-      }
-      event.target.value = "";
-      guestReplaceDocumentIdRef.current = null;
-      setGuestUploading(false);
-    }
-  }
-
   function renderGuestState() {
     if (activeGuestDocument) {
       return (
@@ -225,6 +170,7 @@ function App() {
         uploading={uploading}
         uploadMessage={uploadMessage}
         error={guestError}
+        replacingDocumentId={replacingDocumentId}
         onUpload={openGuestUpload}
         onOpenImage={setActivePhoto}
         onOpenDocument={setActiveGuestDocument}

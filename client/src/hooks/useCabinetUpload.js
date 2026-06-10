@@ -1,13 +1,7 @@
 import { useState } from "react";
+import { UPLOAD_STAGE_MESSAGES } from "../constants/uploadStages";
 import { processPhoto } from "../services/api";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
-
-export const UPLOAD_STAGE_MESSAGES = {
-  preparingImage: "Подготавливаем изображение...",
-  uploading: "Загружаем запись...",
-  recognizing: "Распознаем текст...",
-  preparing: "Готовим результат..."
-};
 
 export function useCabinetUpload({
   user,

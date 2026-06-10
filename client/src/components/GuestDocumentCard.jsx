@@ -24,7 +24,7 @@ function formatCreatedAt(value) {
     .replace(".", "");
 }
 
-function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }) {
+function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocument, onUploadAnother }) {
   const statusMeta = getGuestDocumentStatusMeta(document.status);
   const fileUrl = getGuestDocumentFileUrl(document.id, document.updatedAt || document.filename);
   const createdAtLabel = formatCreatedAt(document.createdAt);
@@ -35,6 +35,10 @@ function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }
   const hasTags = Array.isArray(document.tags) && document.tags.length > 0;
 
   function handleCardClick() {
+    if (isReplacing) {
+      return;
+    }
+
     if (canOpenDocument) {
       onOpenDocument(document);
     }
@@ -42,8 +46,9 @@ function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }
 
   return (
     <article
-      className={`gallery__item ${canOpenDocument ? "gallery__item--clickable" : ""}`}
+      className={`gallery__item ${isReplacing ? "gallery__item--disabled" : ""} ${canOpenDocument && !isReplacing ? "gallery__item--clickable" : ""}`}
       onClick={handleCardClick}
+      aria-busy={isReplacing}
     >
       <div className="gallery__meta">
         {createdAtLabel && <p className="gallery__date">{createdAtLabel}</p>}
@@ -115,6 +120,9 @@ function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
+                    if (isReplacing) {
+                      return;
+                    }
                     onOpenDocument(document);
                   }}
                 >
@@ -132,8 +140,12 @@ function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
+                    if (isReplacing) {
+                      return;
+                    }
                     onUploadAnother(document.id);
                   }}
+                  disabled={isReplacing}
                 >
                   Загрузить другую
                 </button>
@@ -149,21 +161,30 @@ function GuestDocumentCard({ document, onOpen, onOpenDocument, onUploadAnother }
             alt=""
             onClick={(event) => {
               event.stopPropagation();
+              if (isReplacing) {
+                return;
+              }
               onOpen(fileUrl);
             }}
           />
 
-          <div
-            className="gallery__preview-overlay"
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpen(fileUrl);
-            }}
-          >
-            <span className="gallery__preview-zoom" aria-hidden="true">
-              <ZoomIcon />
-            </span>
-          </div>
+          {isReplacing ? (
+            <div className="gallery__upload-overlay">
+              <div className="gallery__upload-spinner" aria-hidden="true" />
+            </div>
+          ) : (
+            <div
+              className="gallery__preview-overlay"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpen(fileUrl);
+              }}
+            >
+              <span className="gallery__preview-zoom" aria-hidden="true">
+                <ZoomIcon />
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </article>

@@ -19,6 +19,7 @@ function GuestHome({
   uploading,
   uploadMessage,
   error,
+  replacingDocumentId,
   onUpload,
   onOpenImage,
   onOpenDocument,
@@ -71,6 +72,7 @@ function GuestHome({
                 <GuestDocumentCard
                   key={document.id}
                   document={document}
+                  isReplacing={uploading && String(replacingDocumentId) === String(document.id)}
                   onOpen={onOpenImage}
                   onOpenDocument={onOpenDocument}
                   onUploadAnother={onUploadAnother}
