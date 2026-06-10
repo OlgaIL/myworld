@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AccessLimitMessage from "../components/AccessLimitMessage";
 import AppHeader from "../components/AppHeader";
+import CabinetEmptyState from "../components/CabinetEmptyState";
 import DocumentPage from "../components/DocumentPage";
 import Gallery from "../components/Gallery";
 import GuestHome from "../components/GuestHome";
@@ -20,19 +21,6 @@ function PlusIcon() {
       <path d="M12 5v14" />
       <path d="M5 12h14" />
     </svg>
-  );
-}
-
-function CabinetEmptyState() {
-  return (
-    <section className="cabinet-empty-state">
-      <h2>Загрузите ваши записи</h2>
-      <p>
-        Просто загрузите скан или фото нужного текста.
-        <br />
-        Прочитаем текст, обработаем и сохраним результат.
-      </p>
-    </section>
   );
 }
 
