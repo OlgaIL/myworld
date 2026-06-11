@@ -10,9 +10,10 @@ import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { useCabinetUpload } from "../hooks/useCabinetUpload";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocument } from "../hooks/useGuestDocument";
+import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
 import { useGuestUpload } from "../hooks/useGuestUpload";
 import { usePhotos } from "../hooks/usePhotos";
-import { getGuestDocumentFileUrl, getPhotoUrl } from "../services/api";
+import { getPhotoUrl } from "../services/api";
 
 function App() {
   const navigate = useNavigate();
@@ -58,31 +59,11 @@ function App() {
   });
   const uploading = user ? cabinetUploading : guestUploading;
   const uploadMessage = user ? cabinetUploadMessage : guestUploadMessage;
+  const { photo: activeGuestPhoto, info: activeGuestInfo } = useGuestDocumentPageData(activeGuestDocument);
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
     : null;
   const activeDocumentInfo = activeDocumentPhoto || null;
-  const activeGuestPhoto = activeGuestDocument
-    ? {
-      name: getGuestDocumentFileUrl(activeGuestDocument.id, activeGuestDocument.updatedAt || activeGuestDocument.filename),
-      url: getGuestDocumentFileUrl(activeGuestDocument.id, activeGuestDocument.updatedAt || activeGuestDocument.filename)
-    }
-    : null;
-  const activeGuestInfo = activeGuestDocument
-    ? {
-      status: activeGuestDocument.status,
-      title: activeGuestDocument.title || "Запись",
-      summary: activeGuestDocument.summary || "",
-      category: activeGuestDocument.category || "",
-      tags: Array.isArray(activeGuestDocument.tags) ? activeGuestDocument.tags : [],
-      text: activeGuestDocument.text || "",
-      cleanText: activeGuestDocument.cleanText || "",
-      textQuality: activeGuestDocument.textQuality || "",
-      notes: activeGuestDocument.notes || "",
-      error: activeGuestDocument.error || null,
-      createdAt: activeGuestDocument.createdAt || null
-    }
-    : null;
   const {
     searchQuery,
     setSearchQuery,
