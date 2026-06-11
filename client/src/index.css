@@ -633,13 +633,13 @@ button {
 
 .cookie-notice {
   position: fixed;
-  right: 20px;
+  left: 20px;
   bottom: 20px;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: 16px;
-  width: min(620px, calc(100% - 40px));
+  width: min(768px, calc(100% - 40px));
   padding: 16px;
   border: 1px solid #dbe1ea;
   border-radius: 12px;
@@ -2467,7 +2467,7 @@ button {
   }
 
   .cookie-notice {
-    right: 16px;
+    left: 16px;
     bottom: 16px;
     align-items: flex-start;
     flex-direction: column;
