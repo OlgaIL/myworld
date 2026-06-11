@@ -8,6 +8,7 @@ import Modal from "../components/Modal";
 import { useAuth } from "../hooks/useAuth";
 import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { useCabinetUpload } from "../hooks/useCabinetUpload";
+import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { useGuestUpload } from "../hooks/useGuestUpload";
 import { usePhotos } from "../hooks/usePhotos";
@@ -20,8 +21,8 @@ function App() {
   const { guestDocuments, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
   const [activePhoto, setActivePhoto] = useState(null);
-  const [documentCopiedMap, setDocumentCopiedMap] = useState({});
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
+  const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
@@ -99,43 +100,26 @@ function App() {
   } = useCabinetFilters(photos);
 
   const openDocument = useCallback(function openDocument(photo) {
-    setDocumentCopiedMap({});
+    resetCopied();
     navigate(`/documents/${encodeURIComponent(photo.name)}`);
-  }, [navigate]);
+  }, [navigate, resetCopied]);
 
   const closeDocument = useCallback(function closeDocument() {
-    setDocumentCopiedMap({});
+    resetCopied();
     navigate("/");
-  }, [navigate]);
+  }, [navigate, resetCopied]);
 
   const selectCategory = useCallback(function selectCategory(category) {
     applyCategoryFilter(category);
-    setDocumentCopiedMap({});
+    resetCopied();
     navigate("/");
-  }, [applyCategoryFilter, navigate]);
+  }, [applyCategoryFilter, navigate, resetCopied]);
 
   const selectTag = useCallback(function selectTag(tag) {
     applyTagFilter(tag);
-    setDocumentCopiedMap({});
+    resetCopied();
     navigate("/");
-  }, [applyTagFilter, navigate]);
-
-  const handleDocumentCopy = useCallback(async function handleDocumentCopy(key, text) {
-    if (!text) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setDocumentCopiedMap((prev) => ({ ...prev, [key]: true }));
-      setTimeout(() => {
-        setDocumentCopiedMap((prev) => ({ ...prev, [key]: false }));
-      }, 1500);
-    } catch (error) {
-      console.error("Copy failed:", error);
-      alert("Не удалось скопировать текст");
-    }
-  }, []);
+  }, [applyTagFilter, navigate, resetCopied]);
 
   function renderGuestState() {
     if (activeGuestDocument) {

@@ -26,6 +26,7 @@ function CookieNotice() {
           Подробнее
         </Link>
         <button className="cookie-notice__button" type="button" onClick={acceptCookies}>
+          <span aria-hidden="true">✓</span>
           Понятно
         </button>
       </div>

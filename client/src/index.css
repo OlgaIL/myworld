@@ -672,13 +672,16 @@ button {
 }
 
 .cookie-notice__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: 36px;
   padding: 8px 14px;
   border: 1px solid #c7d7fe;
   border-radius: 10px;
   background: #eef4ff;
   color: #1d4ed8;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .upload-panel {
