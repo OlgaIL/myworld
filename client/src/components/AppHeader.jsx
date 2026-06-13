@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import AuthMenu from "./AuthMenu";
 
 function formatShortAccessDate(value) {
   if (!value) {
@@ -24,7 +25,7 @@ function getProfileAccessText(user, recordsUsed, recordLimit) {
   return `Бесплатный тариф · ${recordsUsed}/${recordLimit} записей`;
 }
 
-function AppHeader({ user, recordsUsed, recordLimit, onLogin, onLogout }) {
+function AppHeader({ user, recordsUsed, recordLimit, onLogin, onYandexLogin, onLogout }) {
   return (
     <header className="topbar">
       <h1 className="header__logo">
@@ -36,9 +37,7 @@ function AppHeader({ user, recordsUsed, recordLimit, onLogin, onLogout }) {
           <Link className="topbar__link" to="/about">
             О проекте
           </Link>
-          <button className="auth-button" type="button" onClick={onLogin}>
-            Войти через Google
-          </button>
+          <AuthMenu onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
         </div>
       ) : (
         <div className="profile">

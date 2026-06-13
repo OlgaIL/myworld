@@ -3,14 +3,14 @@ export const GUEST_DOCUMENT_STATUS_META = {
     label: "Загружается",
     badgeClassName: "gallery__status-badge--processing",
     emptyText: "Текст еще обрабатывается.",
-    ctaLabel: "Войти через Google",
+    ctaLabel: "Войти в кабинет",
     ctaHint: "После входа запись сохранится в вашем списке."
   },
   processing: {
     label: "Обработка",
     badgeClassName: "gallery__status-badge--processing",
     emptyText: "Текст еще обрабатывается.",
-    ctaLabel: "Войти через Google",
+    ctaLabel: "Войти в кабинет",
     ctaHint: "После входа запись сохранится в вашем списке."
   },
   processed: {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentUser, loginWithGoogle, logout } from "../services/api";
+import { getCurrentUser, loginWithGoogle, loginWithYandex, logout } from "../services/api";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -28,6 +28,8 @@ export function useAuth() {
     user,
     authLoading: loading,
     login: loginWithGoogle,
+    loginWithGoogle,
+    loginWithYandex,
     logout,
     reloadUser: () => loadUser({ showLoading: false })
   };

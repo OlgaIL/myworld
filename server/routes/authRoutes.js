@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { CLIENT_URL } from "../config/env.js";
+import { YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess } from "../utils/photos.js";
@@ -8,6 +9,14 @@ const router = Router();
 
 router.get("/auth/google", (req, res, next) => {
   req.app.get("passport").authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+});
+
+router.get("/auth/yandex", (req, res, next) => {
+  if (!YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET) {
+    return res.status(503).send("Yandex login is not configured");
+  }
+
+  req.app.get("passport").authenticate("yandex")(req, res, next);
 });
 
 router.get(
@@ -20,6 +29,22 @@ router.get(
       await claimGuestDocumentForUser(req);
     } catch (error) {
       console.error("Guest claim after login failed:", error);
+    }
+
+    res.redirect(CLIENT_URL);
+  }
+);
+
+router.get(
+  "/auth/yandex/callback",
+  (req, res, next) => {
+    req.app.get("passport").authenticate("yandex", { failureRedirect: "/" })(req, res, next);
+  },
+  async (req, res) => {
+    try {
+      await claimGuestDocumentForUser(req);
+    } catch (error) {
+      console.error("Guest claim after Yandex login failed:", error);
     }
 
     res.redirect(CLIENT_URL);

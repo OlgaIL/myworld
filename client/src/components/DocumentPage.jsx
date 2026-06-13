@@ -163,7 +163,7 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onS
                     <div className="document-page__field">
                       <p>{ocrText}</p>
                       <CopyButton
-                        label="Скопировать исходный OCR-текст"
+                        label="Скопировать исходный текст распознавания"
                         copied={Boolean(copiedMap?.ocrText)}
                         onClick={() => onCopy("ocrText", ocrText)}
                       />

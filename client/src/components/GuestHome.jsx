@@ -1,4 +1,5 @@
 import GuestDocumentCard from "./GuestDocumentCard";
+import AuthMenu from "./AuthMenu";
 
 function GuestLimitNotice({ onLogin }) {
   return (
@@ -24,7 +25,8 @@ function GuestHome({
   onOpenImage,
   onOpenDocument,
   onUploadAnother,
-  onLogin
+  onLogin,
+  onYandexLogin
 }) {
   const uploadAllowed = access?.uploadAllowed !== false;
   const documentsUsed = Number(access?.documentsUsed || 0);
@@ -81,10 +83,14 @@ function GuestHome({
             </section>
 
             <section className="guest-login-cta">
-              <p>Чтобы сохранить ваши записи и продолжить работу, войдите через Google.</p>
-              <button className="guest-card__primary-action" type="button" onClick={onLogin}>
-                Войти через Google
-              </button>
+              <p>Чтобы сохранить ваши записи и продолжить работу, войдите в кабинет.</p>
+              <div className="guest-login-cta__actions">
+                <AuthMenu
+                  className="auth-menu--guest"
+                  onGoogleLogin={onLogin}
+                  onYandexLogin={onYandexLogin}
+                />
+              </div>
             </section>
           </>
         ) : !uploadAllowed ? (

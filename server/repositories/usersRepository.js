@@ -19,6 +19,70 @@ export async function upsertGoogleUser({ googleId, email, displayName, avatarUrl
   return result.rows[0];
 }
 
+export async function upsertYandexUser({ yandexId, email, displayName, avatarUrl }) {
+  const existingByYandex = await query("select * from users where yandex_id = $1", [yandexId]);
+
+  if (existingByYandex.rows[0]) {
+    const result = await query(
+      `
+        update users
+        set
+          email = $2,
+          display_name = $3,
+          avatar_url = $4,
+          updated_at = now()
+        where yandex_id = $1
+        returning *
+      `,
+      [yandexId, email, displayName, avatarUrl]
+    );
+
+    return result.rows[0];
+  }
+
+  if (email) {
+    const existingByEmail = await query(
+      `
+        select *
+        from users
+        where lower(email) = lower($1)
+        order by created_at asc
+        limit 1
+      `,
+      [email]
+    );
+
+    if (existingByEmail.rows[0] && !existingByEmail.rows[0].yandex_id) {
+      const result = await query(
+        `
+          update users
+          set
+            yandex_id = $2,
+            display_name = $3,
+            avatar_url = coalesce($4, avatar_url),
+            updated_at = now()
+          where id = $1
+          returning *
+        `,
+        [existingByEmail.rows[0].id, yandexId, displayName, avatarUrl]
+      );
+
+      return result.rows[0];
+    }
+  }
+
+  const result = await query(
+    `
+      insert into users (yandex_id, email, display_name, avatar_url)
+      values ($1, $2, $3, $4)
+      returning *
+    `,
+    [yandexId, email, displayName, avatarUrl]
+  );
+
+  return result.rows[0];
+}
+
 export async function findUserById(id) {
   const result = await query("select * from users where id = $1", [id]);
   return result.rows[0] || null;
@@ -164,6 +228,7 @@ export function mapUserForSession(user) {
   return {
     id: user.id,
     googleId: user.google_id,
+    yandexId: user.yandex_id,
     email: user.email,
     displayName: user.display_name,
     avatarUrl: user.avatar_url,

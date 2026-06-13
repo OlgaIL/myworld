@@ -12,6 +12,10 @@ export function loginWithGoogle() {
   window.location.href = `${API_URL}/auth/google`;
 }
 
+export function loginWithYandex() {
+  window.location.href = `${API_URL}/auth/yandex`;
+}
+
 export function logout() {
   window.location.href = `${API_URL}/logout`;
 }
