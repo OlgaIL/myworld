@@ -1,15 +1,12 @@
 import GuestDocumentCard from "./GuestDocumentCard";
-import AuthMenu from "./AuthMenu";
+import AuthProviderButtons from "./AuthProviderButtons";
 
-function GuestLimitNotice({ onLogin }) {
+function GuestLimitNotice({ onLogin, onYandexLogin }) {
   return (
-    <>
-      Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись,{" "}
-      <button className="guest-hero__notice-link" type="button" onClick={onLogin}>
-        войдите в кабинет
-      </button>
-      .
-    </>
+    <div className="guest-auth-notice">
+      <span>Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в аккаунт.</span>
+      <AuthProviderButtons onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+    </div>
   );
 }
 
@@ -31,6 +28,7 @@ function GuestHome({
   const uploadAllowed = access?.uploadAllowed !== false;
   const documentsUsed = Number(access?.documentsUsed || 0);
   const documentLimit = Number(access?.documentLimit || 5);
+  const showAuthForError = Boolean(error && error.toLowerCase().includes("войдите"));
 
   return (
     <section className="guest-shell">
@@ -57,7 +55,16 @@ function GuestHome({
 
         {(uploadMessage || error || !uploadAllowed) && (
           <div className="guest-hero__notice">
-            <p>{error || uploadMessage || <GuestLimitNotice onLogin={onLogin} />}</p>
+            {showAuthForError ? (
+              <div className="guest-auth-notice">
+                <span>{error}</span>
+                <AuthProviderButtons onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+              </div>
+            ) : error || uploadMessage ? (
+              <p>{error || uploadMessage}</p>
+            ) : (
+              <GuestLimitNotice onLogin={onLogin} onYandexLogin={onYandexLogin} />
+            )}
           </div>
         )}
 
@@ -83,13 +90,9 @@ function GuestHome({
             </section>
 
             <section className="guest-login-cta">
-              <p>Чтобы сохранить ваши записи и продолжить работу, войдите в кабинет.</p>
+              <p>Чтобы сохранить ваши записи и продолжить работу, войдите в аккаунт.</p>
               <div className="guest-login-cta__actions">
-                <AuthMenu
-                  className="auth-menu--guest"
-                  onGoogleLogin={onLogin}
-                  onYandexLogin={onYandexLogin}
-                />
+                <AuthProviderButtons onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
               </div>
             </section>
           </>
@@ -97,15 +100,13 @@ function GuestHome({
           <section className="guest-placeholder guest-placeholder--embedded">
             <p className="guest-placeholder__title">Гостевая загрузка без входа уже использована.</p>
             <p className="guest-placeholder__text">
-              Чтобы попробовать еще раз и сохранить новые записи,{" "}
-              <button className="guest-hero__notice-link" type="button" onClick={onLogin}>
-                войдите в кабинет
-              </button>
-              .
+              Чтобы попробовать еще раз и сохранить новые записи, войдите в аккаунт.
             </p>
-            <button className="guest-card__primary-action" type="button" onClick={onLogin}>
-              Войти в кабинет
-            </button>
+            <AuthProviderButtons
+              className="auth-provider-buttons--center"
+              onGoogleLogin={onLogin}
+              onYandexLogin={onYandexLogin}
+            />
           </section>
         ) : null}
       </div>

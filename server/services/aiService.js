@@ -2,6 +2,7 @@ import axios from "axios";
 import OpenAI from "openai";
 import {
   AI_CATEGORIES,
+  AI_SECTIONS,
   AI_SYSTEM_PROMPT,
   AI_TEXT_QUALITY_VALUES,
   buildPrompt
@@ -123,6 +124,7 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
 }
 
 const ALLOWED_CATEGORIES = new Set(AI_CATEGORIES);
+const ALLOWED_SECTIONS = new Set(AI_SECTIONS);
 const ALLOWED_TEXT_QUALITY = new Set(AI_TEXT_QUALITY_VALUES);
 
 function normalizeCategory(value) {
@@ -132,6 +134,23 @@ function normalizeCategory(value) {
 
   const category = value.trim().toLowerCase();
   return ALLOWED_CATEGORIES.has(category) ? category : "другое";
+}
+
+function normalizeSection(value) {
+  if (typeof value !== "string") {
+    return "другое";
+  }
+
+  const section = value.trim().toLowerCase();
+  return ALLOWED_SECTIONS.has(section) ? section : "другое";
+}
+
+function normalizeTopic(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().toLowerCase().slice(0, 80);
 }
 
 function normalizeTextQuality(value) {
@@ -159,6 +178,8 @@ function parseAIResponse(raw) {
       title: typeof parsed.title === "string" ? parsed.title : "",
       summary: typeof parsed.summary === "string" ? parsed.summary : "",
       category: normalizeCategory(parsed.category),
+      section: normalizeSection(parsed.section),
+      topic: normalizeTopic(parsed.topic),
       tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === "string").slice(0, 7) : [],
       cleanText: typeof parsed.cleanText === "string" ? parsed.cleanText : "",
       textQuality: normalizeTextQuality(parsed.textQuality),
@@ -175,6 +196,8 @@ function errorResult(message) {
     title: "",
     summary: "",
     category: "",
+    section: "",
+    topic: "",
     tags: [],
     cleanText: "",
     textQuality: "",

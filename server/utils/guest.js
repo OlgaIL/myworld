@@ -31,6 +31,8 @@ export function mapGuestDocumentInfo(document) {
     title: document.title || "",
     summary: document.summary || "",
     category: document.category || "",
+    section: document.section || "",
+    topic: document.topic || "",
     tags: Array.isArray(document.tags) ? document.tags : [],
     textQuality: document.text_quality || "",
     notes: document.ai_notes || "",

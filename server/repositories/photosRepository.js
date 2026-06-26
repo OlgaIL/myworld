@@ -13,6 +13,8 @@ export async function createPhoto({
   title = "",
   summary = "",
   category = "",
+  section = "",
+  topic = "",
   tags = [],
   cleanText = "",
   textQuality = "",
@@ -35,6 +37,8 @@ export async function createPhoto({
         title,
         summary,
         category,
+        section,
+        topic,
         tags,
         clean_text,
         text_quality,
@@ -42,7 +46,7 @@ export async function createPhoto({
         error_message,
         processed_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       returning *
     `,
     [
@@ -58,6 +62,8 @@ export async function createPhoto({
       title,
       summary,
       category,
+      section,
+      topic,
       JSON.stringify(Array.isArray(tags) ? tags : []),
       cleanText,
       textQuality,
@@ -132,6 +138,8 @@ export async function updatePhotoProcessingResult(id, updates) {
     title,
     summary,
     category,
+    section,
+    topic,
     tags,
     cleanText,
     textQuality,
@@ -149,12 +157,14 @@ export async function updatePhotoProcessingResult(id, updates) {
         title = coalesce($4, title),
         summary = coalesce($5, summary),
         category = coalesce($6, category),
-        tags = coalesce($7, tags),
-        clean_text = coalesce($8, clean_text),
-        text_quality = coalesce($9, text_quality),
-        ai_notes = coalesce($10, ai_notes),
-        error_message = $11,
-        processed_at = $12,
+        section = coalesce($7, section),
+        topic = coalesce($8, topic),
+        tags = coalesce($9, tags),
+        clean_text = coalesce($10, clean_text),
+        text_quality = coalesce($11, text_quality),
+        ai_notes = coalesce($12, ai_notes),
+        error_message = $13,
+        processed_at = $14,
         updated_at = now()
       where id = $1
       returning *
@@ -166,6 +176,8 @@ export async function updatePhotoProcessingResult(id, updates) {
       title,
       summary,
       category,
+      section,
+      topic,
       tags ? JSON.stringify(tags) : null,
       cleanText,
       textQuality,

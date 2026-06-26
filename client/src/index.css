@@ -263,6 +263,46 @@ button {
   color: #d92d20;
 }
 
+.auth-provider-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-provider-buttons--center {
+  justify-content: center;
+}
+
+.auth-provider-buttons__label {
+  color: #475467;
+  font-size: 14px;
+}
+
+.auth-provider-buttons__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.auth-provider-buttons__option:hover {
+  background: #f8fafc;
+  border-color: #98a2b3;
+}
+
+.guest-auth-notice {
+  display: grid;
+  gap: 12px;
+}
+
 @media (max-width: 550px) {
   .auth-menu {
     max-width: 100%;

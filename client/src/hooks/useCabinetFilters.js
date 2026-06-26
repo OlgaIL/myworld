@@ -9,6 +9,8 @@ function getPhotoSearchText(photo) {
     photo?.title,
     photo?.summary,
     photo?.category,
+    photo?.section,
+    photo?.topic,
     Array.isArray(photo?.tags) ? photo.tags.join(" ") : "",
     photo?.cleanText,
     photo?.text

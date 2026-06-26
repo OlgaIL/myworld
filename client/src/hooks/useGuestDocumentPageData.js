@@ -22,6 +22,8 @@ export function useGuestDocumentPageData(document) {
         title: document.title || "Запись",
         summary: document.summary || "",
         category: document.category || "",
+        section: document.section || "",
+        topic: document.topic || "",
         tags: Array.isArray(document.tags) ? document.tags : [],
         text: document.text || "",
         cleanText: document.cleanText || "",

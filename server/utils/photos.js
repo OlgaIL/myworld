@@ -20,6 +20,8 @@ export function mapPhotoInfo(photo) {
     title: photo.title || "",
     summary: photo.summary || "",
     category: photo.category || "",
+    section: photo.section || "",
+    topic: photo.topic || "",
     tags: Array.isArray(photo.tags) ? photo.tags : [],
     textQuality: photo.text_quality || "",
     notes: photo.ai_notes || "",

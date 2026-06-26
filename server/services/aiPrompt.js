@@ -14,6 +14,20 @@ export const AI_CATEGORIES = [
   "другое"
 ];
 
+export const AI_SECTIONS = [
+  "здоровье",
+  "учеба",
+  "работа",
+  "финансы",
+  "дом",
+  "контакты",
+  "рецепты",
+  "документы",
+  "идеи",
+  "личное",
+  "другое"
+];
+
 export const AI_TEXT_QUALITY_VALUES = [
   "full_text",
   "fragment",
@@ -83,7 +97,17 @@ export function buildPrompt(text) {
 5. Выбрать одну category строго из списка:
    ${AI_CATEGORIES.map((category) => `"${category}"`).join(", ")}
 
-6. Добавить 3-7 полезных tags.
+6. Выбрать один section строго из списка:
+   ${AI_SECTIONS.map((section) => `"${section}"`).join(", ")}
+
+7. Создать короткий topic:
+   - это смысловая тема внутри section;
+   - 1-3 слова;
+   - не повторяй section;
+   - не делай topic слишком общим вроде "текст", "фото", "важное";
+   - примеры: "анализы", "биология", "визитки", "лекарства", "история", "договор".
+
+8. Добавить 3-7 полезных tags.
 
 Верни ТОЛЬКО валидный JSON.
 Без markdown.
@@ -96,6 +120,8 @@ export function buildPrompt(text) {
   "title": "короткий понятный заголовок",
   "summary": "краткое описание в 1-2 предложения",
   "category": "документ",
+  "section": "документы",
+  "topic": "общая запись",
   "tags": ["тег1", "тег2", "тег3"],
   "cleanText": "очищенный и удобно оформленный текст для пользователя",
   "textQuality": "full_text",
@@ -105,6 +131,9 @@ export function buildPrompt(text) {
 Правила:
 - category должен быть строго одним из значений:
   ${AI_CATEGORIES.map((category) => `"${category}"`).join(", ")}
+- section должен быть строго одним из значений:
+  ${AI_SECTIONS.map((section) => `"${section}"`).join(", ")}
+- topic должен быть короткой смысловой темой внутри section. Если тема неясна, используй пустую строку.
 - textQuality должен быть строго одним из значений:
   ${AI_TEXT_QUALITY_VALUES.map((value) => `"${value}"`).join(", ")}
 - Если OCR-текст слишком короткий или бессмысленный, установи textQuality = "no_meaningful_text".
@@ -112,7 +141,7 @@ export function buildPrompt(text) {
 - Если текст читается плохо, много неясных мест или распознавание ошиблось во многих местах, установи textQuality = "low_confidence".
 - Если текст выглядит цельным и понятным, установи textQuality = "full_text".
 - Если OCR-текст на русском, все значения в JSON пиши на русском.
-- Если OCR-текст на другом языке, сохрани язык исходного текста для cleanText, а title, summary, category, tags и notes можно писать на русском.
+- Если OCR-текст на другом языке, сохрани язык исходного текста для cleanText, а title, summary, category, section, topic, tags и notes можно писать на русском.
 - notes оставь пустой строкой, если текст нормальный и дополнительных пояснений не нужно.
 - В notes коротко напиши, если текст фрагментарный, плохо читается, похож на набор подписей или OCR не дает полной картины.
 

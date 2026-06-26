@@ -66,7 +66,7 @@ export function useGuestUpload({
       console.error("Guest upload error:", uploadError);
 
       if (uploadError.message === "GUEST_LIMIT_REACHED") {
-        setError("Чтобы загрузить следующую запись, войдите через Google.");
+        setError("Чтобы загрузить следующую запись, войдите в кабинет.");
       } else {
         setError(uploadError.message || "Не удалось загрузить запись.");
       }

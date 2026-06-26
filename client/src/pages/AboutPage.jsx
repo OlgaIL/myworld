@@ -115,7 +115,7 @@ function AboutPage() {
           <strong>до 5 записей</strong>
         </div>
         <div>
-          <span>После входа через Google</span>
+          <span>После входа в аккаунт</span>
           <strong>до 100 записей бесплатно</strong>
         </div>
       </section>
