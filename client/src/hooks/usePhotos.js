@@ -1,30 +1,89 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { deletePhoto, getPhotos, uploadPhoto } from "../services/api";
+
+const AUTO_REFRESH_INTERVAL_MS = 20000;
+
+function getPhotosSnapshot(photos) {
+  return JSON.stringify(
+    photos.map((photo) => ({
+      name: photo.name,
+      status: photo.status,
+      title: photo.title,
+      summary: photo.summary,
+      category: photo.category,
+      section: photo.section,
+      topic: photo.topic,
+      tags: photo.tags,
+      cleanText: photo.cleanText,
+      textQuality: photo.textQuality,
+      notes: photo.notes,
+      error: photo.error,
+      createdAt: photo.createdAt
+    }))
+  );
+}
 
 export function usePhotos(enabled = true) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(enabled);
+  const photosRef = useRef([]);
+  const photosSnapshotRef = useRef(getPhotosSnapshot([]));
+  const loadingRef = useRef(false);
 
-  async function loadPhotos() {
+  const applyPhotos = useCallback((data) => {
+    const nextPhotos = Array.isArray(data) ? data : [];
+    const nextSnapshot = getPhotosSnapshot(nextPhotos);
+
+    if (nextSnapshot !== photosSnapshotRef.current) {
+      photosSnapshotRef.current = nextSnapshot;
+      photosRef.current = nextPhotos;
+      setPhotos(nextPhotos);
+    }
+
+    return nextPhotos;
+  }, []);
+
+  const loadPhotos = useCallback(async function loadPhotos(options = {}) {
+    const { silent = false } = options;
+
     if (!enabled) {
+      photosRef.current = [];
+      photosSnapshotRef.current = getPhotosSnapshot([]);
       setPhotos([]);
       setLoading(false);
       return [];
+    }
+
+    if (loadingRef.current) {
+      return photosRef.current;
     }
 
     try {
-      setLoading(true);
+      loadingRef.current = true;
+
+      if (!silent) {
+        setLoading(true);
+      }
+
       const data = await getPhotos();
-      setPhotos(Array.isArray(data) ? data : []);
-      return Array.isArray(data) ? data : [];
+      return applyPhotos(data);
     } catch (error) {
       console.error("Ошибка загрузки списка фото:", error);
-      setPhotos([]);
+
+      if (!silent) {
+        photosSnapshotRef.current = getPhotosSnapshot([]);
+        setPhotos([]);
+      }
+
       return [];
     } finally {
-      setLoading(false);
+      loadingRef.current = false;
+
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }
+  }, [applyPhotos, enabled]);
 
   async function addPhoto(file, options = {}) {
     const { reload = true } = options;
@@ -54,7 +113,34 @@ export function usePhotos(enabled = true) {
 
   useEffect(() => {
     loadPhotos();
-  }, [enabled]);
+  }, [loadPhotos]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") {
+        loadPhotos({ silent: true });
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      loadPhotos({ silent: true });
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [enabled, loadPhotos]);
 
   return {
     photos,
