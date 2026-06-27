@@ -20,7 +20,9 @@ function App() {
   const { documentName } = useParams();
   const { user, authLoading, login, loginWithYandex, logout, reloadUser } = useAuth();
   const { guestDocuments, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
-  const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user));
+  const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user), {
+    onPhotosChanged: reloadUser
+  });
   const [activePhoto, setActivePhoto] = useState(null);
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();

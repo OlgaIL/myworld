@@ -23,28 +23,39 @@ function getPhotosSnapshot(photos) {
   );
 }
 
-export function usePhotos(enabled = true) {
+export function usePhotos(enabled = true, options = {}) {
+  const { onPhotosChanged } = options;
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(enabled);
   const photosRef = useRef([]);
   const photosSnapshotRef = useRef(getPhotosSnapshot([]));
   const loadingRef = useRef(false);
+  const onPhotosChangedRef = useRef(onPhotosChanged);
+
+  useEffect(() => {
+    onPhotosChangedRef.current = onPhotosChanged;
+  }, [onPhotosChanged]);
 
   const applyPhotos = useCallback((data) => {
     const nextPhotos = Array.isArray(data) ? data : [];
     const nextSnapshot = getPhotosSnapshot(nextPhotos);
 
-    if (nextSnapshot !== photosSnapshotRef.current) {
+    const changed = nextSnapshot !== photosSnapshotRef.current;
+
+    if (changed) {
       photosSnapshotRef.current = nextSnapshot;
       photosRef.current = nextPhotos;
       setPhotos(nextPhotos);
     }
 
-    return nextPhotos;
+    return {
+      changed,
+      photos: nextPhotos
+    };
   }, []);
 
   const loadPhotos = useCallback(async function loadPhotos(options = {}) {
-    const { silent = false } = options;
+    const { silent = false, notify = false } = options;
 
     if (!enabled) {
       photosRef.current = [];
@@ -66,7 +77,13 @@ export function usePhotos(enabled = true) {
       }
 
       const data = await getPhotos();
-      return applyPhotos(data);
+      const result = applyPhotos(data);
+
+      if (notify && result.changed) {
+        await onPhotosChangedRef.current?.();
+      }
+
+      return result.photos;
     } catch (error) {
       console.error("Ошибка загрузки списка фото:", error);
 
@@ -105,7 +122,7 @@ export function usePhotos(enabled = true) {
   async function removePhoto(name) {
     try {
       await deletePhoto(name);
-      await loadPhotos();
+      await loadPhotos({ notify: true });
     } catch (error) {
       console.error("Ошибка удаления фото:", error);
     }
@@ -122,7 +139,7 @@ export function usePhotos(enabled = true) {
 
     function refreshWhenVisible() {
       if (document.visibilityState === "visible") {
-        loadPhotos({ silent: true });
+        loadPhotos({ silent: true, notify: true });
       }
     }
 
@@ -131,7 +148,7 @@ export function usePhotos(enabled = true) {
         return;
       }
 
-      loadPhotos({ silent: true });
+      loadPhotos({ silent: true, notify: true });
     }, AUTO_REFRESH_INTERVAL_MS);
 
     document.addEventListener("visibilitychange", refreshWhenVisible);
