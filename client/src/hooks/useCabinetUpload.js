@@ -32,7 +32,7 @@ export function useCabinetUpload({
     }
 
     if (!recordUploadAllowed) {
-      alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
+      alert("Лимит бесплатного пакета обработок достигнут. Для новых загрузок нужно расширить доступ.");
       event.target.value = "";
       return;
     }
@@ -99,7 +99,7 @@ export function useCabinetUpload({
           console.error("Upload error:", error);
 
           if (error.message === "USER_RECORD_LIMIT_REACHED") {
-            alert("Лимит бесплатного тарифа достигнут. Для новых загрузок нужно расширить доступ.");
+            alert("Лимит бесплатного пакета обработок достигнут. Для новых загрузок нужно расширить доступ.");
           } else {
             alert("Не удалось загрузить запись");
           }

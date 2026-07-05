@@ -2,21 +2,24 @@ import { Router } from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { AI_PROVIDER, OCR_PROVIDER, OPENAI_MODEL } from "../config/env.js";
-import { OPENAI_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
 import { uploadsDir } from "../config/paths.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import {
   createPhoto,
-  countPhotosByUser,
   deletePhoto,
   findPhotoByFilenameAndUser,
   listPhotosByUser,
   updatePhotoProcessingResult,
   updatePhotoStatus
 } from "../repositories/photosRepository.js";
-import * as aiService from "../services/aiService.js";
-import ocrService from "../services/ocrService.js";
+import { incrementUserRecordsProcessedTotal } from "../repositories/usersRepository.js";
+import {
+  canProcessImageWithPipeline,
+  enrichWithPipeline,
+  getProcessingPipelineForUser,
+  processImageWithPipeline,
+  recognizeWithPipeline
+} from "../services/processingPipelineService.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
@@ -52,7 +55,7 @@ const upload = multer({
 
 async function requireRecordUploadAccess(req, res, next) {
   try {
-    const recordsUsed = await countPhotosByUser(req.user.id);
+    const recordsUsed = Number(req.user.recordsProcessedTotal || 0);
     const access = getUserProductAccess(req.user, recordsUsed);
 
     if (!access.recordUploadAllowed) {
@@ -96,6 +99,8 @@ router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, 
     });
 
     try {
+      const pipeline = getProcessingPipelineForUser(req.user);
+
       await createPhoto({
         userId: req.user.id,
         filename: req.file.filename,
@@ -103,8 +108,8 @@ router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, 
         mimeType: req.file.mimetype,
         sizeBytes: req.file.size,
         status: "uploaded",
-        ocrProvider: OCR_PROVIDER,
-        aiProvider: AI_PROVIDER
+        ocrProvider: pipeline.ocrProvider,
+        aiProvider: pipeline.aiProvider
       });
 
       timer.log("photo_created");
@@ -247,7 +252,8 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
     });
   }
 
-  const guardError = getProcessingGuardError(req.user);
+  const pipeline = getProcessingPipelineForUser(req.user);
+  const guardError = getProcessingGuardError(req.user, pipeline);
 
   if (guardError) {
     timer.log("guard_rejected", {
@@ -262,18 +268,103 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
   try {
     await updatePhotoStatus(photo.id, "processing", null);
     const imagePath = photo.storage_path;
+
+    if (canProcessImageWithPipeline(pipeline)) {
+      timer.log("image_ai_started", {
+        pipeline: pipeline.pipeline,
+        provider: pipeline.aiProvider
+      });
+
+      const aiResult = await processImageWithPipeline(imagePath, pipeline);
+
+      timer.log("image_ai_finished", {
+        pipeline: pipeline.pipeline,
+        provider: pipeline.aiProvider
+      });
+
+      if (aiResult.error) {
+        console.error("AI IMAGE ERROR:", aiResult.error);
+        await updatePhotoProcessingResult(photo.id, {
+          status: "error",
+          ocrText: "",
+          errorMessage: aiResult.error,
+          processedAt: new Date()
+        });
+
+        timer.log("response_ai_error", {
+          error: aiResult.error
+        });
+
+        return res.json({
+          status: "error",
+          error: aiResult.error
+        });
+      }
+
+      const text = aiResult.ocrText || aiResult.cleanText || "";
+
+      if (text.trim().length < 10 && aiResult.textQuality === "no_meaningful_text") {
+        await updatePhotoProcessingResult(photo.id, {
+          status: "no_text",
+          ocrText: text,
+          errorMessage: null,
+          processedAt: new Date()
+        });
+
+        timer.log("response_no_text", {
+          textLength: text.trim().length
+        });
+
+        return res.json({ message: "No text detected", status: "no_text" });
+      }
+
+      const updatedPhoto = await updatePhotoProcessingResult(photo.id, {
+        status: "processed",
+        ocrText: text,
+        title: aiResult.title,
+        summary: aiResult.summary,
+        category: aiResult.category,
+        section: aiResult.section,
+        topic: aiResult.topic,
+        tags: aiResult.tags,
+        cleanText: aiResult.cleanText,
+        textQuality: aiResult.textQuality,
+        aiNotes: aiResult.notes,
+        errorMessage: null,
+        processedAt: new Date()
+      });
+      await incrementUserRecordsProcessedTotal(req.user.id);
+
+      timer.log("response_processed", {
+        textLength: text.trim().length
+      });
+
+      return res.json({
+        status: updatedPhoto.status,
+        title: updatedPhoto.title,
+        summary: updatedPhoto.summary,
+        category: updatedPhoto.category || "",
+        section: updatedPhoto.section || "",
+        topic: updatedPhoto.topic || "",
+        tags: Array.isArray(updatedPhoto.tags) ? updatedPhoto.tags : [],
+        cleanText: updatedPhoto.clean_text || "",
+        textQuality: updatedPhoto.text_quality || "",
+        notes: updatedPhoto.ai_notes || ""
+      });
+    }
+
     timer.log("ocr_started", {
-      provider: OCR_PROVIDER
+      pipeline: pipeline.pipeline,
+      provider: pipeline.ocrProvider,
+      languageCodes: pipeline.ocrLanguageCodes,
+      model: pipeline.ocrModel || null
     });
 
-    const rawOcrResult = await ocrService.recognize(imagePath, {
-      provider: OCR_PROVIDER,
-      apiKey: YANDEX_API_KEY,
-      folderId: YANDEX_FOLDER_ID
-    });
+    const rawOcrResult = await recognizeWithPipeline(imagePath, pipeline);
 
     timer.log("ocr_finished", {
-      provider: OCR_PROVIDER
+      pipeline: pipeline.pipeline,
+      provider: pipeline.ocrProvider
     });
 
     const ocrResult = normalizeOcrResult(rawOcrResult);
@@ -309,20 +400,16 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
     }
 
     timer.log("ai_started", {
-      provider: AI_PROVIDER,
+      pipeline: pipeline.pipeline,
+      provider: pipeline.aiProvider,
       textLength: text.trim().length
     });
 
-    const aiResult = await aiService.process(text, {
-      provider: AI_PROVIDER,
-      apiKey: YANDEX_API_KEY,
-      folderId: YANDEX_FOLDER_ID,
-      openAiApiKey: OPENAI_API_KEY,
-      model: OPENAI_MODEL
-    });
+    const aiResult = await enrichWithPipeline(text, pipeline);
 
     timer.log("ai_finished", {
-      provider: AI_PROVIDER
+      pipeline: pipeline.pipeline,
+      provider: pipeline.aiProvider
     });
 
     if (aiResult.error) {
@@ -359,6 +446,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       errorMessage: null,
       processedAt: new Date()
     });
+    await incrementUserRecordsProcessedTotal(req.user.id);
 
     timer.log("response_processed", {
       textLength: text.trim().length

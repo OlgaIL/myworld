@@ -182,3 +182,16 @@ export function createAccessRequest({ message }) {
       throw new Error("Сервер недоступен");
     });
 }
+
+export function getAccessRequests() {
+  return axios
+    .get(`${API_URL}/api/access-requests`)
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err.response) {
+        throw new Error("Ошибка загрузки заявок");
+      }
+
+      throw new Error("Сервер недоступен");
+    });
+}

@@ -46,6 +46,8 @@ function mapAdminUser(user) {
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
+    recordsProcessedTotal: Number(user.records_processed_total || 0),
+    processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,
     documentsCount: Number(user.documents_count || 0),
     createdAt: user.created_at,

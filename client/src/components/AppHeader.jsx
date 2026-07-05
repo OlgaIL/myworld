@@ -22,15 +22,19 @@ function getProfileAccessText(user, recordsUsed, recordLimit) {
     return `Без ограничений до ${formatShortAccessDate(user.accessExpiresAt)}`;
   }
 
-  return `Бесплатный тариф · ${recordsUsed}/${recordLimit} записей`;
+  if (Number(user?.packageRemaining || 0) > 0) {
+    return `Пакет · ${user.packageRemaining}/${user.packageQuota} обработок`;
+  }
+
+  return `Бесплатный пакет · ${recordsUsed}/${recordLimit} обработок`;
 }
 
-function AppHeader({ user, recordsUsed, recordLimit, onLogin, onYandexLogin, onLogout }) {
+function AppHeader({ user, recordsUsed, recordLimit, onLogin, onYandexLogin, onLogout, profileLinkEnabled = true }) {
   return (
     <header className="topbar">
-      <h1 className="header__logo">
+      <Link className="header__logo" to="/">
         Word2you <span className="header__logo-accent">Записи</span>
-      </h1>
+      </Link>
 
       {!user ? (
         <div className="topbar__actions">
@@ -45,7 +49,11 @@ function AppHeader({ user, recordsUsed, recordLimit, onLogin, onYandexLogin, onL
             <img className="profile__avatar" src={user.avatarUrl} alt={user.displayName} />
           )}
           <div className="profile__meta">
-            <span className="profile__name">{user.displayName}</span>
+            {profileLinkEnabled ? (
+              <Link className="profile__name profile__name--link" to="/account">{user.displayName}</Link>
+            ) : (
+              <span className="profile__name">{user.displayName}</span>
+            )}
             <span className="profile__hint">{getProfileAccessText(user, recordsUsed, recordLimit)}</span>
           </div>
           <button className="profile__logout" type="button" onClick={onLogout}>

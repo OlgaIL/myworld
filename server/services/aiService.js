@@ -1,12 +1,26 @@
+import fs from "fs";
+import path from "path";
 import axios from "axios";
 import OpenAI from "openai";
 import {
   AI_CATEGORIES,
   AI_SECTIONS,
-  AI_SYSTEM_PROMPT,
   AI_TEXT_QUALITY_VALUES,
-  buildPrompt
 } from "./aiPrompt.js";
+import {
+  buildOpenAIImagePrompt as buildOpenAIImagePromptFromFile,
+  buildOpenAIImageSystemPrompt,
+  buildOpenAITextPrompt,
+  buildOpenAITextSystemPrompt
+} from "./prompts/openaiPrompt.js";
+import { buildYandexSystemPrompt, buildYandexUserPrompt } from "./prompts/yandexPrompt.js";
+
+const IMAGE_MIME_TYPES = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp"
+};
 
 export async function process(text, options) {
   const { provider } = options;
@@ -22,7 +36,17 @@ export async function process(text, options) {
   return errorResult("Unknown AI provider");
 }
 
-async function processYandex(text, { apiKey, folderId }) {
+export async function processImage(imagePath, options) {
+  const { provider } = options;
+
+  if (provider !== "openai") {
+    return errorResult("Image processing is only supported for OpenAI");
+  }
+
+  return processOpenAIImage(imagePath, options);
+}
+
+async function processYandex(text, { apiKey, folderId, modelUri }) {
   if (!apiKey) {
     return errorResult("YANDEX_API_KEY is not set");
   }
@@ -31,13 +55,14 @@ async function processYandex(text, { apiKey, folderId }) {
     return errorResult("YANDEX_FOLDER_ID is not set");
   }
 
-  const prompt = buildPrompt(text);
+  const prompt = buildYandexUserPrompt(text);
+  const resolvedModelUri = modelUri || `gpt://${folderId}/yandexgpt/latest`;
 
   try {
     const response = await axios.post(
       "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
       {
-        modelUri: `gpt://${folderId}/yandexgpt/latest`,
+        modelUri: resolvedModelUri,
         completionOptions: {
           stream: false,
           temperature: 0.3,
@@ -46,7 +71,7 @@ async function processYandex(text, { apiKey, folderId }) {
         messages: [
           {
             role: "system",
-            text: AI_SYSTEM_PROMPT
+            text: buildYandexSystemPrompt()
           },
           {
             role: "user",
@@ -84,7 +109,7 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
     return errorResult("OPENAI_API_KEY is not set");
   }
 
-  const prompt = buildPrompt(text);
+  const prompt = buildOpenAITextPrompt(text);
   const client = new OpenAI({ apiKey: openAiApiKey });
 
   try {
@@ -98,7 +123,7 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
       messages: [
         {
           role: "system",
-          content: AI_SYSTEM_PROMPT
+          content: buildOpenAITextSystemPrompt()
         },
         {
           role: "user",
@@ -121,6 +146,69 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
 
     return errorResult("OpenAI request failed");
   }
+}
+
+async function processOpenAIImage(imagePath, { openAiApiKey, model = "gpt-4o-mini" }) {
+  if (!openAiApiKey) {
+    return errorResult("OPENAI_API_KEY is not set");
+  }
+
+  const client = new OpenAI({ apiKey: openAiApiKey });
+  const imageUrl = buildImageDataUrl(imagePath);
+  const prompt = buildOpenAIImagePromptFromFile();
+
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      temperature: 0.2,
+      max_tokens: 2500,
+      response_format: {
+        type: "json_object"
+      },
+      messages: [
+        {
+          role: "system",
+          content: buildOpenAIImageSystemPrompt()
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: prompt
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageUrl
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    const rawText = response.choices?.[0]?.message?.content || "";
+    return parseAIResponse(rawText);
+  } catch (error) {
+    if (error.status) {
+      console.error("OPENAI IMAGE API ERROR:", {
+        status: error.status,
+        message: error.message
+      });
+    } else {
+      console.error("OPENAI IMAGE NETWORK ERROR:", error.message);
+    }
+
+    return errorResult("OpenAI image request failed");
+  }
+}
+
+function buildImageDataUrl(imagePath) {
+  const ext = path.extname(imagePath).toLowerCase();
+  const mimeType = IMAGE_MIME_TYPES[ext] || "image/jpeg";
+  const base64 = fs.readFileSync(imagePath).toString("base64");
+  return `data:${mimeType};base64,${base64}`;
 }
 
 const ALLOWED_CATEGORIES = new Set(AI_CATEGORIES);
@@ -181,6 +269,7 @@ function parseAIResponse(raw) {
       section: normalizeSection(parsed.section),
       topic: normalizeTopic(parsed.topic),
       tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === "string").slice(0, 7) : [],
+      ocrText: typeof parsed.ocrText === "string" ? parsed.ocrText : "",
       cleanText: typeof parsed.cleanText === "string" ? parsed.cleanText : "",
       textQuality: normalizeTextQuality(parsed.textQuality),
       notes: typeof parsed.notes === "string" ? parsed.notes : ""
@@ -199,6 +288,7 @@ function errorResult(message) {
     section: "",
     topic: "",
     tags: [],
+    ocrText: "",
     cleanText: "",
     textQuality: "",
     notes: "",

@@ -71,7 +71,13 @@ function getAccessLabel(user) {
     return `До ${formatAccessDate(user.accessExpiresAt)}`;
   }
 
-  return `${user.processingUsed} / ${user.processingQuota}`;
+  const remaining = Math.max(Number(user.processingQuota || 0) - Number(user.processingUsed || 0), 0);
+
+  if (remaining > 0) {
+    return `Пакет: ${remaining} ост.`;
+  }
+
+  return "Бесплатный";
 }
 
 function getProductAccessLabel(user) {
@@ -83,7 +89,13 @@ function getProductAccessLabel(user) {
     return `Без ограничений до ${formatAccessDate(user.accessExpiresAt)}`;
   }
 
-  return "Бесплатный тариф";
+  const remaining = Math.max(Number(user.processingQuota || 0) - Number(user.processingUsed || 0), 0);
+
+  if (remaining > 0) {
+    return `Пакет обработок: осталось ${remaining} из ${user.processingQuota}`;
+  }
+
+  return "Бесплатный пакет";
 }
 
 function getRequestStatusLabel(status) {
@@ -322,6 +334,11 @@ function AdminUserDetails({ user, onSaved }) {
     setProcessingUsed(0);
   }
 
+  function addPackage(amount) {
+    setProcessingEnabled(false);
+    setProcessingQuota((currentQuota) => Number(currentQuota || 0) + amount);
+  }
+
   return (
     <section className="admin-user-details">
       <div className="admin-user-details__header">
@@ -382,7 +399,7 @@ function AdminUserDetails({ user, onSaved }) {
 
         <div className="admin-access-form__grid">
           <label className="admin-field">
-            <span>Лимит обработок</span>
+            <span>Всего обработок в пакетах</span>
             <input
               type="number"
               min="0"
@@ -392,7 +409,7 @@ function AdminUserDetails({ user, onSaved }) {
           </label>
 
           <label className="admin-field">
-            <span>Уже использовано</span>
+            <span>Использовано из пакетов</span>
             <input
               type="number"
               min="0"
@@ -403,6 +420,17 @@ function AdminUserDetails({ user, onSaved }) {
         </div>
 
         <div className="admin-quick-actions">
+          <div className="admin-action-group">
+            <button className="admin-button" type="button" onClick={() => addPackage(50)}>
+              Мини +50
+            </button>
+            <button className="admin-button" type="button" onClick={() => addPackage(150)}>
+              Стандарт +150
+            </button>
+            <button className="admin-button" type="button" onClick={() => addPackage(500)}>
+              Макси +500
+            </button>
+          </div>
           <div className="admin-action-group">
             <button className="admin-button" type="button" onClick={extendOneMonth}>
               Продлить на 1 месяц
@@ -453,7 +481,7 @@ function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }
       <div className="admin-section-heading">
         <div>
           <h2>Заявки</h2>
-          <p className="admin-muted">Запросы на продление доступа</p>
+          <p className="admin-muted">Запросы на пакеты и расширение доступа</p>
         </div>
         {newRequestsCount > 0 && <span className="admin-badge">{newRequestsCount} новых</span>}
       </div>
@@ -471,6 +499,7 @@ function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }
             const sortedRequests = [...group.requests].sort(
               (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
             );
+            const latestRequest = sortedRequests[0] || null;
             const latestRequestDate = sortedRequests[0] ? formatDateTime(sortedRequests[0].createdAt) : "";
             const olderRequestDates = sortedRequests.slice(1).map((request) => formatDateTime(request.createdAt)).join(", ");
 
@@ -479,6 +508,7 @@ function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }
               <div className="admin-access-request__main">
                 <strong>{group.email || group.displayName || `Пользователь ${group.userId}`}</strong>
                 <span>{group.displayName || "Без имени"} · {group.documentsCount} записей</span>
+                {latestRequest?.message && <p>{latestRequest.message}</p>}
                 <div className="admin-access-request__dates">
                   <strong>{latestRequestDate}</strong>
                   {olderRequestDates && <span>{group.requests.length} заявок · {olderRequestDates}</span>}
@@ -622,7 +652,9 @@ function AdminDashboard({ onLogout }) {
     <main className="admin-page">
       <header className="admin-topbar">
         <div>
-          <p className="admin-login__eyebrow">Word2you</p>
+          <a className="admin-site-link" href="/" target="_blank" rel="noreferrer">
+            Word2you
+          </a>
           <h1>Панель управления</h1>
         </div>
         <button className="admin-button" type="button" onClick={handleLogout}>

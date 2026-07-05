@@ -3,6 +3,7 @@ import { CLIENT_URL } from "../config/env.js";
 import { YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
+import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess } from "../utils/photos.js";
 
 const router = Router();
@@ -57,12 +58,16 @@ router.get("/api/me", async (req, res) => {
   }
 
   const processingAccess = getUserProcessingAccess(req.user);
-  const recordsUsed = await countPhotosByUser(req.user.id);
+  const recordsStored = await countPhotosByUser(req.user.id);
+  const recordsUsed = Number(req.user.recordsProcessedTotal || 0);
   const recordAccess = getUserProductAccess(req.user, recordsUsed);
+  const pipeline = getProcessingPipelineForUser(req.user);
 
   return res.send({
     ...req.user,
-    processingAllowed: !getProcessingGuardError(req.user),
+    recordsStored,
+    processingAllowed: !getProcessingGuardError(req.user, pipeline),
+    processingMode: pipeline.pipeline,
     processingUnlimited: processingAccess.processingUnlimited,
     processingQuota: processingAccess.processingQuota,
     processingUsed: processingAccess.processingUsed,

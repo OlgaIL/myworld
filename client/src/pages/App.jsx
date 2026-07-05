@@ -31,7 +31,7 @@ function App() {
   const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
   const recordLimit = Number(user?.recordLimit || 100);
-  const recordsUsed = Number(user?.recordsUsed ?? photosCount);
+  const recordsUsed = Number(user?.recordsUsed ?? 0);
   const recordUploadAllowed = user?.recordUploadAllowed !== false;
   const {
     uploading: cabinetUploading,
@@ -183,7 +183,7 @@ function App() {
           ) : (
             <CabinetHome
               user={user}
-              recordsUsed={recordsUsed}
+              recordsUsed={photosCount}
               photosCount={photosCount}
               pendingPhotos={pendingPhotos}
               filteredPhotos={filteredPhotos}
@@ -219,6 +219,9 @@ function App() {
       <footer className="page-footer">
         <Link className="topbar__link" to="/about">
           О проекте
+        </Link>
+        <Link className="topbar__link" to="/packages">
+          Пакеты
         </Link>
       </footer>
     </div>

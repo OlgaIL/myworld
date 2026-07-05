@@ -28,6 +28,9 @@ button {
 }
 
 .page-footer {
+  display: flex;
+  align-items: center;
+  gap: 18px;
   margin-top: 48px;
   padding-top: 18px;
   border-top: 1px solid #e4e7ec;
@@ -55,8 +58,11 @@ button {
   align-items: baseline;
   gap: 8px;
   margin: 0;
+  color: #111827;
   font-size: 20px;
+  font-weight: 700;
   line-height: 1.1;
+  text-decoration: none;
 }
 
 .header__logo-accent {
@@ -126,7 +132,16 @@ button {
 }
 
 .profile__name {
+  color: #111827;
   font-weight: 700;
+}
+
+.profile__name--link {
+  text-decoration: none;
+}
+
+.profile__name--link:hover {
+  color: #333377;
 }
 
 .profile__hint {
@@ -775,6 +790,316 @@ button {
 
 .privacy-layout a {
   color: #1d4ed8;
+}
+
+.packages-page {
+  min-height: 100vh;
+  background: #fff;
+  color: #1f2937;
+}
+
+.packages-hero,
+.packages-benefits,
+.packages-grid,
+.packages-note {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.packages-hero {
+  padding-top: 56px;
+  padding-bottom: 26px;
+}
+
+.packages-hero h1 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1;
+}
+
+.packages-hero p {
+  max-width: 720px;
+  margin: 18px 0 0;
+  color: #475467;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.packages-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 8px;
+  padding-bottom: 20px;
+}
+
+.packages-benefit {
+  padding: 18px;
+  border-radius: 10px;
+  background: #f5f7fb;
+}
+
+.packages-benefit h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.packages-benefit p {
+  margin: 10px 0 0;
+  color: #475467;
+  line-height: 1.5;
+}
+
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.packages-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 230px;
+  padding: 22px;
+  border: 1px solid #d7dce5;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.packages-card--featured {
+  border-color: #333377;
+  box-shadow: 0 16px 38px rgba(51, 51, 119, 0.12);
+}
+
+.packages-card__badge {
+  align-self: flex-start;
+  margin-bottom: 12px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #333377;
+  font-size: 13px;
+}
+
+.packages-card__title {
+  display: block;
+  color: #667085;
+  font-size: 14px;
+}
+
+.packages-card strong {
+  display: block;
+  margin-top: 14px;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.packages-card p {
+  margin: 16px 0 0;
+  color: #475467;
+  line-height: 1.55;
+}
+
+.packages-card__price {
+  color: #111827 !important;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1 !important;
+}
+
+.packages-card__note {
+  margin-top: 6px !important;
+  color: #667085 !important;
+  font-size: 14px;
+}
+
+.packages-card__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-top: auto;
+  padding: 10px 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  text-decoration: none;
+}
+
+.packages-card__button:hover {
+  background: #f5f7fb;
+  border-color: #98a2b3;
+}
+
+.packages-card__button:disabled {
+  cursor: default;
+  opacity: 0.78;
+}
+
+.packages-card--featured .packages-card__button {
+  border-color: #333377;
+  background: #333377;
+  color: #fff;
+}
+
+.packages-card--featured .packages-card__button:hover {
+  background: #292965;
+}
+
+.packages-card__status {
+  margin-top: 10px !important;
+  color: #18794e !important;
+  font-size: 14px;
+}
+
+.packages-card__status--error {
+  color: #b42318 !important;
+}
+
+.packages-note {
+  padding-top: 20px;
+  padding-bottom: 24px;
+}
+
+.packages-note h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+}
+
+.packages-note p {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: #475467;
+  line-height: 1.55;
+}
+
+.packages-final {
+  max-width: 1040px;
+  margin-top: 18px;
+}
+
+.account-page {
+  max-width: 980px;
+  margin: 0;
+  padding: 32px 20px 56px;
+}
+
+.account-card {
+  max-width: 900px;
+  padding: 0 0 26px;
+  border: 0;
+  border-bottom: 1px solid #e4e7ec;
+  background: transparent;
+  text-align: left;
+}
+
+.account-card + .account-card {
+  margin-top: 26px;
+}
+
+.account-card--hero {
+  padding-bottom: 30px;
+}
+
+.account-card--signin {
+  border-bottom: 0;
+}
+
+.account-card.account-card--signin h1 {
+  font-size: 25px;
+}
+
+.account-card h1,
+.account-card h2,
+.account-card p {
+  margin: 0;
+}
+
+.account-card h1 {
+  margin-top: 10px;
+  color: #111827;
+  font-size: 36px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.account-card h2 {
+  color: #111827;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.account-card p {
+  max-width: 900px;
+  margin-top: 12px;
+  color: #475467;
+  line-height: 1.55;
+}
+
+.account-card strong {
+  display: block;
+  margin-top: 18px;
+  color: #111827;
+  font-size: 18px;
+}
+
+.account-card span {
+  display: block;
+  margin-top: 8px;
+  color: #5b6476;
+}
+
+.account-card--warning h2 {
+  color: #b42318;
+}
+
+.account-card__email {
+  color: #667085 !important;
+}
+
+.account-card__status {
+  color: #18794e !important;
+}
+
+.account-link {
+  display: inline-flex;
+  margin-top: 14px;
+  color: #333377;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account-refresh-button {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #333377;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.account-actions {
+  max-width: 900px;
+  margin-top: 22px;
 }
 
 .cookie-notice {
@@ -2046,6 +2371,20 @@ button {
   font-size: 13px;
 }
 
+.admin-site-link {
+  display: inline-block;
+  margin: 0 0 6px;
+  color: #667085;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.admin-site-link:hover {
+  color: #111827;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .admin-login__title,
 .admin-topbar h1,
 .admin-users h2,
@@ -2502,7 +2841,9 @@ button {
 
   .about-hero,
   .about-grid-section,
-  .about-limits {
+  .about-limits,
+  .packages-benefits,
+  .packages-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2599,8 +2940,14 @@ button {
   .requisites-hero,
   .requisites-layout,
   .privacy-hero,
-  .privacy-layout {
+  .privacy-layout,
+  .packages-hero,
+  .packages-benefits,
+  .packages-grid,
+  .packages-note {
     width: calc(100% - 32px);
+    padding-right: 0;
+    padding-left: 0;
   }
 
   .requisites-hero,

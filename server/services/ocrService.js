@@ -48,7 +48,7 @@ async function recognizeGoogle(imagePath) {
 }
 
 // --- YANDEX OCR  ------
-async function recognizeYandex(imagePath, { apiKey, folderId }) {
+async function recognizeYandex(imagePath, { apiKey, folderId, languageCodes = ["*"], model = "" }) {
   if (!apiKey) {
     throw new Error("YANDEX_API_KEY is not set");
   }
@@ -60,6 +60,14 @@ async function recognizeYandex(imagePath, { apiKey, folderId }) {
   const fileContent = fs.readFileSync(imagePath);
   const base64 = fileContent.toString("base64");
 
+  const textDetectionConfig = {
+    languageCodes: Array.isArray(languageCodes) && languageCodes.length > 0 ? languageCodes : ["*"]
+  };
+
+  if (model) {
+    textDetectionConfig.model = model;
+  }
+
   const body = {
     folderId,
     analyzeSpecs: [
@@ -68,9 +76,7 @@ async function recognizeYandex(imagePath, { apiKey, folderId }) {
         features: [
           {
             type: "TEXT_DETECTION",
-            textDetectionConfig: {
-              languageCodes: ["*"]
-            }
+            textDetectionConfig
           }
         ]
       }

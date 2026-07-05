@@ -116,7 +116,7 @@ function AboutPage() {
         </div>
         <div>
           <span>После входа в аккаунт</span>
-          <strong>до 100 записей бесплатно</strong>
+          <strong>до 50 обработок бесплатно</strong>
         </div>
       </section>
 

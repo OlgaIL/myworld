@@ -3,8 +3,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { AI_PROVIDER, OCR_PROVIDER, GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS, OPENAI_MODEL } from "../config/env.js";
-import { OPENAI_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
+import { GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS } from "../config/env.js";
 import { uploadsDir } from "../config/paths.js";
 import {
   createGuestDocument,
@@ -20,8 +19,13 @@ import {
   findGuestSessionByToken,
   touchGuestSession
 } from "../repositories/guestSessionsRepository.js";
-import ocrService from "../services/ocrService.js";
-import * as aiService from "../services/aiService.js";
+import {
+  canProcessImageWithPipeline,
+  enrichWithPipeline,
+  getProcessingPipelineForUser,
+  processImageWithPipeline,
+  recognizeWithPipeline
+} from "../services/processingPipelineService.js";
 import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
@@ -103,7 +107,8 @@ async function findReplaceableGuestDocument(req, guestSession) {
 }
 
 async function enrichGuestDocumentWithAi({ text, timer }) {
-  const serviceGuardError = getProcessingServiceGuardError();
+  const pipeline = getProcessingPipelineForUser(null, { audience: "guest" });
+  const serviceGuardError = getProcessingServiceGuardError(pipeline);
 
   if (serviceGuardError) {
     timer.log("ai_skipped", {
@@ -124,20 +129,16 @@ async function enrichGuestDocumentWithAi({ text, timer }) {
   }
 
   timer.log("ai_started", {
-    provider: AI_PROVIDER,
+    pipeline: pipeline.pipeline,
+    provider: pipeline.aiProvider,
     textLength: text.trim().length
   });
 
-  const aiResult = await aiService.process(text, {
-    provider: AI_PROVIDER,
-    apiKey: YANDEX_API_KEY,
-    folderId: YANDEX_FOLDER_ID,
-    openAiApiKey: OPENAI_API_KEY,
-    model: OPENAI_MODEL
-  });
+  const aiResult = await enrichWithPipeline(text, pipeline);
 
   timer.log("ai_finished", {
-    provider: AI_PROVIDER
+    pipeline: pipeline.pipeline,
+    provider: pipeline.aiProvider
   });
 
   if (aiResult.error) {
@@ -317,6 +318,7 @@ router.post("/api/guest/upload", (req, res) => {
 
       const replacementDocument = await findReplaceableGuestDocument(req, guestSession);
       const newStoragePath = path.join(uploadsDir, req.file.filename);
+      const pipeline = getProcessingPipelineForUser(null, { audience: "guest" });
       const guestDocument = replacementDocument
         ? await replaceGuestDocumentUpload(replacementDocument.id, {
           filename: req.file.filename,
@@ -324,7 +326,7 @@ router.post("/api/guest/upload", (req, res) => {
           mimeType: req.file.mimetype,
           sizeBytes: req.file.size,
           status: "processing",
-          ocrProvider: OCR_PROVIDER,
+          ocrProvider: pipeline.ocrProvider,
           expiresAt: getGuestDocumentExpiryDate()
         })
         : await createGuestDocument({
@@ -334,7 +336,7 @@ router.post("/api/guest/upload", (req, res) => {
           mimeType: req.file.mimetype,
           sizeBytes: req.file.size,
           status: "processing",
-          ocrProvider: OCR_PROVIDER,
+          ocrProvider: pipeline.ocrProvider,
           expiresAt: getGuestDocumentExpiryDate()
         });
 
@@ -351,14 +353,107 @@ router.post("/api/guest/upload", (req, res) => {
         replacedDocumentId: replacementDocument?.id || null
       });
 
-      const rawOcrResult = await ocrService.recognize(guestDocument.storage_path, {
-        provider: OCR_PROVIDER,
-        apiKey: YANDEX_API_KEY,
-        folderId: YANDEX_FOLDER_ID
+      if (canProcessImageWithPipeline(pipeline)) {
+        timer.log("image_ai_started", {
+          pipeline: pipeline.pipeline,
+          provider: pipeline.aiProvider
+        });
+
+        const aiResult = await processImageWithPipeline(guestDocument.storage_path, pipeline);
+
+        timer.log("image_ai_finished", {
+          pipeline: pipeline.pipeline,
+          provider: pipeline.aiProvider
+        });
+
+        if (aiResult.error) {
+          const updatedDocument = await updateGuestDocumentStatus(guestDocument.id, "error", aiResult.error);
+          timer.log("response_error", {
+            status: "error",
+            error: aiResult.error
+          });
+
+          return res.status(200).json({
+            ...(await buildGuestStateForSession(guestSession)),
+            document: {
+              ...buildGuestDocumentResponse(updatedDocument),
+              error: aiResult.error
+            }
+          });
+        }
+
+        const text = aiResult.ocrText || aiResult.cleanText || "";
+
+        if (text.trim().length < 10 && aiResult.textQuality === "no_meaningful_text") {
+          await updateGuestDocumentProcessingResult(guestDocument.id, {
+            status: "no_text",
+            ocrText: text,
+            errorMessage: null,
+            processedAt: new Date()
+          });
+
+          timer.log("response_no_text", {
+            textLength: text.trim().length
+          });
+
+          return res.status(200).json(await buildGuestStateForSession(guestSession));
+        }
+
+        const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
+
+        if (!consumedSession) {
+          const filePath = path.join(uploadsDir, req.file.filename);
+
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+
+          await updateGuestDocumentStatus(guestDocument.id, "error", "GUEST_LIMIT_REACHED");
+          timer.log("limit_rejected_after_ai");
+          return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
+        }
+
+        timer.log("guest_slot_consumed", {
+          documentsUsed: consumedSession.documents_used,
+          documentLimit: GUEST_DOCUMENT_LIMIT
+        });
+
+        await updateGuestDocumentProcessingResult(guestDocument.id, {
+          status: "processed",
+          ocrText: text,
+          aiProvider: pipeline.aiProvider,
+          title: aiResult.title,
+          summary: aiResult.summary,
+          category: aiResult.category,
+          section: aiResult.section,
+          topic: aiResult.topic,
+          tags: aiResult.tags,
+          cleanText: aiResult.cleanText,
+          textQuality: aiResult.textQuality,
+          aiNotes: aiResult.notes,
+          errorMessage: null,
+          processedAt: new Date()
+        });
+
+        timer.log("response_processed", {
+          textLength: text.trim().length
+        });
+
+        return res.status(200).json(await buildGuestStateForSession(consumedSession));
+      }
+
+      timer.log("ocr_started", {
+        pipeline: pipeline.pipeline,
+        provider: pipeline.ocrProvider,
+        languageCodes: pipeline.ocrLanguageCodes,
+        model: pipeline.ocrModel || null
       });
 
+      const rawOcrResult = await recognizeWithPipeline(guestDocument.storage_path, pipeline);
+
       timer.log("ocr_finished", {
-        provider: OCR_PROVIDER
+        pipeline: pipeline.pipeline,
+        provider: pipeline.ocrProvider
       });
 
       const ocrResult = normalizeOcrResult(rawOcrResult);
@@ -423,7 +518,7 @@ router.post("/api/guest/upload", (req, res) => {
       const updatedDocument = await updateGuestDocumentProcessingResult(guestDocument.id, {
         status: "processed",
         ocrText: text,
-        aiProvider: AI_PROVIDER,
+        aiProvider: pipeline.aiProvider,
         title: aiResult.title,
         summary: aiResult.summary,
         category: aiResult.category,

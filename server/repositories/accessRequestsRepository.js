@@ -13,6 +13,20 @@ export async function createAccessRequest({ userId, email, message = "" }) {
   return result.rows[0];
 }
 
+export async function listAccessRequestsForUser(userId) {
+  const result = await query(
+    `
+      select *
+      from access_requests
+      where user_id = $1
+      order by created_at desc
+    `,
+    [userId]
+  );
+
+  return result.rows;
+}
+
 export async function listAccessRequestsForAdmin() {
   const result = await query(`
     select

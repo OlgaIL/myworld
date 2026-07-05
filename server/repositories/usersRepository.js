@@ -1,4 +1,5 @@
 import { query, withTransaction } from "../db/index.js";
+import { USER_RECORD_LIMIT } from "../config/env.js";
 
 export async function upsertGoogleUser({ googleId, email, displayName, avatarUrl }) {
   const result = await query(
@@ -104,6 +105,8 @@ export async function listUsersForAdmin() {
         users.processing_enabled,
         users.processing_quota,
         users.processing_used,
+        users.records_processed_total,
+        users.processing_mode,
         users.access_expires_at,
         users.created_at,
         users.updated_at,
@@ -130,6 +133,8 @@ export async function findUserForAdmin(userId) {
         users.processing_enabled,
         users.processing_quota,
         users.processing_used,
+        users.records_processed_total,
+        users.processing_mode,
         users.access_expires_at,
         users.created_at,
         users.updated_at,
@@ -220,6 +225,31 @@ export async function consumeProcessingAccess(userId) {
   });
 }
 
+export async function incrementUserRecordsProcessedTotal(userId) {
+  const result = await query(
+    `
+      update users
+      set
+        records_processed_total = records_processed_total + 1,
+        processing_used = case
+          when
+            processing_enabled = false
+            and (access_expires_at is null or access_expires_at <= now())
+            and records_processed_total >= $2
+            and processing_used < processing_quota
+          then processing_used + 1
+          else processing_used
+        end,
+        updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [userId, USER_RECORD_LIMIT]
+  );
+
+  return result.rows[0] || null;
+}
+
 export function mapUserForSession(user) {
   if (!user) {
     return null;
@@ -235,6 +265,8 @@ export function mapUserForSession(user) {
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
+    recordsProcessedTotal: Number(user.records_processed_total || 0),
+    processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null
   };
 }

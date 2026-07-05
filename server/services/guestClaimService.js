@@ -1,14 +1,12 @@
-import { AI_PROVIDER, OCR_PROVIDER, OPENAI_MODEL } from "../config/env.js";
-import { OPENAI_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
 import { createPhoto, updatePhotoProcessingResult } from "../repositories/photosRepository.js";
 import { listActiveGuestDocumentsBySessionId, markGuestDocumentClaimed } from "../repositories/guestDocumentsRepository.js";
-import { findUserById } from "../repositories/usersRepository.js";
+import { findUserById, incrementUserRecordsProcessedTotal } from "../repositories/usersRepository.js";
 import { findGuestSessionByToken, markGuestSessionConverted } from "../repositories/guestSessionsRepository.js";
-import * as aiService from "./aiService.js";
+import { enrichWithPipeline, getProcessingPipelineForUser } from "./processingPipelineService.js";
 import { GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, parseCookies } from "../utils/guest.js";
 import { getProcessingGuardError } from "../utils/photos.js";
 
-function canRunAiForGuestClaim(user, guestDocument) {
+function canRunAiForGuestClaim(user, guestDocument, pipeline) {
   if (!guestDocument) {
     return false;
   }
@@ -27,7 +25,7 @@ function canRunAiForGuestClaim(user, guestDocument) {
     return false;
   }
 
-  return !getProcessingGuardError(user);
+  return !getProcessingGuardError(user, pipeline);
 }
 
 export async function claimGuestDocumentForUser(req) {
@@ -59,6 +57,7 @@ export async function claimGuestDocumentForUser(req) {
   await markGuestSessionConverted(guestSession.id, userId);
   const freshUser = await findUserById(userId);
   const claimedPhotos = [];
+  const pipeline = getProcessingPipelineForUser(freshUser);
 
   for (const guestDocument of guestDocuments) {
     if (isGuestDocumentExpired(guestDocument)) {
@@ -77,8 +76,8 @@ export async function claimGuestDocumentForUser(req) {
       mimeType: guestDocument.mime_type,
       sizeBytes: guestDocument.size_bytes,
       status: initialStatus,
-      ocrProvider: guestDocument.ocr_provider || OCR_PROVIDER,
-      aiProvider: guestDocument.ai_provider || AI_PROVIDER,
+      ocrProvider: guestDocument.ocr_provider || pipeline.ocrProvider,
+      aiProvider: guestDocument.ai_provider || pipeline.aiProvider,
       ocrText: guestDocument.ocr_text || "",
       title: guestDocument.title || "",
       summary: guestDocument.summary || "",
@@ -95,18 +94,16 @@ export async function claimGuestDocumentForUser(req) {
 
     await markGuestDocumentClaimed(guestDocument.id, claimedPhoto.id);
 
-    if (!canRunAiForGuestClaim(freshUser, guestDocument)) {
+    if (!canRunAiForGuestClaim(freshUser, guestDocument, pipeline)) {
+      if (claimedPhoto.status === "processed") {
+        await incrementUserRecordsProcessedTotal(userId);
+      }
+
       claimedPhotos.push(claimedPhoto);
       continue;
     }
 
-    const aiResult = await aiService.process(guestDocument.ocr_text || "", {
-      provider: AI_PROVIDER,
-      apiKey: YANDEX_API_KEY,
-      folderId: YANDEX_FOLDER_ID,
-      openAiApiKey: OPENAI_API_KEY,
-      model: OPENAI_MODEL
-    });
+    const aiResult = await enrichWithPipeline(guestDocument.ocr_text || "", pipeline);
 
     if (aiResult.error) {
       claimedPhotos.push(await updatePhotoProcessingResult(claimedPhoto.id, {
@@ -118,7 +115,7 @@ export async function claimGuestDocumentForUser(req) {
       continue;
     }
 
-    claimedPhotos.push(await updatePhotoProcessingResult(claimedPhoto.id, {
+    const processedPhoto = await updatePhotoProcessingResult(claimedPhoto.id, {
       status: "processed",
       ocrText: guestDocument.ocr_text || "",
       title: aiResult.title,
@@ -132,7 +129,9 @@ export async function claimGuestDocumentForUser(req) {
       aiNotes: aiResult.notes,
       errorMessage: null,
       processedAt: new Date()
-    }));
+    });
+    await incrementUserRecordsProcessedTotal(userId);
+    claimedPhotos.push(processedPhoto);
   }
 
   return claimedPhotos;

@@ -1,8 +1,28 @@
 import { Router } from "express";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
-import { createAccessRequest } from "../repositories/accessRequestsRepository.js";
+import { createAccessRequest, listAccessRequestsForUser } from "../repositories/accessRequestsRepository.js";
 
 const router = Router();
+
+function mapAccessRequest(request) {
+  return {
+    id: String(request.id),
+    message: request.message || "",
+    status: request.status,
+    createdAt: request.created_at,
+    updatedAt: request.updated_at
+  };
+}
+
+router.get("/api/access-requests", requireAuthenticatedUser, async (req, res) => {
+  try {
+    const requests = await listAccessRequestsForUser(req.user.id);
+    return res.json(requests.map(mapAccessRequest));
+  } catch (error) {
+    console.error("List access requests error:", error);
+    return res.status(500).json({ error: "ACCESS_REQUESTS_LOAD_FAILED" });
+  }
+});
 
 router.post("/api/access-requests", requireAuthenticatedUser, async (req, res) => {
   try {
@@ -19,11 +39,7 @@ router.post("/api/access-requests", requireAuthenticatedUser, async (req, res) =
       message
     });
 
-    return res.status(201).json({
-      id: String(accessRequest.id),
-      status: accessRequest.status,
-      createdAt: accessRequest.created_at
-    });
+    return res.status(201).json(mapAccessRequest(accessRequest));
   } catch (error) {
     console.error("Create access request error:", error);
     return res.status(500).json({ error: "ACCESS_REQUEST_CREATE_FAILED" });

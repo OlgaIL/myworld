@@ -5,8 +5,20 @@ import session from "express-session";
 import cors from "cors";
 import passport from "./auth/passport.js";
 import { checkDatabaseConnection, isDatabaseConfigured } from "./db/index.js";
-import { CLIENT_URL, OCR_PROVIDER, AI_PROVIDER, PROCESSING_ALLOWLIST_EMAILS, PROCESSING_ENABLED, SESSION_SECRET } from "./config/env.js";
+import {
+  CLIENT_URL,
+  PROCESSING_ALLOWLIST_EMAILS,
+  PROCESSING_ENABLED,
+  PROCESSING_FREE_MODE,
+  PROCESSING_GUEST_MODE,
+  PROCESSING_MODE_OVERRIDE,
+  PROCESSING_PAID_MODE,
+  PROCESSING_STANDARD_AI_PROVIDER,
+  PROCESSING_STANDARD_OCR_PROVIDER,
+  SESSION_SECRET
+} from "./config/env.js";
 import { clientDistDir } from "./config/paths.js";
+import { getProcessingPipelineForUser } from "./services/processingPipelineService.js";
 import authRoutes from "./routes/authRoutes.js";
 import accessRequestRoutes from "./routes/accessRequestRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -49,8 +61,17 @@ app.get("/api/health", (req, res) => {
     database: databaseStatus,
     processing: {
       enabled: PROCESSING_ENABLED,
-      ocrProvider: OCR_PROVIDER,
-      aiProvider: AI_PROVIDER,
+      modeOverride: PROCESSING_MODE_OVERRIDE,
+      guestMode: PROCESSING_GUEST_MODE,
+      freeMode: PROCESSING_FREE_MODE,
+      paidMode: PROCESSING_PAID_MODE,
+      standardOcrProvider: PROCESSING_STANDARD_OCR_PROVIDER,
+      standardAiProvider: PROCESSING_STANDARD_AI_PROVIDER,
+      pipelines: {
+        guest: getProcessingPipelineForUser(null, { audience: "guest" }),
+        free: getProcessingPipelineForUser(null, { audience: "free" }),
+        paid: getProcessingPipelineForUser(null, { audience: "paid" })
+      },
       allowlistEnabled: PROCESSING_ALLOWLIST_EMAILS.length > 0
     }
   });

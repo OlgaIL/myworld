@@ -61,13 +61,20 @@ export function getUserRecordAccess(recordsUsed) {
 export function getUserProductAccess(user, recordsUsed) {
   const freeAccess = getUserRecordAccess(recordsUsed);
   const unlimitedAccess = Boolean(user?.processingEnabled ?? user?.processing_enabled);
+  const packageQuota = Number(user?.processingQuota ?? user?.processing_quota ?? 0);
+  const packageUsed = Number(user?.processingUsed ?? user?.processing_used ?? 0);
+  const packageRemaining = Math.max(packageQuota - packageUsed, 0);
   const accessExpiresAt = user?.accessExpiresAt ?? user?.access_expires_at ?? null;
   const expiresAtTime = accessExpiresAt ? new Date(accessExpiresAt).getTime() : 0;
   const extendedAccessActive = Boolean(expiresAtTime && expiresAtTime > Date.now());
-  const recordUploadAllowed = unlimitedAccess || extendedAccessActive || freeAccess.recordUploadAllowed;
+  const recordUploadAllowed = unlimitedAccess || extendedAccessActive || freeAccess.recordUploadAllowed || packageRemaining > 0;
 
   return {
     ...freeAccess,
+    packageQuota,
+    packageUsed,
+    packageRemaining,
+    packageAccessActive: packageRemaining > 0,
     recordUploadAllowed,
     unlimitedAccess,
     accessExpiresAt,
@@ -75,31 +82,35 @@ export function getUserProductAccess(user, recordsUsed) {
   };
 }
 
-function isCurrentOcrProviderEnabled() {
-  if (OCR_PROVIDER === "google") {
+function isOcrProviderEnabled(provider = OCR_PROVIDER) {
+  if (provider === "google") {
     return GOOGLE_OCR_ENABLED;
   }
 
-  if (OCR_PROVIDER === "yandex") {
+  if (provider === "yandex") {
     return YANDEX_OCR_ENABLED;
   }
 
-  return false;
-}
-
-function isCurrentAiProviderEnabled() {
-  if (AI_PROVIDER === "yandex") {
-    return YANDEX_AI_ENABLED;
-  }
-
-  if (AI_PROVIDER === "openai") {
+  if (provider === "openai") {
     return OPENAI_ENABLED;
   }
 
   return false;
 }
 
-export function getProcessingGuardError(user) {
+function isAiProviderEnabled(provider = AI_PROVIDER) {
+  if (provider === "yandex") {
+    return YANDEX_AI_ENABLED;
+  }
+
+  if (provider === "openai") {
+    return OPENAI_ENABLED;
+  }
+
+  return false;
+}
+
+export function getProcessingGuardError(user, providers = {}) {
   if (!PROCESSING_ENABLED) {
     return "PROCESSING_DISABLED";
   }
@@ -112,28 +123,34 @@ export function getProcessingGuardError(user) {
     }
   }
 
-  if (!isCurrentOcrProviderEnabled()) {
-    return `${OCR_PROVIDER.toUpperCase()}_OCR_DISABLED`;
+  const ocrProvider = providers.ocrProvider || OCR_PROVIDER;
+  const aiProvider = providers.aiProvider || AI_PROVIDER;
+
+  if (!isOcrProviderEnabled(ocrProvider)) {
+    return `${ocrProvider.toUpperCase()}_OCR_DISABLED`;
   }
 
-  if (!isCurrentAiProviderEnabled()) {
-    return `${AI_PROVIDER.toUpperCase()}_AI_DISABLED`;
+  if (!isAiProviderEnabled(aiProvider)) {
+    return `${aiProvider.toUpperCase()}_AI_DISABLED`;
   }
 
   return null;
 }
 
-export function getProcessingServiceGuardError() {
+export function getProcessingServiceGuardError(providers = {}) {
   if (!PROCESSING_ENABLED) {
     return "PROCESSING_DISABLED";
   }
 
-  if (!isCurrentOcrProviderEnabled()) {
-    return `${OCR_PROVIDER.toUpperCase()}_OCR_DISABLED`;
+  const ocrProvider = providers.ocrProvider || OCR_PROVIDER;
+  const aiProvider = providers.aiProvider || AI_PROVIDER;
+
+  if (!isOcrProviderEnabled(ocrProvider)) {
+    return `${ocrProvider.toUpperCase()}_OCR_DISABLED`;
   }
 
-  if (!isCurrentAiProviderEnabled()) {
-    return `${AI_PROVIDER.toUpperCase()}_AI_DISABLED`;
+  if (!isAiProviderEnabled(aiProvider)) {
+    return `${aiProvider.toUpperCase()}_AI_DISABLED`;
   }
 
   return null;
