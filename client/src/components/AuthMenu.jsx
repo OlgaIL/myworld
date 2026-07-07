@@ -1,8 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 
-function AuthMenu({ onGoogleLogin, onYandexLogin, className = "" }) {
+const authProviderMeta = {
+  google: {
+    icon: "G",
+    title: "Войти через Google",
+    iconClassName: ""
+  },
+  yandex: {
+    icon: "Я",
+    title: "Войти через Яндекс",
+    iconClassName: "auth-menu__icon--yandex"
+  }
+};
+
+function AuthMenu({ providers = [], onGoogleLogin, onYandexLogin, className = "" }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const visibleProviders = Array.isArray(providers) ? providers : [];
+  const loginHandlers = {
+    google: onGoogleLogin,
+    yandex: onYandexLogin
+  };
 
   useEffect(() => {
     if (!open) {
@@ -35,6 +53,10 @@ function AuthMenu({ onGoogleLogin, onYandexLogin, className = "" }) {
     login?.();
   }
 
+  if (visibleProviders.length === 0) {
+    return null;
+  }
+
   return (
     <div className={`auth-menu ${className}`.trim()} ref={menuRef}>
       <button className="auth-button" type="button" onClick={() => setOpen((current) => !current)}>
@@ -43,24 +65,28 @@ function AuthMenu({ onGoogleLogin, onYandexLogin, className = "" }) {
 
       {open && (
         <div className="auth-menu__dropdown">
-          <button
-            className="auth-menu__option"
-            type="button"
-            onClick={() => handleLogin(onGoogleLogin)}
-            title="Войти через Google"
-          >
-            <span className="auth-menu__icon" aria-hidden="true">G</span>
-            Google
-          </button>
-          <button
-            className="auth-menu__option"
-            type="button"
-            onClick={() => handleLogin(onYandexLogin)}
-            title="Войти через Яндекс"
-          >
-            <span className="auth-menu__icon auth-menu__icon--yandex" aria-hidden="true">Я</span>
-            Яндекс
-          </button>
+          {visibleProviders.map((provider) => {
+            const meta = authProviderMeta[provider.id] || {
+              icon: provider.label?.[0] || "?",
+              title: `Войти через ${provider.label || provider.id}`,
+              iconClassName: ""
+            };
+
+            return (
+              <button
+                className="auth-menu__option"
+                type="button"
+                key={provider.id}
+                onClick={() => handleLogin(loginHandlers[provider.id])}
+                title={meta.title}
+              >
+                <span className={`auth-menu__icon ${meta.iconClassName}`.trim()} aria-hidden="true">
+                  {meta.icon}
+                </span>
+                {provider.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

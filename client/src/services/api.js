@@ -8,6 +8,10 @@ export function getCurrentUser() {
   return axios.get(`${API_URL}/api/me`).then((res) => res.data);
 }
 
+export function getAuthProviders() {
+  return axios.get(`${API_URL}/api/auth-providers`).then((res) => res.data);
+}
+
 export function loginWithGoogle() {
   window.location.href = `${API_URL}/auth/google`;
 }

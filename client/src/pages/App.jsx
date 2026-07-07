@@ -18,7 +18,7 @@ import { getPhotoUrl } from "../services/api";
 function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
-  const { user, authLoading, login, loginWithYandex, logout, reloadUser } = useAuth();
+  const { user, authProviders, authLoading, login, loginWithYandex, logout, reloadUser } = useAuth();
   const { guestDocuments, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user), {
     onPhotosChanged: reloadUser
@@ -133,6 +133,7 @@ function App() {
         onUploadAnother={openGuestUpload}
         onLogin={login}
         onYandexLogin={loginWithYandex}
+        authProviders={authProviders}
       />
     );
   }
@@ -147,6 +148,7 @@ function App() {
         user={user}
         recordsUsed={recordsUsed}
         recordLimit={recordLimit}
+        authProviders={authProviders}
         onLogin={login}
         onYandexLogin={loginWithYandex}
         onLogout={logout}

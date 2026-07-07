@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { CLIENT_URL } from "../config/env.js";
-import { YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
+import { CLIENT_URL, isAuthProviderEnabled } from "../config/env.js";
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
@@ -8,12 +8,35 @@ import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess 
 
 const router = Router();
 
+function getConfiguredAuthProviders() {
+  return [
+    {
+      id: "google",
+      label: "Google",
+      enabled: isAuthProviderEnabled("google") && Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET)
+    },
+    {
+      id: "yandex",
+      label: "Яндекс",
+      enabled: isAuthProviderEnabled("yandex") && Boolean(YANDEX_CLIENT_ID && YANDEX_CLIENT_SECRET)
+    }
+  ].filter((provider) => provider.enabled);
+}
+
+router.get("/api/auth-providers", (req, res) => {
+  res.json(getConfiguredAuthProviders().map(({ id, label }) => ({ id, label })));
+});
+
 router.get("/auth/google", (req, res, next) => {
+  if (!isAuthProviderEnabled("google") || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    return res.status(404).send("Google login is not available");
+  }
+
   req.app.get("passport").authenticate("google", { scope: ["profile", "email"] })(req, res, next);
 });
 
 router.get("/auth/yandex", (req, res, next) => {
-  if (!YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET) {
+  if (!isAuthProviderEnabled("yandex") || !YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET) {
     return res.status(503).send("Yandex login is not configured");
   }
 
@@ -23,6 +46,10 @@ router.get("/auth/yandex", (req, res, next) => {
 router.get(
   "/auth/google/callback",
   (req, res, next) => {
+    if (!isAuthProviderEnabled("google") || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.redirect(CLIENT_URL);
+    }
+
     req.app.get("passport").authenticate("google", { failureRedirect: "/" })(req, res, next);
   },
   async (req, res) => {
@@ -39,6 +66,10 @@ router.get(
 router.get(
   "/auth/yandex/callback",
   (req, res, next) => {
+    if (!isAuthProviderEnabled("yandex") || !YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET) {
+      return res.redirect(CLIENT_URL);
+    }
+
     req.app.get("passport").authenticate("yandex", { failureRedirect: "/" })(req, res, next);
   },
   async (req, res) => {

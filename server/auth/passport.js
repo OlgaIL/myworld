@@ -3,34 +3,36 @@ import axios from "axios";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as OAuth2Strategy } from "passport-oauth2";
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
-import { SERVER_URL } from "../config/env.js";
+import { isAuthProviderEnabled, SERVER_URL } from "../config/env.js";
 import { findUserById, mapUserForSession, upsertGoogleUser, upsertYandexUser } from "../repositories/usersRepository.js";
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: `${SERVER_URL}/auth/google/callback`
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const appUser = await upsertGoogleUser({
-          googleId: profile.id,
-          email: profile.emails?.[0]?.value || null,
-          displayName: profile.displayName || "User",
-          avatarUrl: profile.photos?.[0]?.value || null
-        });
+if (isAuthProviderEnabled("google") && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: `${SERVER_URL}/auth/google/callback`
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const appUser = await upsertGoogleUser({
+            googleId: profile.id,
+            email: profile.emails?.[0]?.value || null,
+            displayName: profile.displayName || "User",
+            avatarUrl: profile.photos?.[0]?.value || null
+          });
 
-        done(null, mapUserForSession(appUser));
-      } catch (error) {
-        done(error);
+          done(null, mapUserForSession(appUser));
+        } catch (error) {
+          done(error);
+        }
       }
-    }
-  )
-);
+    )
+  );
+}
 
-if (YANDEX_CLIENT_ID && YANDEX_CLIENT_SECRET) {
+if (isAuthProviderEnabled("yandex") && YANDEX_CLIENT_ID && YANDEX_CLIENT_SECRET) {
   const yandexStrategy = new OAuth2Strategy(
     {
       authorizationURL: "https://oauth.yandex.ru/authorize",

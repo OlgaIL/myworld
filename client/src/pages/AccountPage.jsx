@@ -71,7 +71,7 @@ function getAccountStatusHeading(user) {
 
 function AccountPage() {
   const location = useLocation();
-  const { user, authLoading, login, loginWithYandex, logout, reloadUser } = useAuthContext();
+  const { user, authProviders, authLoading, login, loginWithYandex, logout, reloadUser } = useAuthContext();
   const [accessRequests, setAccessRequests] = useState([]);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const requestedPackageFromUrl = new URLSearchParams(location.search).get("requestedPackage");
@@ -142,6 +142,7 @@ function AccountPage() {
           user={null}
           recordsUsed={0}
           recordLimit={0}
+          authProviders={authProviders}
           onLogin={login}
           onYandexLogin={loginWithYandex}
           onLogout={logout}
@@ -170,6 +171,7 @@ function AccountPage() {
         user={user}
         recordsUsed={Number(user.recordsUsed || 0)}
         recordLimit={Number(user.recordLimit || 0)}
+        authProviders={authProviders}
         onLogin={login}
         onYandexLogin={loginWithYandex}
         onLogout={logout}

@@ -1,9 +1,15 @@
 import {
   OPENAI_MODEL,
+  PROCESSING_FREE_AI_PROVIDER,
   PROCESSING_FREE_MODE,
+  PROCESSING_FREE_OCR_PROVIDER,
+  PROCESSING_GUEST_AI_PROVIDER,
   PROCESSING_GUEST_MODE,
+  PROCESSING_GUEST_OCR_PROVIDER,
   PROCESSING_MODE_OVERRIDE,
+  PROCESSING_PAID_AI_PROVIDER,
   PROCESSING_PAID_MODE,
+  PROCESSING_PAID_OCR_PROVIDER,
   PROCESSING_STANDARD_AI_PROVIDER,
   PROCESSING_STANDARD_OCR_PROVIDER,
   YANDEX_GPT_MODEL_URI,
@@ -64,6 +70,18 @@ function resolveAudienceMode(user, audience) {
   return normalizePipeline(PROCESSING_FREE_MODE, PROCESSING_PIPELINES.FAST);
 }
 
+function resolveAudience(user, audience) {
+  if (audience === "guest" || !user) {
+    return "guest";
+  }
+
+  if (audience === "paid" || hasUnlimitedAccess(user) || hasActiveExtendedAccess(user)) {
+    return "paid";
+  }
+
+  return "free";
+}
+
 export function resolveProcessingPipeline(user = null, options = {}) {
   if (isKnownPipeline(PROCESSING_MODE_OVERRIDE)) {
     return PROCESSING_MODE_OVERRIDE;
@@ -78,17 +96,43 @@ export function resolveProcessingPipeline(user = null, options = {}) {
   return resolveAudienceMode(user, options.audience);
 }
 
+function getStandardProvidersForAudience(audience) {
+  if (audience === "guest") {
+    return {
+      ocrProvider: PROCESSING_GUEST_OCR_PROVIDER,
+      aiProvider: PROCESSING_GUEST_AI_PROVIDER
+    };
+  }
+
+  if (audience === "paid") {
+    return {
+      ocrProvider: PROCESSING_PAID_OCR_PROVIDER,
+      aiProvider: PROCESSING_PAID_AI_PROVIDER
+    };
+  }
+
+  return {
+    ocrProvider: PROCESSING_FREE_OCR_PROVIDER,
+    aiProvider: PROCESSING_FREE_AI_PROVIDER
+  };
+}
+
 export function getProcessingPipelineForUser(user = null, options = {}) {
   const pipeline = resolveProcessingPipeline(user, options);
+  const audience = resolveAudience(user, options.audience);
+  const standardProviders = getStandardProvidersForAudience(audience);
+  const standardOcrProvider = normalizeProvider(PROCESSING_STANDARD_OCR_PROVIDER, STANDARD_OCR_PROVIDERS, "yandex");
+  const standardAiProvider = normalizeProvider(PROCESSING_STANDARD_AI_PROVIDER, STANDARD_AI_PROVIDERS, "yandex");
   const ocrProvider = pipeline === PROCESSING_PIPELINES.STANDARD
-    ? normalizeProvider(PROCESSING_STANDARD_OCR_PROVIDER, STANDARD_OCR_PROVIDERS, "yandex")
+    ? normalizeProvider(standardProviders.ocrProvider, STANDARD_OCR_PROVIDERS, standardOcrProvider)
     : "openai";
   const aiProvider = pipeline === PROCESSING_PIPELINES.STANDARD
-    ? normalizeProvider(PROCESSING_STANDARD_AI_PROVIDER, STANDARD_AI_PROVIDERS, "yandex")
+    ? normalizeProvider(standardProviders.aiProvider, STANDARD_AI_PROVIDERS, standardAiProvider)
     : "openai";
 
   return {
     pipeline,
+    audience,
     ocrProvider,
     aiProvider,
     ocrLanguageCodes: ocrProvider === "yandex" ? YANDEX_OCR_LANGUAGE_CODES : [],

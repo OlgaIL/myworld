@@ -29,7 +29,16 @@ function getProfileAccessText(user, recordsUsed, recordLimit) {
   return `Бесплатный пакет · ${recordsUsed}/${recordLimit} обработок`;
 }
 
-function AppHeader({ user, recordsUsed, recordLimit, onLogin, onYandexLogin, onLogout, profileLinkEnabled = true }) {
+function AppHeader({
+  user,
+  recordsUsed,
+  recordLimit,
+  authProviders,
+  onLogin,
+  onYandexLogin,
+  onLogout,
+  profileLinkEnabled = true
+}) {
   return (
     <header className="topbar">
       <Link className="header__logo" to="/">
@@ -41,7 +50,7 @@ function AppHeader({ user, recordsUsed, recordLimit, onLogin, onYandexLogin, onL
           <Link className="topbar__link" to="/about">
             О проекте
           </Link>
-          <AuthMenu onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+          <AuthMenu providers={authProviders} onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
         </div>
       ) : (
         <div className="profile">
