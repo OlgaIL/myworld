@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PhotoCard from "./PhotoCard";
 import { getPhotoInfo } from "../services/api";
 
@@ -28,13 +28,17 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocum
   const [infoMap, setInfoMap] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
   const pendingQueue = pendingPhotos.length > 0 ? pendingPhotos : (pendingPhoto ? [pendingPhoto] : []);
+  const visiblePhotos = useMemo(() => {
+    const pendingServerNames = new Set(pendingQueue.map((photo) => photo.serverName).filter(Boolean));
+    return photos.filter((photo) => !pendingServerNames.has(photo.name));
+  }, [pendingQueue, photos]);
 
   useEffect(() => {
     let cancelled = false;
     let timeoutId;
 
     async function hydratePhotoInfo() {
-      const photosToRefresh = photos.filter((photo) => {
+      const photosToRefresh = visiblePhotos.filter((photo) => {
         const info = infoMap[photo.name] || getPhotoListInfo(photo);
 
         if (!info) {
@@ -96,7 +100,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocum
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [photos, infoMap]);
+  }, [visiblePhotos, infoMap]);
 
   async function confirmDelete() {
     if (!pendingDelete) {
@@ -107,7 +111,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocum
     setPendingDelete(null);
   }
 
-  if (photos.length === 0 && pendingQueue.length === 0) {
+  if (visiblePhotos.length === 0 && pendingQueue.length === 0) {
     return <p className="gallery__empty">{emptyMessage}</p>;
   }
 
@@ -128,7 +132,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocum
           />
         ))}
 
-        {photos.map((photo) => (
+        {visiblePhotos.map((photo) => (
           <PhotoCard
             key={photo.name}
             photo={photo}

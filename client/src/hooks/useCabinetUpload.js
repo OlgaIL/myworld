@@ -75,8 +75,15 @@ export function useCabinetUpload({
           });
 
           const uploadedPhoto = await addPhoto(uploadFile, { reload: false });
+          const uploadedPhotoName = uploadedPhoto?.filename || uploadedPhoto?.id || "";
 
-          if (user?.processingAllowed && uploadedPhoto?.filename) {
+          if (uploadedPhotoName) {
+            updatePendingPhoto(pendingPhoto.name, {
+              serverName: uploadedPhotoName
+            });
+          }
+
+          if (user?.processingAllowed && uploadedPhotoName) {
             setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
             updatePendingPhoto(pendingPhoto.name, {
               uploadMessage: UPLOAD_STAGE_MESSAGES.recognizing
@@ -89,7 +96,7 @@ export function useCabinetUpload({
               });
             }, 2500);
 
-            await processPhoto(uploadedPhoto.filename);
+            await processPhoto(uploadedPhotoName);
             window.clearTimeout(preparingTimer);
             preparingTimer = null;
           }
