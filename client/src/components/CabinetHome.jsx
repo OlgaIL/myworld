@@ -1,6 +1,7 @@
 import AccessLimitMessage from "./AccessLimitMessage";
 import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
+import LegalConsentText from "./LegalConsentText";
 
 function PlusIcon() {
   return (
@@ -54,6 +55,7 @@ function CabinetHome({
         <p className="guest-hero__counter upload-panel__counter">
           Загружено записей: {recordsUsed}
         </p>
+        {recordUploadAllowed && <LegalConsentText className="legal-consent--cabinet" />}
         {!uploading && <AccessLimitMessage user={user} />}
       </section>
 

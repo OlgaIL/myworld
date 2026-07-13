@@ -1,5 +1,6 @@
 import GuestDocumentCard from "./GuestDocumentCard";
 import AuthProviderButtons from "./AuthProviderButtons";
+import LegalConsentText from "./LegalConsentText";
 
 function GuestLimitNotice({ authProviders, onLogin, onYandexLogin }) {
   return (
@@ -53,6 +54,7 @@ function GuestHome({
             </button>
           )}
         </div>
+        {uploadAllowed && <LegalConsentText />}
 
         {(uploadMessage || error || !uploadAllowed) && (
           <div className="guest-hero__notice">

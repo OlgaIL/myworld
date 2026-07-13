@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import PageFooter from "../components/PageFooter";
 
 const ownerDetails = [
   ["Статус", "Самозанятый"],
@@ -55,6 +56,8 @@ function RequisitesPage() {
         <RequisitesSection title="Данные получателя" items={ownerDetails} />
         <RequisitesSection title="Банковские реквизиты" items={bankDetails} />
       </div>
+
+      <PageFooter />
     </main>
   );
 }

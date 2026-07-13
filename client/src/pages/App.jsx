@@ -1,10 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
 import DocumentPage from "../components/DocumentPage";
 import GuestHome from "../components/GuestHome";
 import Modal from "../components/Modal";
+import PageFooter from "../components/PageFooter";
 import { useAuth } from "../hooks/useAuth";
 import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { useCabinetUpload } from "../hooks/useCabinetUpload";
@@ -218,14 +219,7 @@ function App() {
 
       {activePhoto && <Modal src={activePhoto.startsWith("http") ? activePhoto : getPhotoUrl(activePhoto)} onClose={() => setActivePhoto(null)} />}
 
-      <footer className="page-footer">
-        <Link className="topbar__link" to="/about">
-          О проекте
-        </Link>
-        <Link className="topbar__link" to="/packages">
-          Пакеты
-        </Link>
-      </footer>
+      <PageFooter />
     </div>
   );
 }

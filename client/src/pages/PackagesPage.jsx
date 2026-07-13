@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
 import { createAccessRequest } from "../services/api";
 
@@ -144,6 +145,8 @@ function PackagesPage() {
           Вернуться к записям
         </Link>
       </section>
+
+      <PageFooter />
     </main>
   );
 }

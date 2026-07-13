@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
+import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
 import { getAccessRequests } from "../services/api";
 
@@ -153,14 +154,7 @@ function AccountPage() {
             <p>Для доступа к Личному кабинету войдите в аккаунт.</p>
           </section>
         </main>
-        <footer className="page-footer">
-          <Link className="topbar__link" to="/about">
-            О проекте
-          </Link>
-          <Link className="topbar__link" to="/packages">
-            Пакеты
-          </Link>
-        </footer>
+        <PageFooter />
       </div>
     );
   }
@@ -227,14 +221,7 @@ function AccountPage() {
         )}
       </main>
 
-      <footer className="page-footer">
-        <Link className="topbar__link" to="/about">
-          О проекте
-        </Link>
-        <Link className="topbar__link" to="/packages">
-          Пакеты
-        </Link>
-      </footer>
+      <PageFooter />
     </div>
   );
 }

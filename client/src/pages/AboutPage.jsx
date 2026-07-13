@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import PageFooter from "../components/PageFooter";
 
 const steps = [
   "Загрузите фото",
@@ -116,7 +117,7 @@ function AboutPage() {
         </div>
         <div>
           <span>После входа в аккаунт</span>
-          <strong>до 50 обработок бесплатно</strong>
+          <strong>до 30 обработок бесплатно</strong>
         </div>
       </section>
 
@@ -126,6 +127,8 @@ function AboutPage() {
           Попробовать бесплатно
         </Link>
       </section>
+
+      <PageFooter />
     </main>
   );
 }
