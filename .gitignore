@@ -45,3 +45,7 @@ yarn-error.log*
 
 # OS
 .DS_Store
+
+# Local promo/video workspaces
+word2you-hyperframes-ad/
+word2you_reels/
