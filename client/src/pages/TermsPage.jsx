@@ -104,7 +104,7 @@ function TermsPage() {
           <h2>8. Контакты</h2>
           <p>
             По вопросам работы сервиса можно написать на{" "}
-            <a href="mailto:olga.k.ilyina@gmail.com">olga.k.ilyina@gmail.com</a>.
+            <a href="mailto:support@word2you.ru">support@word2you.ru</a>.
           </p>
         </section>
       </div>

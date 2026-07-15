@@ -57,7 +57,7 @@ function ConsentPage() {
           <p>
             Согласие действует до его отзыва пользователем или до прекращения необходимости обработки данных. Пользователь
             может запросить удаление данных по адресу{" "}
-            <a href="mailto:olga.k.ilyina@gmail.com">olga.k.ilyina@gmail.com</a>.
+            <a href="mailto:support@word2you.ru">support@word2you.ru</a>.
           </p>
         </section>
 

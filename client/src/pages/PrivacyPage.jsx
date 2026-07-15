@@ -25,7 +25,7 @@ function PrivacyPage() {
           <p>
             Оператор сервиса Word2you: Ильина Ольга Игоревна, самозанятый, ИНН 501803615021.
             Контакт для вопросов по персональным данным:{" "}
-            <a href="mailto:olga.k.ilyina@gmail.com">olga.k.ilyina@gmail.com</a>.
+            <a href="mailto:support@word2you.ru">support@word2you.ru</a>.
           </p>
         </section>
 
@@ -100,7 +100,7 @@ function PrivacyPage() {
           <p>
             Пользователь может запросить информацию об обработке своих данных, уточнение, удаление или прекращение
             обработки данных, написав на{" "}
-            <a href="mailto:olga.k.ilyina@gmail.com">olga.k.ilyina@gmail.com</a>.
+            <a href="mailto:support@word2you.ru">support@word2you.ru</a>.
           </p>
         </section>
 
