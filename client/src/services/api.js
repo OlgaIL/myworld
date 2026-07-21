@@ -24,6 +24,10 @@ export function logout() {
   window.location.href = `${API_URL}/logout`;
 }
 
+export function acceptLegalAgreement(version) {
+  return axios.post(`${API_URL}/api/legal-agreement`, { version }).then((res) => res.data);
+}
+
 export function getGuestDocument() {
   return axios.get(`${API_URL}/api/guest/document`).then((res) => res.data);
 }

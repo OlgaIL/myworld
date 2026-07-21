@@ -250,6 +250,23 @@ export async function incrementUserRecordsProcessedTotal(userId) {
   return result.rows[0] || null;
 }
 
+export async function updateUserLegalAgreement(userId, legalVersion) {
+  const result = await query(
+    `
+      update users
+      set
+        legal_accepted_at = now(),
+        legal_version = $2,
+        updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [userId, legalVersion]
+  );
+
+  return result.rows[0] || null;
+}
+
 export function mapUserForSession(user) {
   if (!user) {
     return null;
@@ -267,6 +284,8 @@ export function mapUserForSession(user) {
     processingUsed: Number(user.processing_used || 0),
     recordsProcessedTotal: Number(user.records_processed_total || 0),
     processingMode: user.processing_mode || null,
-    accessExpiresAt: user.access_expires_at || null
+    accessExpiresAt: user.access_expires_at || null,
+    legalAcceptedAt: user.legal_accepted_at || null,
+    legalVersion: user.legal_version || null
   };
 }

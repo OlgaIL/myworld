@@ -1,12 +1,15 @@
 import { Router } from "express";
 import { CLIENT_URL, isAuthProviderEnabled } from "../config/env.js";
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
+import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
+import { mapUserForSession, updateUserLegalAgreement } from "../repositories/usersRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess } from "../utils/photos.js";
 
 const router = Router();
+const LEGAL_AGREEMENT_VERSION = "2026-07-15";
 
 function getConfiguredAuthProviders() {
   return [
@@ -104,6 +107,22 @@ router.get("/api/me", async (req, res) => {
     processingUsed: processingAccess.processingUsed,
     processingRemaining: processingAccess.processingRemaining,
     ...recordAccess
+  });
+});
+
+router.post("/api/legal-agreement", requireAuthenticatedUser, async (req, res) => {
+  const version = req.body?.version || LEGAL_AGREEMENT_VERSION;
+  const updatedUser = await updateUserLegalAgreement(req.user.id, version);
+
+  if (!updatedUser) {
+    return res.status(404).json({ error: "USER_NOT_FOUND" });
+  }
+
+  req.user = mapUserForSession(updatedUser);
+
+  return res.json({
+    legalAcceptedAt: req.user.legalAcceptedAt,
+    legalVersion: req.user.legalVersion
   });
 });
 router.get("/logout", (req, res) => {

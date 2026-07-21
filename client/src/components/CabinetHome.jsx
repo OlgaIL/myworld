@@ -1,7 +1,6 @@
 import AccessLimitMessage from "./AccessLimitMessage";
 import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
-import LegalConsentText from "./LegalConsentText";
 
 function PlusIcon() {
   return (
@@ -34,6 +33,7 @@ function CabinetHome({
   applyTagFilter,
   toggleTags,
   fileInputRef,
+  onRequestUpload,
   handleUpload,
   onOpenImage,
   onOpenDocument,
@@ -47,7 +47,7 @@ function CabinetHome({
         <button
           className="guest-upload-button"
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={onRequestUpload}
           disabled={uploading || !recordUploadAllowed}
         >
           Загрузить запись
@@ -55,7 +55,6 @@ function CabinetHome({
         <p className="guest-hero__counter upload-panel__counter">
           Загружено записей: {recordsUsed}
         </p>
-        {recordUploadAllowed && <LegalConsentText className="legal-consent--cabinet" />}
         {!uploading && <AccessLimitMessage user={user} />}
       </section>
 
@@ -164,7 +163,7 @@ function CabinetHome({
         <button
           className="fab-upload"
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={onRequestUpload}
           disabled={uploading || !recordUploadAllowed}
           title="Добавить запись"
           aria-label="Добавить запись"

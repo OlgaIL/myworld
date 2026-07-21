@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
+import LegalAgreementModal from "../components/LegalAgreementModal";
 import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
+import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { getAccessRequests } from "../services/api";
 
 function getAccessTitle(user) {
@@ -73,6 +75,13 @@ function getAccountStatusHeading(user) {
 function AccountPage() {
   const location = useLocation();
   const { user, authProviders, authLoading, login, loginWithYandex, logout, reloadUser } = useAuthContext();
+  const {
+    legalAgreementOpen,
+    requestLegalAgreement,
+    acceptLegalAgreement,
+    closeLegalAgreement,
+    legalAgreementAccepting
+  } = useLegalAgreement({ user, reloadUser });
   const [accessRequests, setAccessRequests] = useState([]);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const requestedPackageFromUrl = new URLSearchParams(location.search).get("requestedPackage");
@@ -132,6 +141,14 @@ function AccountPage() {
     }
   }
 
+  function requestLogin() {
+    requestLegalAgreement(login);
+  }
+
+  function requestYandexLogin() {
+    requestLegalAgreement(loginWithYandex);
+  }
+
   if (authLoading) {
     return <div className="page page--centered">Загрузка...</div>;
   }
@@ -144,8 +161,8 @@ function AccountPage() {
           recordsUsed={0}
           recordLimit={0}
           authProviders={authProviders}
-          onLogin={login}
-          onYandexLogin={loginWithYandex}
+          onLogin={requestLogin}
+          onYandexLogin={requestYandexLogin}
           onLogout={logout}
         />
         <main className="account-page">
@@ -155,6 +172,13 @@ function AccountPage() {
           </section>
         </main>
         <PageFooter />
+        {legalAgreementOpen && (
+          <LegalAgreementModal
+            accepting={legalAgreementAccepting}
+            onAccept={acceptLegalAgreement}
+            onClose={closeLegalAgreement}
+          />
+        )}
       </div>
     );
   }
@@ -166,8 +190,8 @@ function AccountPage() {
         recordsUsed={Number(user.recordsUsed || 0)}
         recordLimit={Number(user.recordLimit || 0)}
         authProviders={authProviders}
-        onLogin={login}
-        onYandexLogin={loginWithYandex}
+        onLogin={requestLogin}
+        onYandexLogin={requestYandexLogin}
         onLogout={logout}
         profileLinkEnabled={false}
       />

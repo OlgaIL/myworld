@@ -4,6 +4,7 @@ import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
 import DocumentPage from "../components/DocumentPage";
 import GuestHome from "../components/GuestHome";
+import LegalAgreementModal from "../components/LegalAgreementModal";
 import Modal from "../components/Modal";
 import PageFooter from "../components/PageFooter";
 import { useAuth } from "../hooks/useAuth";
@@ -13,6 +14,7 @@ import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
 import { useGuestUpload } from "../hooks/useGuestUpload";
+import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
 import { getPhotoUrl } from "../services/api";
 
@@ -20,6 +22,13 @@ function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
   const { user, authProviders, authLoading, login, loginWithYandex, logout, reloadUser } = useAuth();
+  const {
+    legalAgreementOpen,
+    requestLegalAgreement,
+    acceptLegalAgreement,
+    closeLegalAgreement,
+    legalAgreementAccepting
+  } = useLegalAgreement({ user, reloadUser });
   const { guestDocuments, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user), {
     onPhotosChanged: reloadUser
@@ -83,6 +92,18 @@ function App() {
     toggleTags
   } = useCabinetFilters(photos);
 
+  const requestLogin = useCallback(() => {
+    requestLegalAgreement(login);
+  }, [login, requestLegalAgreement]);
+
+  const requestYandexLogin = useCallback(() => {
+    requestLegalAgreement(loginWithYandex);
+  }, [loginWithYandex, requestLegalAgreement]);
+
+  const requestCabinetUpload = useCallback(() => {
+    requestLegalAgreement(() => fileInputRef.current?.click());
+  }, [requestLegalAgreement]);
+
   const openDocument = useCallback(function openDocument(photo) {
     resetCopied();
     navigate(`/documents/${encodeURIComponent(photo.name)}`);
@@ -132,8 +153,8 @@ function App() {
         onOpenImage={setActivePhoto}
         onOpenDocument={setActiveGuestDocument}
         onUploadAnother={openGuestUpload}
-        onLogin={login}
-        onYandexLogin={loginWithYandex}
+        onLogin={requestLogin}
+        onYandexLogin={requestYandexLogin}
         authProviders={authProviders}
       />
     );
@@ -150,8 +171,8 @@ function App() {
         recordsUsed={recordsUsed}
         recordLimit={recordLimit}
         authProviders={authProviders}
-        onLogin={login}
-        onYandexLogin={loginWithYandex}
+        onLogin={requestLogin}
+        onYandexLogin={requestYandexLogin}
         onLogout={logout}
       />
 
@@ -206,6 +227,7 @@ function App() {
               applyTagFilter={applyTagFilter}
               toggleTags={toggleTags}
               fileInputRef={fileInputRef}
+              onRequestUpload={requestCabinetUpload}
               handleUpload={handleUpload}
               onOpenImage={setActivePhoto}
               onOpenDocument={openDocument}
@@ -218,6 +240,14 @@ function App() {
       )}
 
       {activePhoto && <Modal src={activePhoto.startsWith("http") ? activePhoto : getPhotoUrl(activePhoto)} onClose={() => setActivePhoto(null)} />}
+
+      {legalAgreementOpen && (
+        <LegalAgreementModal
+          accepting={legalAgreementAccepting}
+          onAccept={acceptLegalAgreement}
+          onClose={closeLegalAgreement}
+        />
+      )}
 
       <PageFooter />
     </div>
