@@ -1,0 +1,19 @@
+.auth-menu__dropdown {
+  max-width: calc(100vw - 32px);
+  max-height: min(360px, calc(100vh - 96px));
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.auth-menu__icon--vk {
+  color: #0077ff;
+  font-size: 10px;
+}
+
+.auth-menu__icon--sber {
+  color: #21a038;
+}
+
+.auth-menu__icon--mts {
+  color: #e30611;
+}
