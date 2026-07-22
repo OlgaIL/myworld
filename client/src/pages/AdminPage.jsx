@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getAdminAccessRequests,
   getAdminSession,
+  getAdminSettings,
   getAdminUser,
   getAdminUsers,
   loginAdmin,
@@ -225,7 +226,7 @@ function AdminLogin({ onLogin }) {
   );
 }
 
-function AdminUsersList({ users, selectedUserId, savedUserId, onSelectUser }) {
+function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUser, onSelectUser }) {
   return (
     <section className="admin-users">
       <h2>Пользователи</h2>
@@ -242,7 +243,14 @@ function AdminUsersList({ users, selectedUserId, savedUserId, onSelectUser }) {
               onClick={() => onSelectUser(user.id)}
             >
               <span className="admin-user-row__main">
-                <strong>{user.email || user.displayName || `Пользователь ${user.id}`}</strong>
+                <span className="admin-user-row__title">
+                  <strong>{user.email || user.displayName || `Пользователь ${user.id}`}</strong>
+                  {requestCountsByUser.get(user.id) > 0 && (
+                    <span className="admin-user-row__request">
+                      {requestCountsByUser.get(user.id) === 1 ? "заявка" : `${requestCountsByUser.get(user.id)} заявок`}
+                    </span>
+                  )}
+                </span>
                 <span>{user.displayName || "Без имени"}</span>
               </span>
               <span className="admin-user-row__side">
@@ -301,7 +309,7 @@ function AdminUserDetails({ user, onSaved }) {
         accessExpiresAt: accessExpiresAt || null
       });
       onSaved(updatedUser);
-    } catch (error) {
+    } catch {
       setMessage("Не удалось сохранить изменения.");
     } finally {
       setSaving(false);
@@ -541,9 +549,160 @@ function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }
   );
 }
 
+function StatusPill({ active, children }) {
+  return (
+    <span className={`admin-settings__pill ${active ? "admin-settings__pill--active" : ""}`}>
+      {children}
+    </span>
+  );
+}
+
+function ProviderStatus({ enabled, configured }) {
+  return (
+    <div>
+      <StatusPill active={enabled}>{enabled ? "включен" : "выключен"}</StatusPill>
+      <StatusPill active={configured}>{configured ? "ключи есть" : "нет ключей"}</StatusPill>
+    </div>
+  );
+}
+
+function formatPipeline(pipeline) {
+  if (!pipeline) {
+    return "не задано";
+  }
+
+  if (pipeline.pipeline === "fast") {
+    return "fast · OpenAI";
+  }
+
+  return `${pipeline.pipeline} · OCR: ${pipeline.ocrProvider} · LLM: ${pipeline.aiProvider}`;
+}
+
+function AdminSettingsPanel({ settings }) {
+  if (!settings) {
+    return null;
+  }
+
+  const authProviders = Array.isArray(settings.auth?.providers) ? settings.auth.providers : [];
+  const processingProviders = settings.processing?.providers || {};
+
+  return (
+    <section className="admin-settings">
+      <div className="admin-section-heading">
+        <div>
+          <h2>Настройки сервиса</h2>
+          <p className="admin-muted">Текущее состояние без секретов и ключей</p>
+        </div>
+      </div>
+
+      <div className="admin-settings__grid">
+        <div className="admin-settings__card">
+          <h3>Авторизация</h3>
+          <div className="admin-settings__list">
+            {authProviders.map((provider) => (
+              <div className="admin-settings__row" key={provider.id}>
+                <span>{provider.label}</span>
+                <ProviderStatus enabled={provider.enabled} configured={provider.configured} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="admin-settings__card">
+          <h3>Режимы</h3>
+          <div className="admin-settings__list">
+            <div className="admin-settings__row">
+              <span>Обработка</span>
+              <StatusPill active={settings.processing?.enabled}>{settings.processing?.enabled ? "включена" : "выключена"}</StatusPill>
+            </div>
+            <div className="admin-settings__row">
+              <span>Override</span>
+              <strong>{settings.processing?.modeOverride || "auto"}</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Гость</span>
+              <strong>{formatPipeline(settings.processing?.pipelines?.guest)}</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Бесплатный</span>
+              <strong>{formatPipeline(settings.processing?.pipelines?.free)}</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Платный</span>
+              <strong>{formatPipeline(settings.processing?.pipelines?.paid)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-settings__card">
+          <h3>Провайдеры</h3>
+          <div className="admin-settings__list">
+            <div className="admin-settings__row">
+              <span>Google OCR</span>
+              <ProviderStatus
+                enabled={processingProviders.googleOcr?.enabled}
+                configured={processingProviders.googleOcr?.configured}
+              />
+            </div>
+            <div className="admin-settings__row">
+              <span>Yandex OCR</span>
+              <ProviderStatus
+                enabled={processingProviders.yandexOcr?.enabled}
+                configured={processingProviders.yandexOcr?.configured}
+              />
+            </div>
+            <div className="admin-settings__row">
+              <span>YandexGPT</span>
+              <ProviderStatus
+                enabled={processingProviders.yandexAi?.enabled}
+                configured={processingProviders.yandexAi?.configured}
+              />
+            </div>
+            <div className="admin-settings__row">
+              <span>OpenAI</span>
+              <ProviderStatus
+                enabled={processingProviders.openai?.enabled}
+                configured={processingProviders.openai?.configured}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-settings__card">
+          <h3>Лимиты</h3>
+          <div className="admin-settings__list">
+            <div className="admin-settings__row">
+              <span>Гость</span>
+              <strong>{settings.limits?.guestDocumentLimit} обработок</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Бесплатный пакет</span>
+              <strong>{settings.limits?.userRecordLimit} обработок</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Гостевые записи</span>
+              <strong>{settings.limits?.guestDocumentTtlHours} ч.</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Файл</span>
+              <strong>{settings.limits?.uploadFileLimitMb} МБ</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Allowlist</span>
+              <strong>{settings.processing?.allowlistEnabled ? `${settings.processing.allowlistCount} email` : "выключен"}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AdminDashboard({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
+  const [settings, setSettings] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [savedUserId, setSavedUserId] = useState(null);
@@ -560,14 +719,16 @@ function AdminDashboard({ onLogout }) {
         setLoading(true);
         setRequestsLoading(true);
         setError("");
-        const [loadedUsers, loadedRequests] = await Promise.all([
+        const [loadedUsers, loadedRequests, loadedSettings] = await Promise.all([
           getAdminUsers(),
-          getAdminAccessRequests()
+          getAdminAccessRequests(),
+          getAdminSettings()
         ]);
         setUsers(loadedUsers);
         setAccessRequests(Array.isArray(loadedRequests) ? loadedRequests : []);
+        setSettings(loadedSettings);
         setSelectedUserId((current) => current || loadedUsers[0]?.id || null);
-      } catch (loadError) {
+      } catch {
         setError("Не удалось загрузить данные админки.");
       } finally {
         setLoading(false);
@@ -605,11 +766,24 @@ function AdminDashboard({ onLogout }) {
 
   const usersCount = users.length;
   const documentsCount = useMemo(() => users.reduce((sum, user) => sum + user.documentsCount, 0), [users]);
-  const safeAccessRequests = Array.isArray(accessRequests) ? accessRequests : [];
+  const safeAccessRequests = useMemo(() => (Array.isArray(accessRequests) ? accessRequests : []), [accessRequests]);
   const newAccessRequestsCount = useMemo(
     () => safeAccessRequests.filter((request) => request.status === "new").length,
     [safeAccessRequests]
   );
+  const requestCountsByUser = useMemo(() => {
+    const counts = new Map();
+
+    safeAccessRequests.forEach((request) => {
+      if (!request.userId || request.status !== "new") {
+        return;
+      }
+
+      counts.set(request.userId, (counts.get(request.userId) || 0) + 1);
+    });
+
+    return counts;
+  }, [safeAccessRequests]);
 
   function handleSaved(updatedUser) {
     setSelectedUser(null);
@@ -625,6 +799,7 @@ function AdminDashboard({ onLogout }) {
   function handleSelectUser(userId) {
     setSavedUserId(null);
     setSelectedUserId(userId);
+    setActiveTab("users");
     window.setTimeout(() => {
       userDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 0);
@@ -662,19 +837,43 @@ function AdminDashboard({ onLogout }) {
         </button>
       </header>
 
+      <nav className="admin-tabs" aria-label="Разделы админки">
+        <button
+          className={`admin-tabs__button ${activeTab === "overview" ? "admin-tabs__button--active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("overview")}
+        >
+          Обзор
+        </button>
+        <button
+          className={`admin-tabs__button ${activeTab === "users" ? "admin-tabs__button--active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("users")}
+        >
+          Пользователи
+        </button>
+        <button
+          className={`admin-tabs__button ${activeTab === "requests" ? "admin-tabs__button--active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("requests")}
+        >
+          Заявки
+        </button>
+      </nav>
+
       <section className="admin-overview">
-        <div>
+        <button type="button" onClick={() => setActiveTab("users")}>
           <span>Пользователи</span>
           <strong>{usersCount}</strong>
-        </div>
-        <div>
+        </button>
+        <button type="button" onClick={() => setActiveTab("overview")}>
           <span>Записи</span>
           <strong>{documentsCount}</strong>
-        </div>
-        <div>
+        </button>
+        <button type="button" onClick={() => setActiveTab("requests")}>
           <span>Новые заявки</span>
           <strong>{newAccessRequestsCount}</strong>
-        </div>
+        </button>
       </section>
 
       {loading ? (
@@ -683,21 +882,29 @@ function AdminDashboard({ onLogout }) {
         <p className="admin-error">{error}</p>
       ) : (
         <>
-          <AdminAccessRequests
-            requests={safeAccessRequests}
-            loading={requestsLoading}
-            onMarkReviewed={handleMarkRequestReviewed}
-            onSelectUser={handleSelectUser}
-          />
-          <div className="admin-layout" ref={userDetailsRef}>
-            <AdminUsersList
+          {activeTab === "overview" && <AdminSettingsPanel settings={settings} />}
+
+          {activeTab === "requests" && (
+            <AdminAccessRequests
+              requests={safeAccessRequests}
+              loading={requestsLoading}
+              onMarkReviewed={handleMarkRequestReviewed}
+              onSelectUser={handleSelectUser}
+            />
+          )}
+
+          {activeTab === "users" && (
+            <div className="admin-layout" ref={userDetailsRef}>
+              <AdminUsersList
               users={users}
               selectedUserId={selectedId}
               savedUserId={savedUserId}
+              requestCountsByUser={requestCountsByUser}
               onSelectUser={handleSelectUser}
             />
-            <AdminUserDetails user={selectedUser} onSaved={handleSaved} />
-          </div>
+              <AdminUserDetails user={selectedUser} onSaved={handleSaved} />
+            </div>
+          )}
         </>
       )}
     </main>
@@ -713,7 +920,7 @@ function AdminPage() {
       setChecking(true);
       const session = await getAdminSession();
       setAuthenticated(Boolean(session.authenticated));
-    } catch (error) {
+    } catch {
       setAuthenticated(false);
     } finally {
       setChecking(false);

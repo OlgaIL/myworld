@@ -1326,22 +1326,16 @@ button {
 }
 
 .cabinet-empty-state {
-  padding: 34px 26px 38px;
+  padding: 20px;
+}
+
+.cabinet-empty-state__meta {
+  padding: 0 20px 20px;
   border-bottom: 1px solid #e4e7ec;
 }
 
-.cabinet-empty-state h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.cabinet-empty-state p {
-  margin: 12px 0 0;
-  color: #475467;
-  font-size: 16px;
-  line-height: 1.55;
+.cabinet-empty-state__meta .upload-panel__counter {
+  margin-top: 0;
 }
 
 .access-request {
@@ -1520,6 +1514,95 @@ button {
 
 .guest-hero {
   background: #fff;
+}
+
+.upload-zone {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  min-height: 300px;
+  padding: 34px 28px 28px;
+  border: 1px dashed #a9bfea;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7ff 100%);
+  color: #1f2937;
+  font: inherit;
+  text-align: center;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.upload-zone:hover:not(:disabled) {
+  border-color: #6f96e8;
+  background: #f0f6ff;
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
+}
+
+.upload-zone:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 3px;
+}
+
+.upload-zone:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.upload-zone__plus {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 18px;
+  border: 1px solid #c9d8f8;
+  border-radius: 50%;
+  background: #fff;
+  color: #2563eb;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.1);
+}
+
+.upload-zone__plus svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+.upload-zone__title {
+  color: #172033;
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.upload-zone__action {
+  margin-top: 6px;
+  color: #2563eb;
+  font-size: 15px;
+}
+
+.upload-zone__description {
+  max-width: 560px;
+  margin-top: 20px;
+  color: #475467;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.upload-zone__formats {
+  margin-top: 10px;
+  color: #7a8496;
+  font-size: 12px;
+}
+
+.upload-zone__footnote {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #dce6f7;
+  color: #667085;
+  font-size: 13px;
 }
 
 .guest-hero__eyebrow {
@@ -2498,8 +2581,9 @@ button {
 .admin-login,
 .admin-users,
 .admin-access-requests,
+.admin-settings,
 .admin-user-details,
-.admin-overview > div {
+.admin-overview > button {
   border: 1px solid #e4e8f0;
   border-radius: 14px;
   background: #fff;
@@ -2547,6 +2631,29 @@ button {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-tabs__button {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #d7dce5;
+  border-radius: 10px;
+  background: #fff;
+  color: #475467;
+}
+
+.admin-tabs__button:hover,
+.admin-tabs__button--active {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
 }
 
 .admin-field {
@@ -2629,12 +2736,13 @@ button {
   margin-bottom: 20px;
 }
 
-.admin-overview > div,
+.admin-overview > button,
 .admin-stats > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 14px;
+  text-align: left;
 }
 
 .admin-overview span,
@@ -2649,6 +2757,11 @@ button {
   font-size: 20px;
 }
 
+.admin-overview > button:hover {
+  border-color: #b8c1d1;
+  background: #f8fafc;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
@@ -2658,11 +2771,13 @@ button {
 
 .admin-users,
 .admin-access-requests,
+.admin-settings,
 .admin-user-details {
   padding: 18px;
 }
 
-.admin-access-requests {
+.admin-access-requests,
+.admin-settings {
   margin-bottom: 18px;
 }
 
@@ -2777,6 +2892,76 @@ button {
   color: #027a48;
 }
 
+.admin-settings__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-settings__card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e4e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.admin-settings__card h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+}
+
+.admin-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-settings__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.admin-settings__row strong {
+  min-width: 0;
+  color: #111827;
+  font-size: 13px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.admin-settings__row > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.admin-settings__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-settings__pill--active {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
 .admin-users__list {
   display: flex;
   flex-direction: column;
@@ -2822,6 +3007,23 @@ button {
   color: #111827;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.admin-user-row__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-user-row__request {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #027a48;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .admin-user-row__side {
@@ -3002,6 +3204,7 @@ button {
   .admin-layout,
   .admin-overview,
   .admin-stats,
+  .admin-settings__grid,
   .admin-access-form__grid {
     grid-template-columns: 1fr;
   }
@@ -3193,6 +3396,12 @@ button {
     padding-left: 0;
   }
 
+  .cabinet-empty-state,
+  .cabinet-empty-state__meta {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
   .gallery__empty--cabinet {
     padding: 0;
   }
@@ -3217,6 +3426,36 @@ button {
 }
 
 @media (max-width: 700px) {
+  .upload-zone {
+    min-height: 250px;
+    padding: 26px 18px 22px;
+    border-radius: 14px;
+  }
+
+  .upload-zone__plus {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 14px;
+  }
+
+  .upload-zone__plus svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .upload-zone__title {
+    font-size: 19px;
+  }
+
+  .upload-zone__description {
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  .upload-zone__footnote {
+    margin-top: 14px;
+    padding-top: 13px;
+  }
   .guest-login-cta {
     align-items: flex-start;
     flex-direction: column;

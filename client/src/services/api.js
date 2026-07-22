@@ -12,12 +12,12 @@ export function getAuthProviders() {
   return axios.get(`${API_URL}/api/auth-providers`).then((res) => res.data);
 }
 
-export function loginWithGoogle() {
-  window.location.href = `${API_URL}/auth/google`;
-}
+export function loginWithProvider(providerId) {
+  if (!/^[a-z][a-z0-9_-]*$/.test(String(providerId || ""))) {
+    return;
+  }
 
-export function loginWithYandex() {
-  window.location.href = `${API_URL}/auth/yandex`;
+  window.location.href = `${API_URL}/auth/${encodeURIComponent(providerId)}`;
 }
 
 export function logout() {

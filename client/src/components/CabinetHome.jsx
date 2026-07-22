@@ -43,20 +43,22 @@ function CabinetHome({
 }) {
   return (
     <>
-      <section className="upload-panel upload-panel--cabinet">
-        <button
-          className="guest-upload-button"
-          type="button"
-          onClick={onRequestUpload}
-          disabled={uploading || !recordUploadAllowed}
-        >
-          Загрузить запись
-        </button>
-        <p className="guest-hero__counter upload-panel__counter">
-          Загружено записей: {recordsUsed}
-        </p>
-        {!uploading && <AccessLimitMessage user={user} />}
-      </section>
+      {photosCount > 0 && (
+        <section className="upload-panel upload-panel--cabinet">
+          <button
+            className="guest-upload-button"
+            type="button"
+            onClick={onRequestUpload}
+            disabled={uploading || !recordUploadAllowed}
+          >
+            Загрузить запись
+          </button>
+          <p className="guest-hero__counter upload-panel__counter">
+            Загружено записей: {recordsUsed}
+          </p>
+          {!uploading && <AccessLimitMessage user={user} />}
+        </section>
+      )}
 
       {photosCount > 0 && (
         <section className="cabinet-filter">
@@ -146,7 +148,19 @@ function CabinetHome({
           onSelectTag={onSelectTag}
         />
       ) : (
-        <CabinetEmptyState />
+        <>
+          <CabinetEmptyState
+            uploading={uploading}
+            uploadAllowed={recordUploadAllowed}
+            onUpload={onRequestUpload}
+          />
+          <div className="cabinet-empty-state__meta">
+            <p className="guest-hero__counter upload-panel__counter">
+              Загружено записей: {recordsUsed}
+            </p>
+            {!uploading && <AccessLimitMessage user={user} />}
+          </div>
+        </>
       )}
 
       <input

@@ -2,9 +2,22 @@ import passport from "passport";
 import axios from "axios";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as OAuth2Strategy } from "passport-oauth2";
-import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
+import {
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  VK_CLIENT_ID,
+  VK_CLIENT_SECRET,
+  YANDEX_CLIENT_ID,
+  YANDEX_CLIENT_SECRET
+} from "../config/private-env.js";
 import { isAuthProviderEnabled, SERVER_URL } from "../config/env.js";
-import { findUserById, mapUserForSession, upsertGoogleUser, upsertYandexUser } from "../repositories/usersRepository.js";
+import {
+  findUserById,
+  mapUserForSession,
+  upsertGoogleUser,
+  upsertVkUser,
+  upsertYandexUser
+} from "../repositories/usersRepository.js";
 
 if (isAuthProviderEnabled("google") && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   passport.use(
@@ -81,6 +94,68 @@ if (isAuthProviderEnabled("yandex") && YANDEX_CLIENT_ID && YANDEX_CLIENT_SECRET)
   };
 
   passport.use("yandex", yandexStrategy);
+}
+
+if (isAuthProviderEnabled("vk") && VK_CLIENT_ID && VK_CLIENT_SECRET) {
+  const vkStrategy = new OAuth2Strategy(
+    {
+      authorizationURL: "https://id.vk.com/authorize",
+      tokenURL: "https://id.vk.com/oauth2/auth",
+      clientID: VK_CLIENT_ID,
+      clientSecret: VK_CLIENT_SECRET,
+      callbackURL: `${SERVER_URL}/auth/vk/callback`,
+      scope: ["vkid.personal_info", "email"],
+      scopeSeparator: " ",
+      state: true,
+      pkce: true
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const vkId = profile.user_id || profile.id || profile.sub;
+        if (!vkId) {
+          return done(new Error("VK ID did not return a user identifier"));
+        }
+
+        const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.name || "User";
+        const appUser = await upsertVkUser({
+          vkId: String(vkId),
+          email: profile.email || null,
+          displayName,
+          avatarUrl: profile.avatar || profile.picture || null
+        });
+
+        return done(null, mapUserForSession(appUser));
+      } catch (error) {
+        return done(error);
+      }
+    }
+  );
+
+  vkStrategy.tokenParams = function tokenParams(options) {
+    return {
+      device_id: options.deviceId,
+      state: options.callbackState
+    };
+  };
+
+  vkStrategy.userProfile = async function userProfile(accessToken, done) {
+    try {
+      const response = await axios.post(
+        "https://id.vk.com/oauth2/user_info",
+        new URLSearchParams({ access_token: accessToken, client_id: VK_CLIENT_ID }),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          timeout: 10000
+        }
+      );
+
+      done(null, response.data?.user || response.data);
+    } catch (error) {
+      done(error);
+    }
+  };
+
+  passport.use("vk", vkStrategy);
 }
 
 passport.serializeUser((user, done) => done(null, user.id));
