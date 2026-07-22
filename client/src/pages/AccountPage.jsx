@@ -74,7 +74,7 @@ function getAccountStatusHeading(user) {
 
 function AccountPage() {
   const location = useLocation();
-  const { user, authProviders, authLoading, login, loginWithYandex, logout, reloadUser } = useAuthContext();
+  const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuthContext();
   const {
     legalAgreementOpen,
     requestLegalAgreement,
@@ -141,12 +141,8 @@ function AccountPage() {
     }
   }
 
-  function requestLogin() {
-    requestLegalAgreement(login);
-  }
-
-  function requestYandexLogin() {
-    requestLegalAgreement(loginWithYandex);
+  function requestProviderLogin(providerId) {
+    requestLegalAgreement(() => loginWithProvider(providerId));
   }
 
   if (authLoading) {
@@ -161,8 +157,7 @@ function AccountPage() {
           recordsUsed={0}
           recordLimit={0}
           authProviders={authProviders}
-          onLogin={requestLogin}
-          onYandexLogin={requestYandexLogin}
+          onProviderLogin={requestProviderLogin}
           onLogout={logout}
         />
         <main className="account-page">
@@ -190,8 +185,7 @@ function AccountPage() {
         recordsUsed={Number(user.recordsUsed || 0)}
         recordLimit={Number(user.recordLimit || 0)}
         authProviders={authProviders}
-        onLogin={requestLogin}
-        onYandexLogin={requestYandexLogin}
+        onProviderLogin={requestProviderLogin}
         onLogout={logout}
         profileLinkEnabled={false}
       />

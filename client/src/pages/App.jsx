@@ -21,7 +21,7 @@ import { getPhotoUrl } from "../services/api";
 function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
-  const { user, authProviders, authLoading, login, loginWithYandex, logout, reloadUser } = useAuth();
+  const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuth();
   const {
     legalAgreementOpen,
     requestLegalAgreement,
@@ -92,13 +92,9 @@ function App() {
     toggleTags
   } = useCabinetFilters(photos);
 
-  const requestLogin = useCallback(() => {
-    requestLegalAgreement(login);
-  }, [login, requestLegalAgreement]);
-
-  const requestYandexLogin = useCallback(() => {
-    requestLegalAgreement(loginWithYandex);
-  }, [loginWithYandex, requestLegalAgreement]);
+  const requestProviderLogin = useCallback((providerId) => {
+    requestLegalAgreement(() => loginWithProvider(providerId));
+  }, [loginWithProvider, requestLegalAgreement]);
 
   const requestCabinetUpload = useCallback(() => {
     requestLegalAgreement(() => fileInputRef.current?.click());
@@ -153,8 +149,7 @@ function App() {
         onOpenImage={setActivePhoto}
         onOpenDocument={setActiveGuestDocument}
         onUploadAnother={openGuestUpload}
-        onLogin={requestLogin}
-        onYandexLogin={requestYandexLogin}
+        onProviderLogin={requestProviderLogin}
         authProviders={authProviders}
       />
     );
@@ -171,8 +166,7 @@ function App() {
         recordsUsed={recordsUsed}
         recordLimit={recordLimit}
         authProviders={authProviders}
-        onLogin={requestLogin}
-        onYandexLogin={requestYandexLogin}
+        onProviderLogin={requestProviderLogin}
         onLogout={logout}
       />
 

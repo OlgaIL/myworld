@@ -8,6 +8,22 @@ export const AUTH_PROVIDERS = (process.env.AUTH_PROVIDERS || "google,yandex")
   .map((provider) => provider.trim().toLowerCase())
   .filter(Boolean);
 
+function readOptionalBoolean(value) {
+  if (value === undefined || value === "") {
+    return null;
+  }
+
+  return String(value).toLowerCase() === "true";
+}
+
+const AUTH_PROVIDER_FLAGS = {
+  google: readOptionalBoolean(process.env.GOOGLE_AUTH_ENABLED),
+  yandex: readOptionalBoolean(process.env.YANDEX_AUTH_ENABLED),
+  vk: readOptionalBoolean(process.env.VK_AUTH_ENABLED),
+  sber: readOptionalBoolean(process.env.SBER_AUTH_ENABLED),
+  mts: readOptionalBoolean(process.env.MTS_AUTH_ENABLED)
+};
+
 export const OCR_PROVIDER = process.env.OCR_PROVIDER || "google";
 export const AI_PROVIDER = process.env.AI_PROVIDER || "openai";
 export const PROCESSING_MODE_OVERRIDE = (process.env.PROCESSING_MODE_OVERRIDE || "auto").toLowerCase();
@@ -47,5 +63,10 @@ export const PROCESSING_ALLOWLIST_EMAILS = (process.env.PROCESSING_ALLOWLIST_EMA
   .filter(Boolean);
 
 export function isAuthProviderEnabled(provider) {
-  return AUTH_PROVIDERS.includes(String(provider || "").toLowerCase());
+  const providerId = String(provider || "").toLowerCase();
+  const explicitFlag = AUTH_PROVIDER_FLAGS[providerId];
+
+  return explicitFlag === null || explicitFlag === undefined
+    ? AUTH_PROVIDERS.includes(providerId)
+    : explicitFlag;
 }

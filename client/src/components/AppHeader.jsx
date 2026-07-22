@@ -34,8 +34,7 @@ function AppHeader({
   recordsUsed,
   recordLimit,
   authProviders,
-  onLogin,
-  onYandexLogin,
+  onProviderLogin,
   onLogout,
   profileLinkEnabled = true
 }) {
@@ -50,7 +49,7 @@ function AppHeader({
           <Link className="topbar__link" to="/about">
             О проекте
           </Link>
-          <AuthMenu providers={authProviders} onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+          <AuthMenu providers={authProviders} onProviderLogin={onProviderLogin} />
         </div>
       ) : (
         <div className="profile">

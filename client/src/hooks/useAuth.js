@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAuthProviders, getCurrentUser, loginWithGoogle, loginWithYandex, logout } from "../services/api";
+import { getAuthProviders, getCurrentUser, loginWithProvider, logout } from "../services/api";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -27,7 +27,7 @@ export function useAuth() {
         setLoading(true);
         const [currentUser, providers] = await Promise.all([
           getCurrentUser(),
-          getAuthProviders().catch(() => [{ id: "yandex", label: "Яндекс" }])
+          getAuthProviders().catch(() => [])
         ]);
         setUser(currentUser);
         setAuthProviders(Array.isArray(providers) ? providers : []);
@@ -39,17 +39,15 @@ export function useAuth() {
     loadInitialAuthState();
   }, []);
 
-  const defaultLogin = authProviders.some((provider) => provider.id === "google")
-    ? loginWithGoogle
-    : loginWithYandex;
+  const defaultProvider = authProviders[0];
+  const defaultLogin = () => defaultProvider && loginWithProvider(defaultProvider.id);
 
   return {
     user,
     authProviders,
     authLoading: loading,
     login: defaultLogin,
-    loginWithGoogle,
-    loginWithYandex,
+    loginWithProvider,
     logout,
     reloadUser: () => loadUser({ showLoading: false })
   };

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { CLIENT_URL, isAuthProviderEnabled } from "../config/env.js";
-import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET } from "../config/private-env.js";
+import { CLIENT_URL } from "../config/env.js";
+import { getConfiguredAuthProviders, isAuthProviderConfigured } from "../auth/providers.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { mapUserForSession, updateUserLegalAgreement } from "../repositories/usersRepository.js";
@@ -11,80 +11,100 @@ import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess 
 const router = Router();
 const LEGAL_AGREEMENT_VERSION = "2026-07-15";
 
-function getConfiguredAuthProviders() {
-  return [
-    {
-      id: "google",
-      label: "Google",
-      enabled: isAuthProviderEnabled("google") && Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET)
-    },
-    {
-      id: "yandex",
-      label: "Яндекс",
-      enabled: isAuthProviderEnabled("yandex") && Boolean(YANDEX_CLIENT_ID && YANDEX_CLIENT_SECRET)
+function redirectWithAuthError(res, providerId, errorCode = "oauth_failed") {
+  const target = new URL(CLIENT_URL || "/", "http://localhost");
+  target.searchParams.set("auth_error", errorCode);
+  target.searchParams.set("auth_provider", providerId);
+  return res.redirect(CLIENT_URL ? target.toString() : `${target.pathname}${target.search}`);
+}
+
+function requireConfiguredProvider(providerId) {
+  return (req, res, next) => {
+    if (!isAuthProviderConfigured(providerId)) {
+      return redirectWithAuthError(res, providerId, "provider_not_configured");
     }
-  ].filter((provider) => provider.enabled);
+
+    return next();
+  };
+}
+
+function authenticateProviderCallback(providerId, getOptions = () => ({})) {
+  return (req, res, next) => {
+    req.app.get("passport").authenticate(providerId, getOptions(req), (error, user) => {
+      if (error || !user) {
+        return redirectWithAuthError(res, providerId);
+      }
+
+      return req.logIn(user, (loginError) => {
+        if (loginError) {
+          return redirectWithAuthError(res, providerId);
+        }
+
+        return next();
+      });
+    })(req, res, next);
+  };
+}
+
+async function finishLogin(req, res) {
+  try {
+    await claimGuestDocumentForUser(req);
+  } catch (error) {
+    console.error("Guest claim after login failed:", error.message);
+  }
+
+  res.redirect(CLIENT_URL || "/");
+}
+
+function redirectPartnerSetupRequired(providerId) {
+  return (req, res) => redirectWithAuthError(res, providerId, "partner_setup_required");
 }
 
 router.get("/api/auth-providers", (req, res) => {
-  res.json(getConfiguredAuthProviders().map(({ id, label }) => ({ id, label })));
+  res.json(getConfiguredAuthProviders());
 });
 
-router.get("/auth/google", (req, res, next) => {
-  if (!isAuthProviderEnabled("google") || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    return res.status(404).send("Google login is not available");
-  }
-
+router.get("/auth/google", requireConfiguredProvider("google"), (req, res, next) => {
   req.app.get("passport").authenticate("google", { scope: ["profile", "email"] })(req, res, next);
 });
 
-router.get("/auth/yandex", (req, res, next) => {
-  if (!isAuthProviderEnabled("yandex") || !YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET) {
-    return res.status(503).send("Yandex login is not configured");
-  }
-
+router.get("/auth/yandex", requireConfiguredProvider("yandex"), (req, res, next) => {
   req.app.get("passport").authenticate("yandex")(req, res, next);
 });
 
+router.get("/auth/vk", requireConfiguredProvider("vk"), (req, res, next) => {
+  req.app.get("passport").authenticate("vk")(req, res, next);
+});
+
+router.get("/auth/sber", requireConfiguredProvider("sber"), redirectPartnerSetupRequired("sber"));
+router.get("/auth/mts", requireConfiguredProvider("mts"), redirectPartnerSetupRequired("mts"));
+
 router.get(
   "/auth/google/callback",
-  (req, res, next) => {
-    if (!isAuthProviderEnabled("google") || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      return res.redirect(CLIENT_URL);
-    }
-
-    req.app.get("passport").authenticate("google", { failureRedirect: "/" })(req, res, next);
-  },
-  async (req, res) => {
-    try {
-      await claimGuestDocumentForUser(req);
-    } catch (error) {
-      console.error("Guest claim after login failed:", error);
-    }
-
-    res.redirect(CLIENT_URL);
-  }
+  requireConfiguredProvider("google"),
+  authenticateProviderCallback("google"),
+  finishLogin
 );
 
 router.get(
   "/auth/yandex/callback",
-  (req, res, next) => {
-    if (!isAuthProviderEnabled("yandex") || !YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET) {
-      return res.redirect(CLIENT_URL);
-    }
-
-    req.app.get("passport").authenticate("yandex", { failureRedirect: "/" })(req, res, next);
-  },
-  async (req, res) => {
-    try {
-      await claimGuestDocumentForUser(req);
-    } catch (error) {
-      console.error("Guest claim after Yandex login failed:", error);
-    }
-
-    res.redirect(CLIENT_URL);
-  }
+  requireConfiguredProvider("yandex"),
+  authenticateProviderCallback("yandex"),
+  finishLogin
 );
+
+router.get(
+  "/auth/vk/callback",
+  requireConfiguredProvider("vk"),
+  authenticateProviderCallback("vk", (req) => ({
+    deviceId: req.query.device_id,
+    callbackState: req.query.state
+  })),
+  finishLogin
+);
+
+router.get("/auth/sber/callback", requireConfiguredProvider("sber"), redirectPartnerSetupRequired("sber"));
+router.get("/auth/mts/callback", requireConfiguredProvider("mts"), redirectPartnerSetupRequired("mts"));
 
 router.get("/api/me", async (req, res) => {
   if (!req.user) {

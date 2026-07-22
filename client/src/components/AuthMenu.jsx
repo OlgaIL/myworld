@@ -1,26 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { getAuthProviderMeta } from "../config/authProviders";
+import "./AuthProviders.css";
 
-const authProviderMeta = {
-  google: {
-    icon: "G",
-    title: "Войти через Google",
-    iconClassName: ""
-  },
-  yandex: {
-    icon: "Я",
-    title: "Войти через Яндекс",
-    iconClassName: "auth-menu__icon--yandex"
-  }
-};
-
-function AuthMenu({ providers = [], onGoogleLogin, onYandexLogin, className = "" }) {
+function AuthMenu({ providers = [], onProviderLogin, className = "" }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const visibleProviders = Array.isArray(providers) ? providers : [];
-  const loginHandlers = {
-    google: onGoogleLogin,
-    yandex: onYandexLogin
-  };
 
   useEffect(() => {
     if (!open) {
@@ -66,18 +51,14 @@ function AuthMenu({ providers = [], onGoogleLogin, onYandexLogin, className = ""
       {open && (
         <div className="auth-menu__dropdown">
           {visibleProviders.map((provider) => {
-            const meta = authProviderMeta[provider.id] || {
-              icon: provider.label?.[0] || "?",
-              title: `Войти через ${provider.label || provider.id}`,
-              iconClassName: ""
-            };
+            const meta = getAuthProviderMeta(provider);
 
             return (
               <button
                 className="auth-menu__option"
                 type="button"
                 key={provider.id}
-                onClick={() => handleLogin(loginHandlers[provider.id])}
+                onClick={() => handleLogin(() => onProviderLogin?.(provider.id))}
                 title={meta.title}
               >
                 <span className={`auth-menu__icon ${meta.iconClassName}`.trim()} aria-hidden="true">

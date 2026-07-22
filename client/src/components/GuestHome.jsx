@@ -3,11 +3,11 @@ import AuthProviderButtons from "./AuthProviderButtons";
 import LegalConsentText from "./LegalConsentText";
 import UploadZone from "./UploadZone";
 
-function GuestLimitNotice({ authProviders, onLogin, onYandexLogin }) {
+function GuestLimitNotice({ authProviders, onProviderLogin }) {
   return (
     <div className="guest-auth-notice">
       <span>Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в аккаунт.</span>
-      <AuthProviderButtons providers={authProviders} onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+      <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
     </div>
   );
 }
@@ -24,8 +24,7 @@ function GuestHome({
   onOpenImage,
   onOpenDocument,
   onUploadAnother,
-  onLogin,
-  onYandexLogin,
+  onProviderLogin,
   authProviders
 }) {
   const uploadAllowed = access?.uploadAllowed !== false;
@@ -53,12 +52,12 @@ function GuestHome({
             {showAuthForError ? (
               <div className="guest-auth-notice">
                 <span>{error}</span>
-                <AuthProviderButtons providers={authProviders} onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
               </div>
             ) : error || uploadMessage ? (
               <p>{error || uploadMessage}</p>
             ) : (
-              <GuestLimitNotice authProviders={authProviders} onLogin={onLogin} onYandexLogin={onYandexLogin} />
+              <GuestLimitNotice authProviders={authProviders} onProviderLogin={onProviderLogin} />
             )}
           </div>
         )}
@@ -87,7 +86,7 @@ function GuestHome({
             <section className="guest-login-cta">
               <p>Чтобы сохранить ваши записи и продолжить работу, войдите в аккаунт.</p>
               <div className="guest-login-cta__actions">
-                <AuthProviderButtons providers={authProviders} onGoogleLogin={onLogin} onYandexLogin={onYandexLogin} />
+                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
               </div>
             </section>
           </>
@@ -100,8 +99,7 @@ function GuestHome({
             <AuthProviderButtons
               className="auth-provider-buttons--center"
               providers={authProviders}
-              onGoogleLogin={onLogin}
-              onYandexLogin={onYandexLogin}
+              onProviderLogin={onProviderLogin}
             />
           </section>
         ) : null}

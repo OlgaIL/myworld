@@ -84,6 +84,82 @@ export async function upsertYandexUser({ yandexId, email, displayName, avatarUrl
   return result.rows[0];
 }
 
+async function upsertProviderUser({ providerColumn, providerId, email, displayName, avatarUrl }) {
+  const allowedProviderColumns = new Set(["vk_id", "sber_id", "mts_id"]);
+  if (!allowedProviderColumns.has(providerColumn)) {
+    throw new Error("Unsupported auth provider");
+  }
+
+  const normalizedName = displayName || "User";
+  const existingByProvider = await query(`select * from users where ${providerColumn} = $1`, [providerId]);
+
+  if (existingByProvider.rows[0]) {
+    const result = await query(
+      `
+        update users
+        set
+          email = coalesce($2, email),
+          display_name = $3,
+          avatar_url = coalesce($4, avatar_url),
+          updated_at = now()
+        where ${providerColumn} = $1
+        returning *
+      `,
+      [providerId, email || null, normalizedName, avatarUrl || null]
+    );
+
+    return result.rows[0];
+  }
+
+  if (email) {
+    const existingByEmail = await query(
+      "select * from users where lower(email) = lower($1) order by created_at asc limit 1",
+      [email]
+    );
+
+    if (existingByEmail.rows[0] && !existingByEmail.rows[0][providerColumn]) {
+      const result = await query(
+        `
+          update users
+          set
+            ${providerColumn} = $2,
+            display_name = $3,
+            avatar_url = coalesce($4, avatar_url),
+            updated_at = now()
+          where id = $1
+          returning *
+        `,
+        [existingByEmail.rows[0].id, providerId, normalizedName, avatarUrl || null]
+      );
+
+      return result.rows[0];
+    }
+  }
+
+  const result = await query(
+    `
+      insert into users (${providerColumn}, email, display_name, avatar_url)
+      values ($1, $2, $3, $4)
+      returning *
+    `,
+    [providerId, email || null, normalizedName, avatarUrl || null]
+  );
+
+  return result.rows[0];
+}
+
+export function upsertVkUser({ vkId, email, displayName, avatarUrl }) {
+  return upsertProviderUser({ providerColumn: "vk_id", providerId: vkId, email, displayName, avatarUrl });
+}
+
+export function upsertSberUser({ sberId, email, displayName, avatarUrl }) {
+  return upsertProviderUser({ providerColumn: "sber_id", providerId: sberId, email, displayName, avatarUrl });
+}
+
+export function upsertMtsUser({ mtsId, email, displayName, avatarUrl }) {
+  return upsertProviderUser({ providerColumn: "mts_id", providerId: mtsId, email, displayName, avatarUrl });
+}
+
 export async function findUserById(id) {
   const result = await query("select * from users where id = $1", [id]);
   return result.rows[0] || null;
@@ -276,6 +352,9 @@ export function mapUserForSession(user) {
     id: user.id,
     googleId: user.google_id,
     yandexId: user.yandex_id,
+    vkId: user.vk_id,
+    sberId: user.sber_id,
+    mtsId: user.mts_id,
     email: user.email,
     displayName: user.display_name,
     avatarUrl: user.avatar_url,
