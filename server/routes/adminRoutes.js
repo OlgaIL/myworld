@@ -1,8 +1,50 @@
 import { Router } from "express";
 import { timingSafeEqual } from "crypto";
-import { ADMIN_ENABLED, ADMIN_LOGIN, ADMIN_PASSWORD } from "../config/env.js";
+import {
+  ADMIN_ENABLED,
+  ADMIN_LOGIN,
+  ADMIN_PASSWORD,
+  AUTH_PROVIDERS,
+  GOOGLE_OCR_ENABLED,
+  GUEST_DOCUMENT_LIMIT,
+  GUEST_DOCUMENT_TTL_HOURS,
+  OPENAI_ENABLED,
+  OPENAI_MODEL,
+  PROCESSING_ALLOWLIST_EMAILS,
+  PROCESSING_ENABLED,
+  PROCESSING_FREE_MODE,
+  PROCESSING_GUEST_MODE,
+  PROCESSING_MODE_OVERRIDE,
+  PROCESSING_PAID_MODE,
+  PROCESSING_STANDARD_AI_PROVIDER,
+  PROCESSING_STANDARD_OCR_PROVIDER,
+  USER_RECORD_LIMIT,
+  YANDEX_AI_ENABLED,
+  YANDEX_GPT_MODEL_URI,
+  YANDEX_OCR_ENABLED,
+  YANDEX_OCR_LANGUAGE_CODES,
+  YANDEX_OCR_MODEL,
+  isAuthProviderEnabled
+} from "../config/env.js";
+import {
+  GOOGLE_APPLICATION_CREDENTIALS,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  MTS_CLIENT_ID,
+  MTS_CLIENT_SECRET,
+  OPENAI_API_KEY,
+  SBER_CLIENT_ID,
+  SBER_CLIENT_SECRET,
+  VK_CLIENT_ID,
+  VK_CLIENT_SECRET,
+  YANDEX_API_KEY,
+  YANDEX_CLIENT_ID,
+  YANDEX_CLIENT_SECRET,
+  YANDEX_FOLDER_ID
+} from "../config/private-env.js";
 import { listAccessRequestsForAdmin, updateAccessRequestStatus } from "../repositories/accessRequestsRepository.js";
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
+import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 
 const router = Router();
 
@@ -71,6 +113,94 @@ function mapAdminAccessRequest(request) {
   };
 }
 
+function getAuthProviderSettings() {
+  return [
+    {
+      id: "google",
+      label: "Google",
+      enabled: isAuthProviderEnabled("google"),
+      configured: Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET)
+    },
+    {
+      id: "yandex",
+      label: "Яндекс",
+      enabled: isAuthProviderEnabled("yandex"),
+      configured: Boolean(YANDEX_CLIENT_ID && YANDEX_CLIENT_SECRET)
+    },
+    {
+      id: "vk",
+      label: "VK ID",
+      enabled: isAuthProviderEnabled("vk"),
+      configured: Boolean(VK_CLIENT_ID && VK_CLIENT_SECRET)
+    },
+    {
+      id: "sber",
+      label: "Сбер ID",
+      enabled: isAuthProviderEnabled("sber"),
+      configured: Boolean(SBER_CLIENT_ID && SBER_CLIENT_SECRET)
+    },
+    {
+      id: "mts",
+      label: "МТС ID",
+      enabled: isAuthProviderEnabled("mts"),
+      configured: Boolean(MTS_CLIENT_ID && MTS_CLIENT_SECRET)
+    }
+  ];
+}
+
+function getAdminSettings() {
+  return {
+    auth: {
+      providersFromEnv: AUTH_PROVIDERS,
+      providers: getAuthProviderSettings()
+    },
+    processing: {
+      enabled: PROCESSING_ENABLED,
+      modeOverride: PROCESSING_MODE_OVERRIDE,
+      guestMode: PROCESSING_GUEST_MODE,
+      freeMode: PROCESSING_FREE_MODE,
+      paidMode: PROCESSING_PAID_MODE,
+      standardOcrProvider: PROCESSING_STANDARD_OCR_PROVIDER,
+      standardAiProvider: PROCESSING_STANDARD_AI_PROVIDER,
+      allowlistEnabled: PROCESSING_ALLOWLIST_EMAILS.length > 0,
+      allowlistCount: PROCESSING_ALLOWLIST_EMAILS.length,
+      providers: {
+        googleOcr: {
+          enabled: GOOGLE_OCR_ENABLED,
+          configured: Boolean(GOOGLE_APPLICATION_CREDENTIALS)
+        },
+        yandexOcr: {
+          enabled: YANDEX_OCR_ENABLED,
+          configured: Boolean(YANDEX_API_KEY && YANDEX_FOLDER_ID),
+          languageCodes: YANDEX_OCR_LANGUAGE_CODES,
+          model: YANDEX_OCR_MODEL || "default"
+        },
+        yandexAi: {
+          enabled: YANDEX_AI_ENABLED,
+          configured: Boolean(YANDEX_API_KEY && YANDEX_FOLDER_ID),
+          modelUriConfigured: Boolean(YANDEX_GPT_MODEL_URI)
+        },
+        openai: {
+          enabled: OPENAI_ENABLED,
+          configured: Boolean(OPENAI_API_KEY),
+          model: OPENAI_MODEL
+        }
+      },
+      pipelines: {
+        guest: getProcessingPipelineForUser(null, { audience: "guest" }),
+        free: getProcessingPipelineForUser(null, { audience: "free" }),
+        paid: getProcessingPipelineForUser(null, { audience: "paid" })
+      }
+    },
+    limits: {
+      guestDocumentLimit: GUEST_DOCUMENT_LIMIT,
+      userRecordLimit: USER_RECORD_LIMIT,
+      guestDocumentTtlHours: GUEST_DOCUMENT_TTL_HOURS,
+      uploadFileLimitMb: 10
+    }
+  };
+}
+
 router.post("/admin-api/login", (req, res) => {
   if (!isAdminConfigured()) {
     return res.status(404).json({ error: "ADMIN_DISABLED" });
@@ -109,6 +239,10 @@ router.get("/admin-api/users", requireAdmin, async (req, res) => {
 router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {
   const requests = await listAccessRequestsForAdmin();
   return res.json(requests.map(mapAdminAccessRequest));
+});
+
+router.get("/admin-api/settings", requireAdmin, (req, res) => {
+  return res.json(getAdminSettings());
 });
 
 router.patch("/admin-api/access-requests/:id/status", requireAdmin, async (req, res) => {

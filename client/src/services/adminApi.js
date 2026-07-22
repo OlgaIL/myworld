@@ -24,6 +24,10 @@ export function getAdminAccessRequests() {
   return axios.get(`${API_URL}/admin-api/access-requests`).then((res) => res.data);
 }
 
+export function getAdminSettings() {
+  return axios.get(`${API_URL}/admin-api/settings`).then((res) => res.data);
+}
+
 export function getAdminUser(id) {
   return axios.get(`${API_URL}/admin-api/users/${id}`).then((res) => res.data);
 }

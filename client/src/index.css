@@ -2498,8 +2498,9 @@ button {
 .admin-login,
 .admin-users,
 .admin-access-requests,
+.admin-settings,
 .admin-user-details,
-.admin-overview > div {
+.admin-overview > button {
   border: 1px solid #e4e8f0;
   border-radius: 14px;
   background: #fff;
@@ -2547,6 +2548,29 @@ button {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-tabs__button {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #d7dce5;
+  border-radius: 10px;
+  background: #fff;
+  color: #475467;
+}
+
+.admin-tabs__button:hover,
+.admin-tabs__button--active {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
 }
 
 .admin-field {
@@ -2629,12 +2653,13 @@ button {
   margin-bottom: 20px;
 }
 
-.admin-overview > div,
+.admin-overview > button,
 .admin-stats > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 14px;
+  text-align: left;
 }
 
 .admin-overview span,
@@ -2649,6 +2674,11 @@ button {
   font-size: 20px;
 }
 
+.admin-overview > button:hover {
+  border-color: #b8c1d1;
+  background: #f8fafc;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
@@ -2658,11 +2688,13 @@ button {
 
 .admin-users,
 .admin-access-requests,
+.admin-settings,
 .admin-user-details {
   padding: 18px;
 }
 
-.admin-access-requests {
+.admin-access-requests,
+.admin-settings {
   margin-bottom: 18px;
 }
 
@@ -2777,6 +2809,76 @@ button {
   color: #027a48;
 }
 
+.admin-settings__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-settings__card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e4e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.admin-settings__card h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+}
+
+.admin-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-settings__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.admin-settings__row strong {
+  min-width: 0;
+  color: #111827;
+  font-size: 13px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.admin-settings__row > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.admin-settings__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-settings__pill--active {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
 .admin-users__list {
   display: flex;
   flex-direction: column;
@@ -2822,6 +2924,23 @@ button {
   color: #111827;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.admin-user-row__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-user-row__request {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #027a48;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .admin-user-row__side {
@@ -3002,6 +3121,7 @@ button {
   .admin-layout,
   .admin-overview,
   .admin-stats,
+  .admin-settings__grid,
   .admin-access-form__grid {
     grid-template-columns: 1fr;
   }
