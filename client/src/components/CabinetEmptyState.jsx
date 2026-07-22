@@ -1,12 +1,15 @@
-function CabinetEmptyState() {
+import UploadZone from "./UploadZone";
+
+function CabinetEmptyState({ uploading, uploadAllowed, onUpload }) {
   return (
     <section className="cabinet-empty-state">
-      <h2>Загрузите ваши записи</h2>
-      <p>
-        Просто загрузите скан или фото нужного текста.
-        <br />
-        Прочитаем текст, обработаем и сохраним результат.
-      </p>
+      <UploadZone
+        title="Загрузите первую запись"
+        description="Фото конспекта, заметки, документа или любого текста — мы превратим его в удобную запись."
+        uploading={uploading}
+        disabled={uploading || !uploadAllowed}
+        onUpload={onUpload}
+      />
     </section>
   );
 }

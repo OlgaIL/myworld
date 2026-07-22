@@ -1,6 +1,7 @@
 import GuestDocumentCard from "./GuestDocumentCard";
 import AuthProviderButtons from "./AuthProviderButtons";
 import LegalConsentText from "./LegalConsentText";
+import UploadZone from "./UploadZone";
 
 function GuestLimitNotice({ authProviders, onLogin, onYandexLogin }) {
   return (
@@ -35,25 +36,16 @@ function GuestHome({
   return (
     <section className="guest-shell">
       <div className="guest-hero">
-        <h2 className="guest-hero__title">Загрузите ваши записи</h2>
-        <p className="guest-hero__text">
-          Просто загрузите скан или фото нужного текста.
-          <br />
-          Прочитаем текст, обработаем и сохраним результат.
-        </p>
-
-        <div className="guest-hero__actions">
-          {uploadAllowed && (
-            <button
-              className="guest-upload-button"
-              type="button"
-              onClick={() => onUpload()}
-              disabled={uploading}
-            >
-              {uploading ? "Загрузка..." : "Загрузить запись"}
-            </button>
-          )}
-        </div>
+        {uploadAllowed && (
+          <UploadZone
+            title="Перетащите сюда фото записи"
+            description="Мы распознаем текст, оформим результат и сохраним его в архиве."
+            footnote={`До ${documentLimit} обработок без регистрации.`}
+            uploading={uploading}
+            disabled={uploading}
+            onUpload={onUpload}
+          />
+        )}
         {uploadAllowed && <LegalConsentText />}
 
         {(uploadMessage || error || !uploadAllowed) && (
