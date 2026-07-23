@@ -1516,6 +1516,30 @@ button {
   background: #fff;
 }
 
+.guest-hero__intro {
+  max-width: 780px;
+  margin: 0 auto 20px;
+  text-align: center;
+}
+
+.guest-hero__intro .guest-hero__title {
+  margin-bottom: 10px;
+  color: #172033;
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+}
+
+.guest-hero__intro .guest-hero__text {
+  font-size: 17px;
+}
+
+.guest-hero .upload-zone {
+  min-height: 270px;
+  padding-top: 26px;
+  padding-bottom: 24px;
+}
+
 .upload-zone {
   display: flex;
   align-items: center;
@@ -1591,6 +1615,60 @@ button {
   line-height: 1.5;
 }
 
+.upload-zone__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  margin-top: 16px;
+  padding: 10px 20px;
+  border: 1px solid #b8cdf5;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
+}
+
+.upload-zone__status-panel {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+}
+
+.upload-zone__status-mark {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 18px;
+  border: 1px solid #c9d8f8;
+  border-radius: 50%;
+  background: #fff;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.1);
+}
+
+.upload-zone__status {
+  margin-top: 12px;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.upload-zone__status-hint {
+  margin-top: 10px;
+  color: #667085;
+  font-size: 13px;
+}
+
 .upload-zone__formats {
   margin-top: 10px;
   color: #7a8496;
@@ -1603,6 +1681,13 @@ button {
   border-top: 1px solid #dce6f7;
   color: #667085;
   font-size: 13px;
+}
+
+.guest-hero__signup-bonus {
+  margin: 12px 0 0;
+  color: #475467;
+  font-size: 14px;
+  text-align: center;
 }
 
 .guest-hero__eyebrow {
@@ -3382,9 +3467,10 @@ button {
     padding: 0;
   }
 
-  .gallery.guest-documents-list {
-    padding-top: 22px;
-  }
+.gallery.guest-documents-list {
+  scroll-margin-top: 12px;
+  padding-top: 22px;
+}
 
   .upload-panel {
     padding-right: 0;
@@ -3425,17 +3511,57 @@ button {
   }
 }
 
+@media (max-width: 900px) {
+  .guest-login-cta {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .guest-login-cta__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 700px) {
+  .guest-hero__intro {
+    margin-bottom: 14px;
+    text-align: left;
+  }
+
+  .guest-hero__intro .guest-hero__title {
+    margin-bottom: 8px;
+    font-size: 27px;
+    line-height: 1.16;
+  }
+
+  .guest-hero__intro .guest-hero__text {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
   .upload-zone {
     min-height: 250px;
     padding: 26px 18px 22px;
     border-radius: 14px;
   }
 
+  .guest-hero .upload-zone {
+    min-height: 230px;
+    padding: 20px 16px 18px;
+  }
+
   .upload-zone__plus {
     width: 50px;
     height: 50px;
     margin-bottom: 14px;
+  }
+
+  .guest-hero .upload-zone__plus {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
   }
 
   .upload-zone__plus svg {
@@ -3452,20 +3578,45 @@ button {
     font-size: 14px;
   }
 
+  .guest-hero .upload-zone__description {
+    margin-top: 12px;
+  }
+
+  .upload-zone__button {
+    min-height: 40px;
+    margin-top: 12px;
+    padding: 9px 18px;
+  }
+
+  .upload-zone__status-mark {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .upload-zone__status {
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
   .upload-zone__footnote {
     margin-top: 14px;
     padding-top: 13px;
   }
-  .guest-login-cta {
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: flex-start;
-    margin-right: 0;
-    margin-left: 0;
+
+  .guest-hero .upload-zone__footnote {
+    margin-top: 10px;
+    padding-top: 10px;
   }
 
-  .guest-login-cta__actions {
-    justify-content: flex-start;
+  .guest-hero__signup-bonus {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .guest-login-cta {
+    margin-right: 0;
+    margin-left: 0;
   }
 
   .auth-menu--guest .auth-menu__dropdown {
