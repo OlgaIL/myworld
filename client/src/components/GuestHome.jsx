@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import GuestDocumentCard from "./GuestDocumentCard";
 import AuthProviderButtons from "./AuthProviderButtons";
 import LegalConsentText from "./LegalConsentText";
@@ -27,35 +28,90 @@ function GuestHome({
   onProviderLogin,
   authProviders
 }) {
+  const documentsListRef = useRef(null);
+  const wasUploadingRef = useRef(false);
+  const documentsBeforeUploadRef = useRef("");
   const uploadAllowed = access?.uploadAllowed !== false;
   const documentsUsed = Number(access?.documentsUsed || 0);
   const documentLimit = Number(access?.documentLimit || 5);
   const showAuthForError = Boolean(error && error.toLowerCase().includes("войдите"));
 
+  useEffect(() => {
+    const documentsSignature = documents
+      .map((document) => `${document.id}:${document.updatedAt || ""}:${document.status || ""}`)
+      .join("|");
+
+    if (uploading) {
+      if (!wasUploadingRef.current) {
+        wasUploadingRef.current = true;
+        documentsBeforeUploadRef.current = documentsSignature;
+      }
+
+      return undefined;
+    }
+
+    if (!wasUploadingRef.current) {
+      return undefined;
+    }
+
+    wasUploadingRef.current = false;
+
+    if (
+      loading ||
+      documents.length === 0 ||
+      documentsSignature === documentsBeforeUploadRef.current ||
+      !window.matchMedia("(max-width: 700px)").matches
+    ) {
+      return undefined;
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const frameId = window.requestAnimationFrame(() => {
+      documentsListRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start"
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [documents, loading, uploading]);
+
   return (
     <section className="guest-shell">
       <div className="guest-hero">
+        <header className="guest-hero__intro">
+          <h1 className="guest-hero__title">Переведите фото записи в текст</h1>
+          <p className="guest-hero__text">
+            Получите аккуратно оформленную запись и сохраните её в личном архиве — чтобы легко найти позже.
+          </p>
+        </header>
+
         {uploadAllowed && (
           <UploadZone
-            title="Перетащите сюда фото записи"
-            description="Мы распознаем текст, оформим результат и сохраним его в архиве."
-            footnote={`До ${documentLimit} обработок без регистрации.`}
+            title="Перетащите сюда фото записи или выберите файл"
+            description="Мы распознаем текст, оформим результат и сохраним его в архиве"
+            actionLabel="Выбрать фото"
+            footnote={`До ${documentLimit} обработок без регистрации`}
+            statusMessage={uploadMessage}
             uploading={uploading}
             disabled={uploading}
             onUpload={onUpload}
           />
         )}
+        {uploadAllowed && (
+          <p className="guest-hero__signup-bonus">После регистрации — ещё 30 обработок бесплатно</p>
+        )}
         {uploadAllowed && <LegalConsentText />}
 
-        {(uploadMessage || error || !uploadAllowed) && (
+        {(error || !uploadAllowed) && (
           <div className="guest-hero__notice">
             {showAuthForError ? (
               <div className="guest-auth-notice">
                 <span>{error}</span>
                 <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
               </div>
-            ) : error || uploadMessage ? (
-              <p>{error || uploadMessage}</p>
+            ) : error ? (
+              <p>{error}</p>
             ) : (
               <GuestLimitNotice authProviders={authProviders} onProviderLogin={onProviderLogin} />
             )}
@@ -70,7 +126,7 @@ function GuestHome({
           </section>
         ) : documents.length > 0 ? (
           <>
-            <section className="gallery guest-documents-list">
+            <section ref={documentsListRef} className="gallery guest-documents-list">
               {documents.map((document) => (
                 <GuestDocumentCard
                   key={document.id}
