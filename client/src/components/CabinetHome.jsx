@@ -136,17 +136,19 @@ function CabinetHome({
       )}
 
       {photosCount > 0 || pendingPhotos.length > 0 ? (
-        <Gallery
-          photos={filteredPhotos}
-          pendingPhotos={pendingPhotos}
-          onOpen={onOpenImage}
-          onOpenDocument={onOpenDocument}
-          onDelete={onDelete}
-          uploadMessage={uploadMessage}
-          emptyMessage="Ничего не найдено."
-          onSelectCategory={onSelectCategory}
-          onSelectTag={onSelectTag}
-        />
+        <div className={photosCount === 0 && pendingPhotos.length > 0 ? "cabinet-first-upload" : ""}>
+          <Gallery
+            photos={filteredPhotos}
+            pendingPhotos={pendingPhotos}
+            onOpen={onOpenImage}
+            onOpenDocument={onOpenDocument}
+            onDelete={onDelete}
+            uploadMessage={uploadMessage}
+            emptyMessage="Ничего не найдено."
+            onSelectCategory={onSelectCategory}
+            onSelectTag={onSelectTag}
+          />
+        </div>
       ) : (
         <>
           <CabinetEmptyState

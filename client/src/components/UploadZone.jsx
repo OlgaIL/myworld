@@ -48,7 +48,7 @@ function UploadZone({
           {!uploading && !actionLabel && <span className="upload-zone__action">или выберите файл</span>}
           <span className="upload-zone__description">{description}</span>
           {!uploading && actionLabel && <span className="upload-zone__button">{actionLabel}</span>}
-          <span className="upload-zone__formats">JPEG, PNG, WEBP до 20 МБ</span>
+          <span className="upload-zone__formats">JPEG, PNG, WEBP до 10 МБ</span>
           {footnote && <span className="upload-zone__footnote">{footnote}</span>}
         </>
       )}
