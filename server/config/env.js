@@ -57,6 +57,8 @@ export const GUEST_DOCUMENT_TTL_HOURS = Number(process.env.GUEST_DOCUMENT_TTL_HO
 export const ADMIN_ENABLED = process.env.ADMIN_ENABLED === "true";
 export const ADMIN_LOGIN = process.env.ADMIN_LOGIN || "";
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+export const YOOKASSA_ENABLED = process.env.YOOKASSA_ENABLED === "true";
+export const YOOKASSA_RETURN_URL = process.env.YOOKASSA_RETURN_URL || `${CLIENT_URL || ""}/account`;
 export const PROCESSING_ALLOWLIST_EMAILS = (process.env.PROCESSING_ALLOWLIST_EMAILS || "")
   .split(",")
   .map((email) => email.trim().toLowerCase())

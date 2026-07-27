@@ -1163,6 +1163,25 @@ button {
   border-bottom: 0;
 }
 
+.account-auth-buttons {
+  margin-top: 18px;
+}
+
+.account-auth-buttons .auth-provider-buttons__label {
+  display: none;
+}
+
+.account-card .account-auth-buttons span {
+  display: inline-flex;
+  margin-top: 0;
+}
+
+.account-auth-buttons .auth-provider-buttons__option {
+  min-height: 42px;
+  padding: 9px 14px;
+  border-radius: 8px;
+}
+
 .account-card.account-card--signin h1 {
   font-size: 25px;
 }

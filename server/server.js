@@ -23,6 +23,7 @@ import authRoutes from "./routes/authRoutes.js";
 import accessRequestRoutes from "./routes/accessRequestRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
 
 let databaseStatus = {
@@ -81,6 +82,7 @@ app.use(authRoutes);
 app.use(accessRequestRoutes);
 app.use(adminRoutes);
 app.use(guestRoutes);
+app.use(paymentRoutes);
 app.use(photoRoutes);
 
 app.use(express.static(clientDistDir));

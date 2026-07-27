@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
-import { createAccessRequest } from "../services/api";
+import { createAccessRequest, createYookassaPayment } from "../services/api";
 
 const packages = [
   {
@@ -11,7 +11,7 @@ const packages = [
     price: "290 ₽",
     note: "5.8 ₽ за обработку",
     text: "Для небольшого архива: записи, чеки, фото документов и тексты на потом.",
-    action: "Запросить пакет"
+    action: "Оплатить"
   },
   {
     title: "Стандарт",
@@ -19,7 +19,7 @@ const packages = [
     price: "590 ₽",
     note: "3.9 ₽ за обработку",
     text: "Хороший вариант, если нужно разобрать конспекты, заметки и накопившиеся фото текстов.",
-    action: "Запросить пакет",
+    action: "Оплатить",
     featured: true,
     badge: "Хороший выбор"
   },
@@ -29,7 +29,7 @@ const packages = [
     price: "1 490 ₽",
     note: "2.9 ₽ за обработку",
     text: "Для больших архивов, учебных материалов и регулярной работы с записями.",
-    action: "Запросить пакет"
+    action: "Оплатить"
   }
 ];
 
@@ -56,12 +56,29 @@ function PackagesPage() {
   async function requestPackage(item) {
     try {
       setRequestStatus((current) => ({ ...current, [item.title]: "sending" }));
-      await createAccessRequest({
-        message: `Запрос пакета: ${item.title}, ${item.value}, ${item.price}`
-      });
-      setRequestStatus((current) => ({ ...current, [item.title]: "sent" }));
-      navigate(`/account?requestedPackage=${encodeURIComponent(item.title)}`);
+      const payment = await createYookassaPayment({ packageTitle: item.title });
+
+      if (payment?.confirmationUrl) {
+        window.location.href = payment.confirmationUrl;
+        return;
+      }
+
+      throw new Error("PAYMENT_CONFIRMATION_URL_MISSING");
     } catch (error) {
+      if (error.response?.status === 503 && error.response?.data?.error === "YOOKASSA_DISABLED") {
+        try {
+          await createAccessRequest({
+            message: `Запрос пакета: ${item.title}, ${item.value}, ${item.price}`
+          });
+          setRequestStatus((current) => ({ ...current, [item.title]: "sent" }));
+          navigate(`/account?requestedPackage=${encodeURIComponent(item.title)}`);
+          return;
+        } catch {
+          setRequestStatus((current) => ({ ...current, [item.title]: "error" }));
+          return;
+        }
+      }
+
       setRequestStatus((current) => ({ ...current, [item.title]: "error" }));
     }
   }
@@ -103,7 +120,7 @@ function PackagesPage() {
             <p>{item.text}</p>
             {!user && !authLoading ? (
               <Link className="packages-card__button" to="/account">
-                Войти и запросить
+                Войти и оплатить
               </Link>
             ) : (
               <button
@@ -120,7 +137,7 @@ function PackagesPage() {
               </button>
             )}
             {requestStatus[item.title] === "error" && (
-              <p className="packages-card__status packages-card__status--error">Не удалось отправить заявку</p>
+              <p className="packages-card__status packages-card__status--error">Не удалось перейти к оплате</p>
             )}
             {requestStatus[item.title] === "sent" && (
               <p className="packages-card__status">

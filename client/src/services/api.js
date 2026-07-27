@@ -191,6 +191,10 @@ export function createAccessRequest({ message }) {
     });
 }
 
+export function createYookassaPayment({ packageTitle }) {
+  return axios.post(`${API_URL}/api/payments/yookassa`, { packageTitle }).then((res) => res.data);
+}
+
 export function getAccessRequests() {
   return axios
     .get(`${API_URL}/api/access-requests`)

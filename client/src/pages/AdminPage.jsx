@@ -699,6 +699,19 @@ function AdminSettingsPanel({ settings }) {
         </div>
 
         <div className="admin-settings__card">
+          <h3>Платежи</h3>
+          <div className="admin-settings__list">
+            <div className="admin-settings__row">
+              <span>ЮKassa</span>
+              <ProviderStatus
+                enabled={settings.payments?.yookassa?.enabled}
+                configured={settings.payments?.yookassa?.configured}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-settings__card">
           <h3>Лимиты</h3>
           <div className="admin-settings__list">
             <div className="admin-settings__row">

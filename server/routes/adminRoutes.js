@@ -19,6 +19,7 @@ import {
   PROCESSING_STANDARD_AI_PROVIDER,
   PROCESSING_STANDARD_OCR_PROVIDER,
   USER_RECORD_LIMIT,
+  YOOKASSA_ENABLED,
   YANDEX_AI_ENABLED,
   YANDEX_GPT_MODEL_URI,
   YANDEX_OCR_ENABLED,
@@ -37,6 +38,8 @@ import {
   SBER_CLIENT_SECRET,
   VK_CLIENT_ID,
   VK_CLIENT_SECRET,
+  YOOKASSA_SECRET_KEY,
+  YOOKASSA_SHOP_ID,
   YANDEX_API_KEY,
   YANDEX_CLIENT_ID,
   YANDEX_CLIENT_SECRET,
@@ -197,6 +200,12 @@ function getAdminSettings() {
       userRecordLimit: USER_RECORD_LIMIT,
       guestDocumentTtlHours: GUEST_DOCUMENT_TTL_HOURS,
       uploadFileLimitMb: 10
+    },
+    payments: {
+      yookassa: {
+        enabled: YOOKASSA_ENABLED,
+        configured: Boolean(YOOKASSA_SHOP_ID && YOOKASSA_SECRET_KEY)
+      }
     }
   };
 }

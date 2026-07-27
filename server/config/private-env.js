@@ -14,3 +14,5 @@ export const GOOGLE_APPLICATION_CREDENTIALS = process.env.GOOGLE_APPLICATION_CRE
 export const YANDEX_API_KEY = process.env.YANDEX_API_KEY;
 export const YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID;
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+export const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID;
+export const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY;

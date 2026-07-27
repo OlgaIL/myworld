@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
+import AuthProviderButtons from "../components/AuthProviderButtons";
 import LegalAgreementModal from "../components/LegalAgreementModal";
 import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
@@ -164,6 +165,11 @@ function AccountPage() {
           <section className="account-card account-card--signin">
             <h1>Личный кабинет</h1>
             <p>Для доступа к Личному кабинету войдите в аккаунт.</p>
+            <AuthProviderButtons
+              className="account-auth-buttons"
+              providers={authProviders}
+              onProviderLogin={requestProviderLogin}
+            />
           </section>
         </main>
         <PageFooter />
