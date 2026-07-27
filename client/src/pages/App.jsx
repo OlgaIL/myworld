@@ -16,6 +16,7 @@ import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
 import { useGuestUpload } from "../hooks/useGuestUpload";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
+import { trackGoal } from "../services/analytics";
 import { getPhotoUrl } from "../services/api";
 
 function App() {
@@ -93,8 +94,12 @@ function App() {
   } = useCabinetFilters(photos);
 
   const requestProviderLogin = useCallback((providerId) => {
+    if (!user && guestDocuments.length > 0) {
+      trackGoal("auth_click_after_upload", { provider: providerId });
+    }
+
     requestLegalAgreement(() => loginWithProvider(providerId));
-  }, [loginWithProvider, requestLegalAgreement]);
+  }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
 
   const requestCabinetUpload = useCallback(() => {
     requestLegalAgreement(() => fileInputRef.current?.click());

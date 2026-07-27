@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { UPLOAD_STAGE_MESSAGES } from "../constants/uploadStages";
+import { trackGoal } from "../services/analytics";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
 export function useGuestUpload({
@@ -39,11 +40,13 @@ export function useGuestUpload({
 
     let recognizingTimer = null;
     let preparingTimer = null;
+    const uploadMode = replaceDocumentIdRef.current ? "replace" : "new";
 
     try {
       setUploading(true);
       setReplacingDocumentId(replaceDocumentIdRef.current);
       setError("");
+      trackGoal("guest_upload_start", { upload_mode: uploadMode });
       onUploadStart?.();
       setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
       const uploadFile = await prepareImageForUpload(file);
@@ -57,6 +60,7 @@ export function useGuestUpload({
       await addGuestDocument(uploadFile, {
         replaceDocumentId: replaceDocumentIdRef.current
       });
+      trackGoal("guest_upload_success", { upload_mode: uploadMode });
       window.clearTimeout(recognizingTimer);
       window.clearTimeout(preparingTimer);
       recognizingTimer = null;

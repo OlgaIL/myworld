@@ -38,3 +38,11 @@ export function trackPageView(path) {
 
   window.ym(Number(YANDEX_METRIKA_ID), "hit", path);
 }
+
+export function trackGoal(goalName, params = {}) {
+  if (!shouldUseYandexMetrika || !window.ym || !goalName) {
+    return;
+  }
+
+  window.ym(Number(YANDEX_METRIKA_ID), "reachGoal", goalName, params);
+}

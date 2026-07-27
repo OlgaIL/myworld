@@ -110,6 +110,24 @@ function getRequestStatusLabel(status) {
   return labels[status] || status;
 }
 
+const packagePresets = {
+  Мини: 50,
+  Стандарт: 150,
+  Макси: 500
+};
+
+function getPackageTitleFromRequest(request) {
+  const match = String(request?.message || "").match(/^Запрос пакета:\s*([^,]+)/);
+  const title = match?.[1]?.trim();
+
+  return packagePresets[title] ? title : "";
+}
+
+function getLatestPackageTitle(requests) {
+  const packageRequest = requests.find((request) => getPackageTitleFromRequest(request));
+  return getPackageTitleFromRequest(packageRequest);
+}
+
 function CopyIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -480,7 +498,7 @@ function AdminUserDetails({ user, onSaved }) {
   );
 }
 
-function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }) {
+function AdminAccessRequests({ requests, loading, onGrantPackage, onMarkReviewed, onSelectUser }) {
   const newRequestsCount = requests.filter((request) => request.status === "new").length;
   const groupedRequests = useMemo(() => groupAccessRequestsByUser(requests), [requests]);
 
@@ -510,12 +528,15 @@ function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }
             const latestRequest = sortedRequests[0] || null;
             const latestRequestDate = sortedRequests[0] ? formatDateTime(sortedRequests[0].createdAt) : "";
             const olderRequestDates = sortedRequests.slice(1).map((request) => formatDateTime(request.createdAt)).join(", ");
+            const packageTitle = getLatestPackageTitle(sortedRequests);
+            const packageAmount = packagePresets[packageTitle] || 0;
 
             return (
             <article className="admin-access-request" key={group.id}>
               <div className="admin-access-request__main">
                 <strong>{group.email || group.displayName || `Пользователь ${group.userId}`}</strong>
                 <span>{group.displayName || "Без имени"} · {group.documentsCount} записей</span>
+                {packageTitle && <span className="admin-access-request__package">Пакет «{packageTitle}» · +{packageAmount}</span>}
                 {latestRequest?.message && <p>{latestRequest.message}</p>}
                 <div className="admin-access-request__dates">
                   <strong>{latestRequestDate}</strong>
@@ -533,6 +554,15 @@ function AdminAccessRequests({ requests, loading, onMarkReviewed, onSelectUser }
                   <button className="admin-button" type="button" onClick={() => onSelectUser(group.userId)}>
                     Пользователь
                   </button>
+                  {packageAmount > 0 && newRequestIds.length > 0 && (
+                    <button
+                      className="admin-button admin-button--primary"
+                      type="button"
+                      onClick={() => onGrantPackage(group.userId, packageTitle, packageAmount, newRequestIds)}
+                    >
+                      Начислить +{packageAmount}
+                    </button>
+                  )}
                   {newRequestIds.length > 0 && (
                     <button className="admin-button" type="button" onClick={() => onMarkReviewed(newRequestIds)}>
                       Отметить обработанной
@@ -818,6 +848,32 @@ function AdminDashboard({ onLogout }) {
     ));
   }
 
+  async function handleGrantPackage(userId, packageTitle, amount, requestIds) {
+    if (!userId || !amount) {
+      return;
+    }
+
+    const user = selectedUser?.id === userId ? selectedUser : await getAdminUser(userId);
+    const updatedUser = await updateAdminUserProcessingAccess(userId, {
+      processingEnabled: false,
+      processingQuota: Number(user.processingQuota || 0) + amount,
+      processingUsed: Number(user.processingUsed || 0),
+      accessExpiresAt: user.accessExpiresAt || null
+    });
+
+    setSelectedUser(updatedUser);
+    setSelectedUserId(userId);
+    setSavedUserId(userId);
+    setUsers((currentUsers) => currentUsers.map((item) => (item.id === userId ? updatedUser : item)));
+    await handleMarkRequestReviewed(requestIds);
+
+    window.setTimeout(() => {
+      setSavedUserId((currentSavedUserId) => (currentSavedUserId === userId ? null : currentSavedUserId));
+    }, 3500);
+
+    console.info(`Granted package ${packageTitle} to user ${userId}`);
+  }
+
   async function handleLogout() {
     await logoutAdmin();
     onLogout();
@@ -888,6 +944,7 @@ function AdminDashboard({ onLogout }) {
             <AdminAccessRequests
               requests={safeAccessRequests}
               loading={requestsLoading}
+              onGrantPackage={handleGrantPackage}
               onMarkReviewed={handleMarkRequestReviewed}
               onSelectUser={handleSelectUser}
             />
