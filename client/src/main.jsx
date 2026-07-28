@@ -9,6 +9,7 @@ import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 import ConsentPage from "./pages/ConsentPage";
 import PackagesPage from "./pages/PackagesPage";
+import PhotoToTextLanding from "./pages/PhotoToTextLanding";
 import PrivacyPage from "./pages/PrivacyPage";
 import RequisitesPage from "./pages/RequisitesPage";
 import TermsPage from "./pages/TermsPage";
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           }
         />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/photo-to-text" element={<PhotoToTextLanding />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route
           path="/packages"
