@@ -46,6 +46,7 @@ import {
   YANDEX_FOLDER_ID
 } from "../config/private-env.js";
 import { listAccessRequestsForAdmin, updateAccessRequestStatus } from "../repositories/accessRequestsRepository.js";
+import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 
@@ -113,6 +114,26 @@ function mapAdminAccessRequest(request) {
     documentsCount: Number(request.documents_count || 0),
     createdAt: request.created_at,
     updatedAt: request.updated_at
+  };
+}
+
+function mapAdminProcessingCreditEvent(event) {
+  return {
+    id: event.id,
+    userId: event.user_id,
+    email: event.email || "",
+    displayName: event.display_name || "",
+    source: event.source,
+    packageTitle: event.package_title || "",
+    amount: Number(event.amount || 0),
+    note: event.note || "",
+    createdBy: event.created_by || "",
+    createdAt: event.created_at,
+    paymentId: event.payment_id || null,
+    providerPaymentId: event.provider_payment_id || "",
+    amountValue: event.amount_value === null || event.amount_value === undefined ? null : Number(event.amount_value),
+    currency: event.currency || "",
+    paymentStatus: event.payment_status || ""
   };
 }
 
@@ -250,6 +271,11 @@ router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {
   return res.json(requests.map(mapAdminAccessRequest));
 });
 
+router.get("/admin-api/processing-credits", requireAdmin, async (req, res) => {
+  const events = await listProcessingCreditEventsForAdmin();
+  return res.json(events.map(mapAdminProcessingCreditEvent));
+});
+
 router.get("/admin-api/settings", requireAdmin, (req, res) => {
   return res.json(getAdminSettings());
 });
@@ -301,6 +327,40 @@ router.patch("/admin-api/users/:id/processing-access", requireAdmin, async (req,
 
   const adminUser = await findUserForAdmin(req.params.id);
   return res.json(mapAdminUser(adminUser));
+});
+
+router.post("/admin-api/users/:id/processing-credits", requireAdmin, async (req, res) => {
+  const amount = Math.max(0, Number(req.body?.amount || 0));
+  const packageTitle = String(req.body?.packageTitle || "Пакет").trim();
+
+  if (!amount) {
+    return res.status(400).json({ error: "INVALID_AMOUNT" });
+  }
+
+  const user = await findUserForAdmin(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ error: "USER_NOT_FOUND" });
+  }
+
+  const updatedUser = await grantManualProcessingCredit({
+    userId: req.params.id,
+    packageTitle,
+    amount,
+    note: req.body?.note || "Начислено вручную в админке",
+    createdBy: ADMIN_LOGIN || "admin"
+  });
+
+  if (!updatedUser) {
+    return res.status(404).json({ error: "USER_NOT_FOUND" });
+  }
+
+  const adminUser = await findUserForAdmin(req.params.id);
+  const events = await listProcessingCreditEventsForAdmin();
+  return res.json({
+    user: mapAdminUser(adminUser || updatedUser),
+    credits: events.map(mapAdminProcessingCreditEvent)
+  });
 });
 
 export default router;

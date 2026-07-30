@@ -3331,6 +3331,16 @@ button {
   color: #027a48;
 }
 
+.admin-status--yookassa {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.admin-status--manual {
+  background: #eff6ff;
+  color: #175cd3;
+}
+
 .admin-settings__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

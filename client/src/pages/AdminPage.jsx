@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  createAdminManualProcessingCredit,
   getAdminAccessRequests,
+  getAdminProcessingCredits,
   getAdminSession,
   getAdminSettings,
   getAdminUser,
@@ -579,6 +581,67 @@ function AdminAccessRequests({ requests, loading, onGrantPackage, onMarkReviewed
   );
 }
 
+function getCreditSourceLabel(source) {
+  if (source === "yookassa") {
+    return "Оплата ЮKassa";
+  }
+
+  if (source === "manual") {
+    return "Вручную";
+  }
+
+  return source || "Источник не указан";
+}
+
+function AdminProcessingCredits({ credits = [], loading, onSelectUser }) {
+  return (
+    <section className="admin-access-requests admin-processing-credits">
+      <div className="admin-section-heading">
+        <div>
+          <h2>Начисления</h2>
+          <p className="admin-muted">История пополнений баланса обработок</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="admin-muted">Загружаем начисления...</p>
+      ) : credits.length === 0 ? (
+        <p className="admin-muted">Начислений пока нет.</p>
+      ) : (
+        <div className="admin-access-requests__list">
+          {credits.map((credit) => (
+            <article className="admin-access-request" key={credit.id}>
+              <div className="admin-access-request__main">
+                <strong>{credit.email || credit.displayName || `Пользователь ${credit.userId}`}</strong>
+                <span>{credit.displayName || "Без имени"}</span>
+                <span className="admin-access-request__package">
+                  {getCreditSourceLabel(credit.source)} · пакет «{credit.packageTitle}» · +{credit.amount}
+                </span>
+                {credit.note && <p>{credit.note}</p>}
+                {credit.amountValue !== null && credit.amountValue !== undefined && (
+                  <p>{credit.amountValue} {credit.currency || "RUB"} · платеж {credit.providerPaymentId || credit.paymentId}</p>
+                )}
+              </div>
+
+              <div className="admin-access-request__side">
+                <span className={`admin-status admin-status--${credit.source}`}>
+                  {getCreditSourceLabel(credit.source)}
+                </span>
+                <span>{formatDateTime(credit.createdAt)}</span>
+                <div className="admin-access-request__actions">
+                  <button className="admin-button" type="button" onClick={() => onSelectUser(credit.userId)}>
+                    Пользователь
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function StatusPill({ active, children }) {
   return (
     <span className={`admin-settings__pill ${active ? "admin-settings__pill--active" : ""}`}>
@@ -744,12 +807,14 @@ function AdminSettingsPanel({ settings }) {
 function AdminDashboard({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
+  const [processingCredits, setProcessingCredits] = useState([]);
   const [settings, setSettings] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [savedUserId, setSavedUserId] = useState(null);
   const [requestsLoading, setRequestsLoading] = useState(true);
+  const [creditsLoading, setCreditsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const userDetailsRef = useRef(null);
@@ -761,21 +826,25 @@ function AdminDashboard({ onLogout }) {
       try {
         setLoading(true);
         setRequestsLoading(true);
+        setCreditsLoading(true);
         setError("");
-        const [loadedUsers, loadedRequests, loadedSettings] = await Promise.all([
+        const [loadedUsers, loadedRequests, loadedSettings, loadedCredits] = await Promise.all([
           getAdminUsers(),
           getAdminAccessRequests(),
-          getAdminSettings()
+          getAdminSettings(),
+          getAdminProcessingCredits()
         ]);
         setUsers(loadedUsers);
         setAccessRequests(Array.isArray(loadedRequests) ? loadedRequests : []);
         setSettings(loadedSettings);
+        setProcessingCredits(Array.isArray(loadedCredits) ? loadedCredits : []);
         setSelectedUserId((current) => current || loadedUsers[0]?.id || null);
       } catch {
         setError("Не удалось загрузить данные админки.");
       } finally {
         setLoading(false);
         setRequestsLoading(false);
+        setCreditsLoading(false);
       }
     }
 
@@ -813,6 +882,10 @@ function AdminDashboard({ onLogout }) {
   const newAccessRequestsCount = useMemo(
     () => safeAccessRequests.filter((request) => request.status === "new").length,
     [safeAccessRequests]
+  );
+  const paidCreditsCount = useMemo(
+    () => processingCredits.filter((credit) => credit.source === "yookassa").length,
+    [processingCredits]
   );
   const requestCountsByUser = useMemo(() => {
     const counts = new Map();
@@ -866,18 +939,18 @@ function AdminDashboard({ onLogout }) {
       return;
     }
 
-    const user = selectedUser?.id === userId ? selectedUser : await getAdminUser(userId);
-    const updatedUser = await updateAdminUserProcessingAccess(userId, {
-      processingEnabled: false,
-      processingQuota: Number(user.processingQuota || 0) + amount,
-      processingUsed: Number(user.processingUsed || 0),
-      accessExpiresAt: user.accessExpiresAt || null
+    const creditResult = await createAdminManualProcessingCredit(userId, {
+      packageTitle,
+      amount,
+      note: `Ручное начисление по заявке: пакет «${packageTitle}»`
     });
+    const updatedUser = creditResult?.user || await getAdminUser(userId);
 
     setSelectedUser(updatedUser);
     setSelectedUserId(userId);
     setSavedUserId(userId);
     setUsers((currentUsers) => currentUsers.map((item) => (item.id === userId ? updatedUser : item)));
+    setProcessingCredits(Array.isArray(creditResult?.credits) ? creditResult.credits : []);
     await handleMarkRequestReviewed(requestIds);
 
     window.setTimeout(() => {
@@ -928,6 +1001,13 @@ function AdminDashboard({ onLogout }) {
         >
           Заявки
         </button>
+        <button
+          className={`admin-tabs__button ${activeTab === "credits" ? "admin-tabs__button--active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("credits")}
+        >
+          Начисления
+        </button>
       </nav>
 
       <section className="admin-overview">
@@ -942,6 +1022,10 @@ function AdminDashboard({ onLogout }) {
         <button type="button" onClick={() => setActiveTab("requests")}>
           <span>Новые заявки</span>
           <strong>{newAccessRequestsCount}</strong>
+        </button>
+        <button type="button" onClick={() => setActiveTab("credits")}>
+          <span>Оплаты ЮKassa</span>
+          <strong>{paidCreditsCount}</strong>
         </button>
       </section>
 
@@ -959,6 +1043,14 @@ function AdminDashboard({ onLogout }) {
               loading={requestsLoading}
               onGrantPackage={handleGrantPackage}
               onMarkReviewed={handleMarkRequestReviewed}
+              onSelectUser={handleSelectUser}
+            />
+          )}
+
+          {activeTab === "credits" && (
+            <AdminProcessingCredits
+              credits={processingCredits}
+              loading={creditsLoading}
               onSelectUser={handleSelectUser}
             />
           )}

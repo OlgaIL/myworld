@@ -111,9 +111,98 @@ export async function markPaymentSucceededAndCredit(providerPaymentId, rawPayloa
       [payment.user_id, Number(payment.package_amount || 0)]
     );
 
+    await client.query(
+      `
+        insert into processing_credit_events (
+          user_id,
+          payment_id,
+          source,
+          package_title,
+          amount,
+          note
+        )
+        values ($1, $2, 'yookassa', $3, $4, $5)
+        on conflict do nothing
+      `,
+      [
+        payment.user_id,
+        payment.id,
+        payment.package_title,
+        Number(payment.package_amount || 0),
+        `Оплата ЮKassa · ${payment.amount_value} ${payment.currency}`
+      ]
+    );
+
     return {
       payment: updatedPaymentResult.rows[0],
       credited: true
     };
   });
+}
+
+export async function grantManualProcessingCredit({
+  userId,
+  packageTitle,
+  amount,
+  note = "",
+  createdBy = "admin"
+}) {
+  return withTransaction(async (client) => {
+    const userResult = await client.query("select * from users where id = $1 for update", [userId]);
+    const user = userResult.rows[0] || null;
+
+    if (!user) {
+      return null;
+    }
+
+    const updatedUserResult = await client.query(
+      `
+        update users
+        set
+          processing_enabled = false,
+          processing_quota = coalesce(processing_quota, 0) + $2,
+          updated_at = now()
+        where id = $1
+        returning *
+      `,
+      [userId, amount]
+    );
+
+    await client.query(
+      `
+        insert into processing_credit_events (
+          user_id,
+          source,
+          package_title,
+          amount,
+          note,
+          created_by
+        )
+        values ($1, 'manual', $2, $3, $4, $5)
+      `,
+      [userId, packageTitle, amount, note, createdBy]
+    );
+
+    return updatedUserResult.rows[0] || null;
+  });
+}
+
+export async function listProcessingCreditEventsForAdmin() {
+  const result = await query(`
+    select
+      processing_credit_events.*,
+      users.email,
+      users.display_name,
+      payments.provider_payment_id,
+      payments.amount_value,
+      payments.currency,
+      payments.status as payment_status
+    from processing_credit_events
+    join users on users.id = processing_credit_events.user_id
+    left join payments on payments.id = processing_credit_events.payment_id
+    order by processing_credit_events.created_at desc
+    limit 200
+  `);
+
+  return result.rows;
 }

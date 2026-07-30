@@ -24,6 +24,10 @@ export function getAdminAccessRequests() {
   return axios.get(`${API_URL}/admin-api/access-requests`).then((res) => res.data);
 }
 
+export function getAdminProcessingCredits() {
+  return axios.get(`${API_URL}/admin-api/processing-credits`).then((res) => res.data);
+}
+
 export function getAdminSettings() {
   return axios.get(`${API_URL}/admin-api/settings`).then((res) => res.data);
 }
@@ -34,6 +38,10 @@ export function getAdminUser(id) {
 
 export function updateAdminUserProcessingAccess(id, access) {
   return axios.patch(`${API_URL}/admin-api/users/${id}/processing-access`, access).then((res) => res.data);
+}
+
+export function createAdminManualProcessingCredit(id, credit) {
+  return axios.post(`${API_URL}/admin-api/users/${id}/processing-credits`, credit).then((res) => res.data);
 }
 
 export function updateAdminAccessRequestStatus(id, status) {
