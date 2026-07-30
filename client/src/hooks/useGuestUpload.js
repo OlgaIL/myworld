@@ -57,10 +57,15 @@ export function useGuestUpload({
       preparingTimer = window.setTimeout(() => {
         setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
       }, 4500);
-      await addGuestDocument(uploadFile, {
+      const guestState = await addGuestDocument(uploadFile, {
         replaceDocumentId: replaceDocumentIdRef.current
       });
-      trackGoal("guest_upload_success", { upload_mode: uploadMode });
+      const processedDocument = guestState?.document;
+      const readableText = processedDocument?.cleanText || processedDocument?.text || "";
+
+      if (processedDocument?.status === "processed" && readableText.trim()) {
+        trackGoal("guest_upload_success", { upload_mode: uploadMode });
+      }
       window.clearTimeout(recognizingTimer);
       window.clearTimeout(preparingTimer);
       recognizingTimer = null;

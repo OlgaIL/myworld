@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
+import AuthProviderButtons from "./AuthProviderButtons";
 
 function formatCreatedAt(value) {
   if (!value) {
@@ -64,7 +65,18 @@ function CopyButton({ label, copied, onClick }) {
   );
 }
 
-function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onSelectCategory, onSelectTag }) {
+function DocumentPage({
+  photo,
+  info,
+  copiedMap,
+  onBack,
+  onOpenImage,
+  onCopy,
+  onSelectCategory,
+  onSelectTag,
+  authProviders = [],
+  onProviderLogin
+}) {
   const [showOcrText, setShowOcrText] = useState(false);
 
   if (!photo || !info) {
@@ -87,6 +99,7 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onS
   const canShowOcrText = Boolean(ocrText.trim() && processedText.trim() && ocrText.trim() !== processedText.trim());
   const hasTags = Array.isArray(info?.tags) && info.tags.length > 0;
   const hasSideMeta = Boolean(info?.category || hasTags);
+  const showGuestSaveCta = Boolean(onProviderLogin && authProviders.length > 0);
 
   return (
     <main className="document-page">
@@ -173,6 +186,19 @@ function DocumentPage({ photo, info, copiedMap, onBack, onOpenImage, onCopy, onS
               </div>
             )}
           </section>
+
+          {showGuestSaveCta && (
+            <section className="guest-login-cta" aria-label="Сохранить запись в личном архиве">
+              <p>
+                <strong>Сохранить запись в личном архиве</strong>
+                <br />
+                После регистрации — ещё 30 обработок бесплатно.
+              </p>
+              <div className="guest-login-cta__actions">
+                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
+              </div>
+            </section>
+          )}
         </section>
 
         <aside className="document-page__side">

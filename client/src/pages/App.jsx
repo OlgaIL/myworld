@@ -137,6 +137,8 @@ function App() {
           onBack={() => setActiveGuestDocument(null)}
           onOpenImage={setActivePhoto}
           onCopy={handleDocumentCopy}
+          authProviders={authProviders}
+          onProviderLogin={requestProviderLogin}
         />
       );
     }
