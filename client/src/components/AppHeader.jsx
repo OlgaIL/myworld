@@ -22,8 +22,9 @@ function getProfileAccessText(user, recordsUsed, recordLimit) {
     return `Без ограничений до ${formatShortAccessDate(user.accessExpiresAt)}`;
   }
 
-  if (Number(user?.packageRemaining || 0) > 0) {
-    return `Пакет · ${user.packageRemaining}/${user.packageQuota} обработок`;
+  if (Number(user?.packageQuota || 0) > 0) {
+    const totalRemaining = Number(user?.recordsRemaining || 0) + Number(user?.packageRemaining || 0);
+    return `Баланс · ${totalRemaining} обработок`;
   }
 
   return `Бесплатный пакет · ${recordsUsed}/${recordLimit} обработок`;

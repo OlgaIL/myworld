@@ -50,13 +50,19 @@ const benefits = [
 
 function PackagesPage() {
   const navigate = useNavigate();
-  const { user, authLoading } = useAuthContext();
+  const { user, authLoading, reloadUser } = useAuthContext();
   const [requestStatus, setRequestStatus] = useState({});
 
   async function requestPackage(item) {
     try {
       setRequestStatus((current) => ({ ...current, [item.title]: "sending" }));
       const payment = await createYookassaPayment({ packageTitle: item.title });
+
+      if (payment?.credited) {
+        await reloadUser();
+        navigate("/account");
+        return;
+      }
 
       if (payment?.confirmationUrl) {
         window.location.href = payment.confirmationUrl;
@@ -65,6 +71,8 @@ function PackagesPage() {
 
       throw new Error("PAYMENT_CONFIRMATION_URL_MISSING");
     } catch (error) {
+      console.error("Package payment failed:", error.response?.data || error.message);
+
       if (error.response?.status === 503 && error.response?.data?.error === "YOOKASSA_DISABLED") {
         try {
           await createAccessRequest({

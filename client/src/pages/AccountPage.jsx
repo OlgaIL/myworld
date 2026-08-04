@@ -6,7 +6,15 @@ import LegalAgreementModal from "../components/LegalAgreementModal";
 import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
-import { getAccessRequests } from "../services/api";
+import { getAccessRequests, getProcessingHistory } from "../services/api";
+
+function formatDate(value) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(value));
+}
 
 function getAccessTitle(user) {
   if (user?.unlimitedAccess) {
@@ -17,11 +25,15 @@ function getAccessTitle(user) {
     return "Расширенный доступ";
   }
 
-  if (Number(user?.packageRemaining || 0) > 0) {
-    return "Пакет обработок";
+  if (Number(user?.packageQuota || 0) > 0) {
+    return "Баланс обработок";
   }
 
   return "Бесплатный пакет";
+}
+
+function getTotalRemaining(user) {
+  return Number(user?.recordsRemaining || 0) + Number(user?.packageRemaining || 0);
 }
 
 function getAccessStatus(user) {
@@ -37,8 +49,8 @@ function getAccessStatus(user) {
     return "Новые загрузки доступны";
   }
 
-  if (Number(user?.packageRemaining || 0) > 0) {
-    return `Баланс обработок: доступно ${user.packageRemaining} из ${user.packageQuota}`;
+  if (Number(user?.packageQuota || 0) > 0) {
+    return `Доступно ${getTotalRemaining(user)} обработок`;
   }
 
   if (!limit) {
@@ -62,8 +74,8 @@ function getAccountStatusHeading(user) {
     return "Текущий доступ";
   }
 
-  if (Number(user?.packageRemaining || 0) > 0) {
-    return "Текущий пакет";
+  if (Number(user?.packageQuota || 0) > 0) {
+    return "Текущий баланс";
   }
 
   if (Number(user?.recordsRemaining || 0) <= 0) {
@@ -84,10 +96,13 @@ function AccountPage() {
     legalAgreementAccepting
   } = useLegalAgreement({ user, reloadUser });
   const [accessRequests, setAccessRequests] = useState([]);
+  const [processingHistory, setProcessingHistory] = useState([]);
+  const [processingHistoryLoading, setProcessingHistoryLoading] = useState(false);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const requestedPackageFromUrl = new URLSearchParams(location.search).get("requestedPackage");
-  const packageActive = Number(user?.packageRemaining || 0) > 0;
-  const limitReached = !user?.unlimitedAccess && !user?.extendedAccessActive && !packageActive && Number(user?.recordsRemaining || 0) <= 0;
+  const totalRemaining = user ? getTotalRemaining(user) : 0;
+  const packageActive = Number(user?.packageQuota || 0) > 0;
+  const limitReached = !user?.unlimitedAccess && !user?.extendedAccessActive && totalRemaining <= 0;
   const latestPackageRequest = useMemo(
     () =>
       accessRequests.find((request) => {
@@ -108,8 +123,11 @@ function AccountPage() {
 
     if (!user) {
       setAccessRequests([]);
+      setProcessingHistory([]);
       return undefined;
     }
+
+    setProcessingHistoryLoading(true);
 
     getAccessRequests()
       .then((requests) => {
@@ -124,6 +142,24 @@ function AccountPage() {
         }
       });
 
+    getProcessingHistory()
+      .then((history) => {
+        if (!cancelled) {
+          setProcessingHistory(Array.isArray(history) ? history : []);
+        }
+      })
+      .catch((error) => {
+        console.error("Processing history load failed:", error);
+        if (!cancelled) {
+          setProcessingHistory([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setProcessingHistoryLoading(false);
+        }
+      });
+
     return () => {
       cancelled = true;
     };
@@ -133,8 +169,12 @@ function AccountPage() {
     try {
       setStatusRefreshing(true);
       await reloadUser();
-      const requests = await getAccessRequests();
+      const [requests, history] = await Promise.all([
+        getAccessRequests(),
+        getProcessingHistory()
+      ]);
       setAccessRequests(Array.isArray(requests) ? requests : []);
+      setProcessingHistory(Array.isArray(history) ? history : []);
     } catch (error) {
       console.error("Account status refresh failed:", error);
     } finally {
@@ -236,10 +276,35 @@ function AccountPage() {
           </section>
         )}
 
+        <section className="account-card">
+          <h2>История обработок</h2>
+          {processingHistoryLoading ? (
+            <p>Загружаем историю...</p>
+          ) : processingHistory.length === 0 ? (
+            <p>Истории пока нет.</p>
+          ) : (
+            <div className="account-processing-history">
+              {processingHistory.map((item) => (
+                <div className="account-processing-history__row" key={item.id}>
+                  <div>
+                    <strong>
+                      {item.createdAt && `${formatDate(item.createdAt)} `}
+                      {item.type === "legacy" && !item.createdAt && "Дата не зафиксирована · "}
+                      {item.title}
+                    </strong>
+                    {item.packageTitle && <span>Пакет «{item.packageTitle}»</span>}
+                  </div>
+                  <p>использовано {item.used} из {item.amount}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {showPackagesLink && (
           <nav className="account-actions" aria-label="Действия личного кабинета">
             <Link className="account-link" to="/packages">
-              {limitReached ? "Выбрать пакет" : packageActive ? "Пополнить пакет" : "Посмотреть другие пакеты"}
+              {limitReached ? "Выбрать пакет" : packageActive ? "Пополнить баланс" : "Посмотреть другие пакеты"}
             </Link>
           </nav>
         )}

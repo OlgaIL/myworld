@@ -207,3 +207,16 @@ export function getAccessRequests() {
       throw new Error("Сервер недоступен");
     });
 }
+
+export function getProcessingHistory() {
+  return axios
+    .get(`${API_URL}/api/processing-history`)
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err.response) {
+        throw new Error("Ошибка загрузки истории обработок");
+      }
+
+      throw new Error("Сервер недоступен");
+    });
+}

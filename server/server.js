@@ -25,6 +25,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
+import processingHistoryRoutes from "./routes/processingHistoryRoutes.js";
 
 let databaseStatus = {
   configured: isDatabaseConfigured(),
@@ -84,6 +85,7 @@ app.use(adminRoutes);
 app.use(guestRoutes);
 app.use(paymentRoutes);
 app.use(photoRoutes);
+app.use(processingHistoryRoutes);
 
 app.use(express.static(clientDistDir));
 app.use((req, res) => res.sendFile(`${clientDistDir}/index.html`));

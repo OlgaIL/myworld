@@ -81,7 +81,12 @@ export async function markPaymentSucceededAndCredit(providerPaymentId, rawPayloa
       return null;
     }
 
-    if (payment.status === "succeeded") {
+    const creditEventResult = await client.query(
+      "select id from processing_credit_events where payment_id = $1",
+      [payment.id]
+    );
+
+    if (creditEventResult.rows[0]) {
       return { payment, credited: false };
     }
 
@@ -203,6 +208,25 @@ export async function listProcessingCreditEventsForAdmin() {
     order by processing_credit_events.created_at desc
     limit 200
   `);
+
+  return result.rows;
+}
+
+export async function listProcessingCreditEventsForUser(userId) {
+  const result = await query(
+    `
+      select
+        processing_credit_events.*,
+        payments.amount_value,
+        payments.currency,
+        payments.status as payment_status
+      from processing_credit_events
+      left join payments on payments.id = processing_credit_events.payment_id
+      where processing_credit_events.user_id = $1
+      order by processing_credit_events.created_at asc
+    `,
+    [userId]
+  );
 
   return result.rows;
 }

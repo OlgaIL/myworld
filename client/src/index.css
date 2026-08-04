@@ -1590,6 +1590,33 @@ button {
   text-underline-offset: 3px;
 }
 
+.account-processing-history {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.account-processing-history__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: baseline;
+}
+
+.account-processing-history__row strong {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+.account-processing-history__row span {
+  margin-top: 4px;
+}
+
+.account-processing-history__row p {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
 .account-refresh-button:disabled {
   cursor: wait;
   opacity: 0.65;

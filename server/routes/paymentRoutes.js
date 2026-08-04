@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { Router } from "express";
-import { YOOKASSA_ENABLED, YOOKASSA_RETURN_URL } from "../config/env.js";
+import { YOOKASSA_ENABLED, YOOKASSA_MOCK_SUCCESS, YOOKASSA_RETURN_URL } from "../config/env.js";
 import { YOOKASSA_SECRET_KEY, YOOKASSA_SHOP_ID } from "../config/private-env.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import {
@@ -35,6 +35,13 @@ function isYookassaConfigured() {
   return Boolean(YOOKASSA_ENABLED && YOOKASSA_SHOP_ID && YOOKASSA_SECRET_KEY);
 }
 
+function isLocalMockEnabled(req) {
+  const hostname = String(req.hostname || "").toLowerCase();
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+
+  return YOOKASSA_MOCK_SUCCESS && isLocalhost;
+}
+
 function getReturnUrl() {
   return YOOKASSA_RETURN_URL || "/";
 }
@@ -45,67 +52,120 @@ function getPaymentPackage(packageTitle) {
 }
 
 router.post("/api/payments/yookassa", requireAuthenticatedUser, async (req, res) => {
-  if (!isYookassaConfigured()) {
-    return res.status(503).json({ error: "YOOKASSA_DISABLED" });
-  }
-
-  const paymentPackage = getPaymentPackage(req.body?.packageTitle);
-
-  if (!paymentPackage) {
-    return res.status(400).json({ error: "UNKNOWN_PACKAGE" });
-  }
-
-  const idempotenceKey = randomUUID();
-  const localPayment = await createPayment({
-    userId: req.user.id,
-    idempotenceKey,
-    packageTitle: paymentPackage.title,
-    packageAmount: paymentPackage.amount,
-    amountValue: paymentPackage.price,
-    currency: "RUB"
-  });
-
   try {
-    const yookassaPayment = await createYookassaPayment({
-      shopId: YOOKASSA_SHOP_ID,
-      secretKey: YOOKASSA_SECRET_KEY,
+    const mockEnabled = isLocalMockEnabled(req);
+
+    console.log("[payment] yookassa request", {
+      userId: req.user?.id,
+      packageTitle: req.body?.packageTitle,
+      mockEnabled,
+      yookassaEnabled: YOOKASSA_ENABLED
+    });
+
+    if (!mockEnabled && !isYookassaConfigured()) {
+      return res.status(503).json({ error: "YOOKASSA_DISABLED" });
+    }
+
+    const paymentPackage = getPaymentPackage(req.body?.packageTitle);
+
+    if (!paymentPackage) {
+      return res.status(400).json({ error: "UNKNOWN_PACKAGE" });
+    }
+
+    const idempotenceKey = randomUUID();
+    const localPayment = await createPayment({
+      userId: req.user.id,
       idempotenceKey,
+      packageTitle: paymentPackage.title,
+      packageAmount: paymentPackage.amount,
       amountValue: paymentPackage.price,
-      currency: "RUB",
-      description: `Пакет Word2you «${paymentPackage.title}»`,
-      returnUrl: getReturnUrl(),
-      metadata: {
-        localPaymentId: String(localPayment.id),
-        userId: String(req.user.id),
+      currency: "RUB"
+    });
+
+    if (mockEnabled) {
+      const mockPayment = {
+        id: `mock-${localPayment.id}-${Date.now()}`,
+        status: "succeeded",
+        paid: true,
+        amount: {
+          value: String(paymentPackage.price),
+          currency: "RUB"
+        },
+        metadata: {
+          localPaymentId: String(localPayment.id),
+          userId: String(req.user.id),
+          packageTitle: paymentPackage.title,
+          packageAmount: String(paymentPackage.amount)
+        }
+      };
+
+      await updatePaymentProviderData(localPayment.id, {
+        providerPaymentId: mockPayment.id,
+        status: mockPayment.status,
+        confirmationUrl: "",
+        rawPayload: mockPayment
+      });
+      const result = await markPaymentSucceededAndCredit(mockPayment.id, mockPayment);
+
+      console.log("[payment] mock credited", {
+        userId: req.user.id,
         packageTitle: paymentPackage.title,
-        packageAmount: String(paymentPackage.amount)
+        amount: paymentPackage.amount,
+        credited: Boolean(result?.credited)
+      });
+
+      return res.json({
+        credited: Boolean(result?.credited),
+        paymentId: mockPayment.id,
+        packageTitle: paymentPackage.title
+      });
+    }
+
+    try {
+      const yookassaPayment = await createYookassaPayment({
+        shopId: YOOKASSA_SHOP_ID,
+        secretKey: YOOKASSA_SECRET_KEY,
+        idempotenceKey,
+        amountValue: paymentPackage.price,
+        currency: "RUB",
+        description: `Пакет Word2you «${paymentPackage.title}»`,
+        returnUrl: getReturnUrl(),
+        metadata: {
+          localPaymentId: String(localPayment.id),
+          userId: String(req.user.id),
+          packageTitle: paymentPackage.title,
+          packageAmount: String(paymentPackage.amount)
+        }
+      });
+
+      const confirmationUrl = yookassaPayment.confirmation?.confirmation_url || "";
+      await updatePaymentProviderData(localPayment.id, {
+        providerPaymentId: yookassaPayment.id,
+        status: yookassaPayment.status || "pending",
+        confirmationUrl,
+        rawPayload: yookassaPayment
+      });
+
+      if (yookassaPayment.status === "succeeded") {
+        await markPaymentSucceededAndCredit(yookassaPayment.id, yookassaPayment);
       }
-    });
 
-    const confirmationUrl = yookassaPayment.confirmation?.confirmation_url || "";
-    await updatePaymentProviderData(localPayment.id, {
-      providerPaymentId: yookassaPayment.id,
-      status: yookassaPayment.status || "pending",
-      confirmationUrl,
-      rawPayload: yookassaPayment
-    });
+      if (!confirmationUrl) {
+        return res.status(502).json({ error: "YOOKASSA_CONFIRMATION_URL_MISSING" });
+      }
 
-    if (yookassaPayment.status === "succeeded") {
-      await markPaymentSucceededAndCredit(yookassaPayment.id, yookassaPayment);
+      return res.json({
+        confirmationUrl,
+        paymentId: yookassaPayment.id,
+        packageTitle: paymentPackage.title
+      });
+    } catch (error) {
+      console.error("YOOKASSA CREATE PAYMENT ERROR:", error.response?.data || error.message);
+      return res.status(502).json({ error: "YOOKASSA_PAYMENT_CREATE_FAILED" });
     }
-
-    if (!confirmationUrl) {
-      return res.status(502).json({ error: "YOOKASSA_CONFIRMATION_URL_MISSING" });
-    }
-
-    return res.json({
-      confirmationUrl,
-      paymentId: yookassaPayment.id,
-      packageTitle: paymentPackage.title
-    });
   } catch (error) {
-    console.error("YOOKASSA CREATE PAYMENT ERROR:", error.response?.data || error.message);
-    return res.status(502).json({ error: "YOOKASSA_PAYMENT_CREATE_FAILED" });
+    console.error("PAYMENT ROUTE ERROR:", error);
+    return res.status(500).json({ error: "PAYMENT_ROUTE_FAILED", message: error.message });
   }
 });
 

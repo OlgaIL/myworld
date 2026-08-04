@@ -59,6 +59,7 @@ export const ADMIN_LOGIN = process.env.ADMIN_LOGIN || "";
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 export const YOOKASSA_ENABLED = process.env.YOOKASSA_ENABLED === "true";
 export const YOOKASSA_RETURN_URL = process.env.YOOKASSA_RETURN_URL || `${CLIENT_URL || ""}/account`;
+export const YOOKASSA_MOCK_SUCCESS = process.env.YOOKASSA_MOCK_SUCCESS === "true";
 export const PROCESSING_ALLOWLIST_EMAILS = (process.env.PROCESSING_ALLOWLIST_EMAILS || "")
   .split(",")
   .map((email) => email.trim().toLowerCase())

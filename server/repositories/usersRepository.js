@@ -358,6 +358,7 @@ export function mapUserForSession(user) {
     email: user.email,
     displayName: user.display_name,
     avatarUrl: user.avatar_url,
+    createdAt: user.created_at || null,
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
