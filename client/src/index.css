@@ -3512,6 +3512,25 @@ button {
   font-weight: 700;
 }
 
+.admin-auth-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-auth-provider {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid #d8dee9;
+  border-radius: 999px;
+  background: #f7f8fa;
+  color: #344054;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .admin-user-details {
   display: flex;
   flex-direction: column;

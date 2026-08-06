@@ -79,6 +79,16 @@ function requireAdmin(req, res, next) {
   return next();
 }
 
+function getUserAuthProviders(user) {
+  return [
+    user.google_id && "Google",
+    user.yandex_id && "Яндекс",
+    user.vk_id && "VK ID",
+    user.sber_id && "Сбер ID",
+    user.mts_id && "МТС ID"
+  ].filter(Boolean);
+}
+
 function mapAdminUser(user) {
   if (!user) {
     return null;
@@ -89,6 +99,7 @@ function mapAdminUser(user) {
     email: user.email || "",
     displayName: user.display_name || "",
     avatarUrl: user.avatar_url || "",
+    authProviders: getUserAuthProviders(user),
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),

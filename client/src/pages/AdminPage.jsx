@@ -199,6 +199,13 @@ function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUse
                   )}
                 </span>
                 <span>{user.displayName || "Без имени"}</span>
+                {user.authProviders?.length > 0 && (
+                  <span className="admin-auth-providers" aria-label="Способы входа">
+                    {user.authProviders.map((provider) => (
+                      <span className="admin-auth-provider" key={provider}>{provider}</span>
+                    ))}
+                  </span>
+                )}
               </span>
               <span className="admin-user-row__side">
                 <span>{user.documentsCount} док.</span>
@@ -304,6 +311,15 @@ function AdminUserDetails({ user, onSaved }) {
             {user.email && <AdminCopyButton label="Скопировать email" value={user.email} />}
           </div>
           <p>{user.displayName || "Без имени"}</p>
+          <div className="admin-auth-providers" aria-label="Способы входа">
+            {user.authProviders?.length > 0 ? (
+              user.authProviders.map((provider) => (
+                <span className="admin-auth-provider" key={provider}>{provider}</span>
+              ))
+            ) : (
+              <span className="admin-muted">Способ входа не определён</span>
+            )}
+          </div>
         </div>
       </div>
 
