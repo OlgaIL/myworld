@@ -60,10 +60,12 @@ crontab -e
 Добавить строку:
 
 ```cron
-30 3 * * * cd /root/myworld && /root/myworld/scripts/backup-production.sh >> /root/myworld-backups/backup.log 2>&1
+30 3 * * * cd /root/myworld && S3_BUCKET=word2you-backups /root/myworld/scripts/backup-production.sh >> /root/myworld-backups/backup.log 2>&1
 ```
 
-Это будет запускать бекап каждый день в 03:30 по времени сервера.
+Это будет запускать бекап каждый день в 03:30 по времени сервера и отправлять готовую тройку файлов в приватный S3-бакет.
+
+Для S3 используется защищённый файл `/root/.s3cfg` с правами `600`. Ключи S3 не добавляются в git или cron.
 
 ## Копия вне сервера
 

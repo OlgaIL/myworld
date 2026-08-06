@@ -9,6 +9,9 @@ ENV_FILE="${ENV_FILE:-$SERVER_DIR/.env}"
 UPLOADS_DIR="${UPLOADS_DIR:-$SERVER_DIR/uploads}"
 BACKUP_DIR="${BACKUP_DIR:-/root/myworld-backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-7}"
+S3_BUCKET="${S3_BUCKET:-}"
+S3_PREFIX="${S3_PREFIX:-daily}"
+S3_CONFIG="${S3_CONFIG:-/root/.s3cfg}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Env file not found: $ENV_FILE" >&2
@@ -92,6 +95,26 @@ uploads_sha256="$(sha256sum "$uploads_tmp" | awk '{print $1}')"
 mv "$db_tmp" "$db_backup"
 mv "$uploads_tmp" "$uploads_backup"
 mv "$manifest_tmp" "$manifest"
+
+if [[ -n "$S3_BUCKET" ]]; then
+  if ! command -v s3cmd >/dev/null 2>&1; then
+    echo "s3cmd is not installed" >&2
+    exit 1
+  fi
+
+  if [[ ! -f "$S3_CONFIG" ]]; then
+    echo "S3 config not found: $S3_CONFIG" >&2
+    exit 1
+  fi
+
+  s3_destination="s3://$S3_BUCKET/${S3_PREFIX#/}/"
+  echo "Uploading backup to: $s3_destination"
+  s3cmd --config="$S3_CONFIG" --no-progress put \
+    "$db_backup" \
+    "$uploads_backup" \
+    "$manifest" \
+    "$s3_destination"
+fi
 
 find "$BACKUP_DIR" -type f -name 'myworld-*' -mtime "+$RETENTION_DAYS" -delete
 
