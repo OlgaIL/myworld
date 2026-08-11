@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
 import { createAccessRequest, createYookassaPayment } from "../services/api";
+import { trackGoal, trackGoalOnce } from "../services/analytics";
 
 const packages = [
   {
@@ -53,18 +54,37 @@ function PackagesPage() {
   const { user, authLoading, reloadUser } = useAuthContext();
   const [requestStatus, setRequestStatus] = useState({});
 
+  useEffect(() => {
+    trackGoalOnce("packages_view", user?.id || "guest", {
+      authenticated: Boolean(user)
+    });
+  }, [user]);
+
   async function requestPackage(item) {
     try {
+      trackGoal("package_select", {
+        package_name: item.title,
+        package_value: item.value,
+        package_price: item.price
+      });
       setRequestStatus((current) => ({ ...current, [item.title]: "sending" }));
       const payment = await createYookassaPayment({ packageTitle: item.title });
 
       if (payment?.credited) {
+        trackGoalOnce("payment_success", payment.paymentId || `${user?.id}:${item.title}`, {
+          package_name: item.title,
+          package_price: item.price
+        });
         await reloadUser();
         navigate("/account");
         return;
       }
 
       if (payment?.confirmationUrl) {
+        trackGoal("payment_redirect", {
+          package_name: item.title,
+          package_price: item.price
+        });
         window.location.href = payment.confirmationUrl;
         return;
       }
@@ -77,6 +97,10 @@ function PackagesPage() {
         try {
           await createAccessRequest({
             message: `Запрос пакета: ${item.title}, ${item.value}, ${item.price}`
+          });
+          trackGoal("package_request", {
+            package_name: item.title,
+            package_price: item.price
           });
           setRequestStatus((current) => ({ ...current, [item.title]: "sent" }));
           navigate(`/account?requestedPackage=${encodeURIComponent(item.title)}`);

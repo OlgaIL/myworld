@@ -1,4 +1,5 @@
 import AccessLimitMessage from "./AccessLimitMessage";
+import CabinetArchiveNavigation from "./CabinetArchiveNavigation";
 import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
 
@@ -22,15 +23,32 @@ function CabinetHome({
   recordUploadAllowed,
   searchQuery,
   setSearchQuery,
+  browseMode,
   activeCategory,
+  activeSection,
+  activeTopic,
   activeTag,
+  activeYear,
+  activeMonth,
+  activeDay,
   showTags,
-  categoryOptions,
+  sectionOptions,
+  topicOptions,
   tagOptions,
+  yearOptions,
+  monthOptions,
+  dayOptions,
+  selectBrowseMode,
   resetCategory,
-  applyCategoryFilter,
+  resetTopicFilters,
+  selectSection,
+  selectTopic,
   resetTag,
   applyTagFilter,
+  resetDateFilters,
+  selectYear,
+  selectMonth,
+  selectDay,
   toggleTags,
   fileInputRef,
   onRequestUpload,
@@ -73,65 +91,36 @@ function CabinetHome({
             />
           </div>
 
-          {categoryOptions.length > 0 && (
-            <div className="cabinet-categories" aria-label="Фильтр по рубрикам">
-              <button
-                className={`cabinet-categories__button ${!activeCategory ? "cabinet-categories__button--active" : ""}`}
-                type="button"
-                onClick={resetCategory}
-              >
-                Все
-              </button>
-              {categoryOptions.map((category) => (
-                <button
-                  className={`cabinet-categories__button ${activeCategory === category ? "cabinet-categories__button--active" : ""}`}
-                  type="button"
-                  key={category}
-                  onClick={() => applyCategoryFilter(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {tagOptions.length > 0 && (
-            <div className="cabinet-tags">
-              <button
-                className="cabinet-tags__toggle"
-                type="button"
-                onClick={toggleTags}
-                aria-expanded={showTags}
-              >
-                Ваши теги
-                <span className="cabinet-tags__chevron" aria-hidden="true" />
-              </button>
-
-              {(showTags || activeTag) && (
-                <div className="cabinet-tags__list" aria-label="Фильтр по тегам">
-                  {activeTag && (
-                    <button
-                      className="cabinet-categories__button"
-                      type="button"
-                      onClick={resetTag}
-                    >
-                      Все теги
-                    </button>
-                  )}
-                  {tagOptions.map((tag) => (
-                    <button
-                      className={`cabinet-categories__button ${activeTag === tag ? "cabinet-categories__button--active" : ""}`}
-                      type="button"
-                      key={tag}
-                      onClick={() => applyTagFilter(tag)}
-                    >
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <CabinetArchiveNavigation
+            photosCount={photosCount}
+            browseMode={browseMode}
+            activeCategory={activeCategory}
+            activeSection={activeSection}
+            activeTopic={activeTopic}
+            activeTag={activeTag}
+            activeYear={activeYear}
+            activeMonth={activeMonth}
+            activeDay={activeDay}
+            showTags={showTags}
+            sectionOptions={sectionOptions}
+            topicOptions={topicOptions}
+            tagOptions={tagOptions}
+            yearOptions={yearOptions}
+            monthOptions={monthOptions}
+            dayOptions={dayOptions}
+            onModeChange={selectBrowseMode}
+            onResetCategory={resetCategory}
+            onResetTopics={resetTopicFilters}
+            onSelectSection={selectSection}
+            onSelectTopic={selectTopic}
+            onResetTag={resetTag}
+            onSelectTag={applyTagFilter}
+            onResetDates={resetDateFilters}
+            onSelectYear={selectYear}
+            onSelectMonth={selectMonth}
+            onSelectDay={selectDay}
+            onToggleTags={toggleTags}
+          />
         </section>
       )}
 

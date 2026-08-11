@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { initYandexMetrika, trackPageView } from "../services/analytics";
+import { captureAcquisitionContext, initYandexMetrika, trackPageView } from "../services/analytics";
 
 function AnalyticsTracker() {
   const location = useLocation();
 
   useEffect(() => {
+    captureAcquisitionContext();
     initYandexMetrika();
   }, []);
 

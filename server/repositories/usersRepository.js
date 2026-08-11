@@ -170,6 +170,27 @@ export async function findUserByGoogleId(googleId) {
   return result.rows[0] || null;
 }
 
+export async function saveUserAcquisitionContext(userId, context) {
+  if (!userId || !context || Object.keys(context).length === 0) {
+    return null;
+  }
+
+  const result = await query(
+    `
+      update users
+      set
+        acquisition_context = coalesce(acquisition_context, $2::jsonb),
+        acquisition_captured_at = coalesce(acquisition_captured_at, now()),
+        updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [userId, JSON.stringify(context)]
+  );
+
+  return result.rows[0] || null;
+}
+
 export async function listUsersForAdmin() {
   const result = await query(
     `
@@ -189,6 +210,8 @@ export async function listUsersForAdmin() {
         users.records_processed_total,
         users.processing_mode,
         users.access_expires_at,
+        users.acquisition_context,
+        users.acquisition_captured_at,
         users.created_at,
         users.updated_at,
         count(photos.id)::int as documents_count,
@@ -222,6 +245,8 @@ export async function findUserForAdmin(userId) {
         users.records_processed_total,
         users.processing_mode,
         users.access_expires_at,
+        users.acquisition_context,
+        users.acquisition_captured_at,
         users.created_at,
         users.updated_at,
         count(photos.id)::int as documents_count,

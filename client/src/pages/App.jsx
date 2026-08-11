@@ -80,16 +80,34 @@ function App() {
   const {
     searchQuery,
     setSearchQuery,
+    browseMode,
     activeCategory,
+    activeSection,
+    activeTopic,
     activeTag,
+    activeYear,
+    activeMonth,
+    activeDay,
     showTags,
-    categoryOptions,
+    sectionOptions,
+    topicOptions,
     tagOptions,
+    yearOptions,
+    monthOptions,
+    dayOptions,
     filteredPhotos,
+    selectBrowseMode,
     resetCategory,
     selectCategory: applyCategoryFilter,
+    resetTopicFilters,
+    selectSection,
+    selectTopic,
     resetTag,
     selectTag: applyTagFilter,
+    resetDateFilters,
+    selectYear,
+    selectMonth,
+    selectDay,
     toggleTags
   } = useCabinetFilters(photos);
 
@@ -217,15 +235,32 @@ function App() {
               recordUploadAllowed={recordUploadAllowed}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
+              browseMode={browseMode}
               activeCategory={activeCategory}
+              activeSection={activeSection}
+              activeTopic={activeTopic}
               activeTag={activeTag}
+              activeYear={activeYear}
+              activeMonth={activeMonth}
+              activeDay={activeDay}
               showTags={showTags}
-              categoryOptions={categoryOptions}
+              sectionOptions={sectionOptions}
+              topicOptions={topicOptions}
               tagOptions={tagOptions}
+              yearOptions={yearOptions}
+              monthOptions={monthOptions}
+              dayOptions={dayOptions}
+              selectBrowseMode={selectBrowseMode}
               resetCategory={resetCategory}
-              applyCategoryFilter={applyCategoryFilter}
+              resetTopicFilters={resetTopicFilters}
+              selectSection={selectSection}
+              selectTopic={selectTopic}
               resetTag={resetTag}
               applyTagFilter={applyTagFilter}
+              resetDateFilters={resetDateFilters}
+              selectYear={selectYear}
+              selectMonth={selectMonth}
+              selectDay={selectDay}
               toggleTags={toggleTags}
               fileInputRef={fileInputRef}
               onRequestUpload={requestCabinetUpload}

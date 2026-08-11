@@ -12,9 +12,15 @@ export function getAuthProviders() {
   return axios.get(`${API_URL}/api/auth-providers`).then((res) => res.data);
 }
 
-export function loginWithProvider(providerId) {
+export async function loginWithProvider(providerId, acquisitionContext = {}) {
   if (!/^[a-z][a-z0-9_-]*$/.test(String(providerId || ""))) {
     return;
+  }
+
+  try {
+    await axios.post(`${API_URL}/api/acquisition`, { context: acquisitionContext });
+  } catch (error) {
+    console.warn("Acquisition context was not saved before authentication:", error.message);
   }
 
   window.location.href = `${API_URL}/auth/${encodeURIComponent(providerId)}`;

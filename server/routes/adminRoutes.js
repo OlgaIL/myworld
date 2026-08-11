@@ -106,6 +106,8 @@ function mapAdminUser(user) {
     recordsProcessedTotal: Number(user.records_processed_total || 0),
     processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,
+    acquisitionContext: user.acquisition_context || null,
+    acquisitionCapturedAt: user.acquisition_captured_at || null,
     documentsCount: Number(user.documents_count || 0),
     createdAt: user.created_at,
     updatedAt: user.updated_at,

@@ -349,6 +349,23 @@ function AdminUserDetails({ user, onSaved }) {
         </div>
       </div>
 
+      {user.acquisitionContext && (
+        <div className="admin-current-access">
+          <span>Первый рекламный источник</span>
+          <div className="admin-current-access__value">
+            <strong>
+              {user.acquisitionContext.utm_source || "источник не указан"}
+              {user.acquisitionContext.utm_campaign ? ` · ${user.acquisitionContext.utm_campaign}` : ""}
+              {user.acquisitionContext.utm_term ? ` · ${user.acquisitionContext.utm_term}` : ""}
+            </strong>
+            <AdminCopyButton
+              label="Скопировать рекламный источник"
+              value={JSON.stringify(user.acquisitionContext)}
+            />
+          </div>
+        </div>
+      )}
+
       <form className="admin-access-form" onSubmit={handleSave}>
         <label className="admin-checkbox">
           <input

@@ -3,13 +3,26 @@ import { CLIENT_URL } from "../config/env.js";
 import { getConfiguredAuthProviders, isAuthProviderConfigured } from "../auth/providers.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
-import { mapUserForSession, updateUserLegalAgreement } from "../repositories/usersRepository.js";
+import { mapUserForSession, saveUserAcquisitionContext, updateUserLegalAgreement } from "../repositories/usersRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess } from "../utils/photos.js";
 
 const router = Router();
 const LEGAL_AGREEMENT_VERSION = "2026-07-15";
+const ACQUISITION_KEYS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid", "landing_path", "captured_at"]);
+
+function sanitizeAcquisitionContext(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key, item]) => ACQUISITION_KEYS.has(key) && typeof item === "string" && item.trim())
+      .map(([key, item]) => [key, item.trim().slice(0, key === "landing_path" ? 1500 : 500)])
+  );
+}
 
 function redirectWithAuthError(res, providerId, errorCode = "oauth_failed") {
   const target = new URL(CLIENT_URL || "/", "http://localhost");
@@ -53,6 +66,14 @@ async function finishLogin(req, res) {
     console.error("Guest claim after login failed:", error.message);
   }
 
+  try {
+    const acquisitionContext = sanitizeAcquisitionContext(req.session?.acquisitionContext);
+    await saveUserAcquisitionContext(req.user?.id, acquisitionContext);
+    delete req.session.acquisitionContext;
+  } catch (error) {
+    console.error("Acquisition context after login failed:", error.message);
+  }
+
   res.redirect(CLIENT_URL || "/");
 }
 
@@ -62,6 +83,11 @@ function redirectPartnerSetupRequired(providerId) {
 
 router.get("/api/auth-providers", (req, res) => {
   res.json(getConfiguredAuthProviders());
+});
+
+router.post("/api/acquisition", (req, res) => {
+  req.session.acquisitionContext = sanitizeAcquisitionContext(req.body?.context);
+  return res.status(204).send();
 });
 
 router.get("/auth/google", requireConfiguredProvider("google"), (req, res, next) => {

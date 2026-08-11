@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAuthProviders, getCurrentUser, loginWithProvider as redirectToProvider, logout } from "../services/api";
-import { trackGoal } from "../services/analytics";
+import { getAcquisitionContext, trackGoal } from "../services/analytics";
 
 const AUTH_PENDING_STORAGE_KEY = "word2you_auth_pending";
 
@@ -74,7 +74,7 @@ export function useAuth() {
   const loginWithProvider = (providerId) => {
     trackGoal("auth_start", { provider: providerId });
     rememberPendingAuth(providerId);
-    return redirectToProvider(providerId);
+    return redirectToProvider(providerId, getAcquisitionContext());
   };
   const defaultLogin = () => defaultProvider && loginWithProvider(defaultProvider.id);
 

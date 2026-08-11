@@ -7,6 +7,7 @@ import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { getAccessRequests, getProcessingHistory } from "../services/api";
+import { trackGoalOnce } from "../services/analytics";
 
 function formatDate(value) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -164,6 +165,26 @@ function AccountPage() {
       cancelled = true;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (limitReached && user?.id) {
+      trackGoalOnce("free_limit_reached", user.id, {
+        records_processed: Number(user.recordsProcessedTotal || user.recordsUsed || 0)
+      });
+    }
+  }, [limitReached, user]);
+
+  useEffect(() => {
+    processingHistory
+      .filter((item) => item.type === "yookassa")
+      .forEach((item) => {
+        trackGoalOnce("payment_success", item.id, {
+          package_name: item.packageTitle,
+          amount: item.amountValue,
+          currency: item.currency
+        });
+      });
+  }, [processingHistory]);
 
   async function refreshAccountStatus() {
     try {
