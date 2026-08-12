@@ -160,6 +160,56 @@ curl https://word2you.ru/api/health
 - превью загруженного изображения;
 - тестовую загрузку.
 
-## Следующий шаг
+## Безопасная репетиция восстановления
 
-Подключить автоматическую выгрузку архивов в Timeweb Cloud Object Storage и один раз провести тестовое восстановление.
+Репетиция выполняется без остановки сайта и только в отдельную пустую базу
+`word2you_restore_test`. Скрипт откажется работать с базой, имеющей другое имя,
+и не использует `--clean`.
+
+1. Создать отдельную пустую базу `word2you_restore_test` в Timeweb Cloud.
+
+2. На сервере создать защищённый файл `/root/word2you-restore.env`:
+
+```bash
+sudo install -m 600 /dev/null /root/word2you-restore.env
+sudo nano /root/word2you-restore.env
+```
+
+Содержимое:
+
+```dotenv
+RESTORE_DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/word2you_restore_test
+```
+
+Строку подключения нельзя публиковать в чат или добавлять в git.
+
+3. Если проверяется копия из S3, скачать три файла с одинаковой датой:
+
+```bash
+mkdir -p /root/myworld-restore-source
+s3cmd --config=/root/.s3cfg get s3://word2you-backups/daily/myworld-db-ДАТА.dump /root/myworld-restore-source/
+s3cmd --config=/root/.s3cfg get s3://word2you-backups/daily/myworld-uploads-ДАТА.tar.gz /root/myworld-restore-source/
+s3cmd --config=/root/.s3cfg get s3://word2you-backups/daily/myworld-backup-ДАТА.txt /root/myworld-restore-source/
+```
+
+4. Запустить репетицию, заменив `ДАТА` на общую дату и время файлов:
+
+```bash
+cd /root/myworld
+BACKUP_DIR=/root/myworld-restore-source bash ./scripts/restore-rehearsal.sh ДАТА
+```
+
+Скрипт:
+
+- проверит имя целевой базы через URL и реальное подключение;
+- убедится, что тестовая база пустая;
+- проверит SHA256 из манифеста;
+- восстановит дамп без удаления существующих объектов;
+- распакует изображения только в `/root/myworld-restore-test/ДАТА/uploads`;
+- посчитает пользователей, записи, платежи, начисления и файлы;
+- проверит наличие изображения для каждой записи;
+- создаст `restore-report.txt`.
+
+Боевые `DATABASE_URL`, база и `/root/myworld/server/uploads` при этом не используются.
+
+Полный запуск копии приложения с тестовой базой проводится отдельным вторым этапом.
