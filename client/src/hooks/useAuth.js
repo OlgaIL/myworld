@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
-import { getAuthProviders, getCurrentUser, loginWithProvider as redirectToProvider, logout } from "../services/api";
+import {
+  getAuthProviders,
+  getCurrentUser,
+  loginWithProvider as redirectToProvider,
+  logout,
+  requestEmailLoginCode as requestEmailLoginCodeApi,
+  verifyEmailLoginCode as verifyEmailLoginCodeApi
+} from "../services/api";
 import { getAcquisitionContext, trackGoal } from "../services/analytics";
+import { LEGAL_AGREEMENT_VERSION } from "../constants/legalAgreement";
 
 const AUTH_PENDING_STORAGE_KEY = "word2you_auth_pending";
 
@@ -35,6 +43,7 @@ export function useAuth() {
   const [user, setUser] = useState(null);
   const [authProviders, setAuthProviders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [emailAuthOpen, setEmailAuthOpen] = useState(false);
 
   async function loadUser({ showLoading = true } = {}) {
     try {
@@ -74,7 +83,30 @@ export function useAuth() {
   const loginWithProvider = (providerId) => {
     trackGoal("auth_start", { provider: providerId });
     rememberPendingAuth(providerId);
+
+    if (providerId === "email") {
+      setEmailAuthOpen(true);
+      return;
+    }
+
     return redirectToProvider(providerId, getAcquisitionContext());
+  };
+  const requestEmailLoginCode = async (email, { resend = false } = {}) => {
+    const result = await requestEmailLoginCodeApi(email, getAcquisitionContext());
+    trackGoal(resend ? "auth_email_resend" : "auth_email_requested", { provider: "email" });
+    return result;
+  };
+  const verifyEmailLoginCode = async (email, code) => {
+    try {
+      await verifyEmailLoginCodeApi({ email, code, legalVersion: LEGAL_AGREEMENT_VERSION });
+      const currentUser = await loadUser({ showLoading: false });
+      trackCompletedAuth(currentUser);
+      setEmailAuthOpen(false);
+      return currentUser;
+    } catch (error) {
+      trackGoal("auth_email_code_failed", { provider: "email" });
+      throw error;
+    }
   };
   const defaultLogin = () => defaultProvider && loginWithProvider(defaultProvider.id);
 
@@ -84,6 +116,10 @@ export function useAuth() {
     authLoading: loading,
     login: defaultLogin,
     loginWithProvider,
+    emailAuthOpen,
+    closeEmailAuth: () => setEmailAuthOpen(false),
+    requestEmailLoginCode,
+    verifyEmailLoginCode,
     logout,
     reloadUser: () => loadUser({ showLoading: false })
   };

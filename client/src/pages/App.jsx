@@ -7,7 +7,7 @@ import GuestHome from "../components/GuestHome";
 import LegalAgreementModal from "../components/LegalAgreementModal";
 import Modal from "../components/Modal";
 import PageFooter from "../components/PageFooter";
-import { useAuth } from "../hooks/useAuth";
+import { useAuthContext } from "../contexts/AuthContext";
 import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { useCabinetUpload } from "../hooks/useCabinetUpload";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
@@ -22,7 +22,7 @@ import { getPhotoUrl } from "../services/api";
 function App() {
   const navigate = useNavigate();
   const { documentName } = useParams();
-  const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuth();
+  const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuthContext();
   const {
     legalAgreementOpen,
     requestLegalAgreement,

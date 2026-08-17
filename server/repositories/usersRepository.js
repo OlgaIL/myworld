@@ -197,6 +197,7 @@ export async function listUsersForAdmin() {
       select
         users.id,
         users.email,
+        users.email_verified_at,
         users.display_name,
         users.avatar_url,
         users.google_id,
@@ -232,6 +233,7 @@ export async function findUserForAdmin(userId) {
       select
         users.id,
         users.email,
+        users.email_verified_at,
         users.display_name,
         users.avatar_url,
         users.google_id,
@@ -391,6 +393,7 @@ export function mapUserForSession(user) {
     sberId: user.sber_id,
     mtsId: user.mts_id,
     email: user.email,
+    emailVerifiedAt: user.email_verified_at || null,
     displayName: user.display_name,
     avatarUrl: user.avatar_url,
     createdAt: user.created_at || null,

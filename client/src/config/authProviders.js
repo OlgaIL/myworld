@@ -3,7 +3,8 @@ const authProviderMeta = {
   yandex: { icon: "Я", title: "Войти через Яндекс", iconClassName: "auth-menu__icon--yandex" },
   vk: { icon: "VK", title: "Войти через VK ID", iconClassName: "auth-menu__icon--vk" },
   sber: { icon: "С", title: "Войти через Сбер ID", iconClassName: "auth-menu__icon--sber" },
-  mts: { icon: "М", title: "Войти через МТС ID", iconClassName: "auth-menu__icon--mts" }
+  mts: { icon: "М", title: "Войти через МТС ID", iconClassName: "auth-menu__icon--mts" },
+  email: { icon: "@", title: "Продолжить по email", iconClassName: "auth-menu__icon--email" }
 };
 
 export function getAuthProviderMeta(provider) {

@@ -6,6 +6,13 @@ import { countPhotosByUser } from "../repositories/photosRepository.js";
 import { mapUserForSession, saveUserAcquisitionContext, updateUserLegalAgreement } from "../repositories/usersRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
+import {
+  EmailAuthError,
+  hashRequestIp,
+  normalizeEmail,
+  requestEmailLoginCode,
+  verifyEmailLoginCode
+} from "../services/emailAuthService.js";
 import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess } from "../utils/photos.js";
 
 const router = Router();
@@ -59,7 +66,7 @@ function authenticateProviderCallback(providerId, getOptions = () => ({})) {
   };
 }
 
-async function finishLogin(req, res) {
+async function completeLogin(req) {
   try {
     await claimGuestDocumentForUser(req);
   } catch (error) {
@@ -73,8 +80,33 @@ async function finishLogin(req, res) {
   } catch (error) {
     console.error("Acquisition context after login failed:", error.message);
   }
+}
+
+async function finishLogin(req, res) {
+  await completeLogin(req);
 
   res.redirect(CLIENT_URL || "/");
+}
+
+function getRequestIp(req) {
+  const remoteAddress = req.socket?.remoteAddress || "";
+  const isLocalProxy = remoteAddress === "127.0.0.1"
+    || remoteAddress === "::1"
+    || remoteAddress === "::ffff:127.0.0.1";
+  const forwardedAddress = isLocalProxy ? req.get("x-forwarded-for")?.split(",")[0]?.trim() : "";
+  return forwardedAddress || remoteAddress || "unknown";
+}
+
+function sendEmailAuthError(res, error) {
+  if (error instanceof EmailAuthError) {
+    return res.status(error.status).json({
+      error: error.code,
+      ...(error.retryAfterSeconds ? { retryAfterSeconds: error.retryAfterSeconds } : {})
+    });
+  }
+
+  console.error("Email auth failed:", error.message);
+  return res.status(500).json({ error: "EMAIL_AUTH_FAILED" });
 }
 
 function redirectPartnerSetupRequired(providerId) {
@@ -88,6 +120,64 @@ router.get("/api/auth-providers", (req, res) => {
 router.post("/api/acquisition", (req, res) => {
   req.session.acquisitionContext = sanitizeAcquisitionContext(req.body?.context);
   return res.status(204).send();
+});
+
+router.post("/api/auth/email/request", async (req, res) => {
+  if (!isAuthProviderConfigured("email")) {
+    return res.status(503).json({ error: "EMAIL_AUTH_NOT_CONFIGURED" });
+  }
+
+  const email = normalizeEmail(req.body?.email);
+  if (!email) {
+    return res.status(400).json({ error: "INVALID_EMAIL" });
+  }
+
+  try {
+    req.session.acquisitionContext = sanitizeAcquisitionContext(req.body?.acquisitionContext);
+    const result = await requestEmailLoginCode({
+      email,
+      ipHash: hashRequestIp(getRequestIp(req))
+    });
+
+    return res.json({
+      ok: true,
+      retryAfterSeconds: result.retryAfterSeconds
+    });
+  } catch (error) {
+    return sendEmailAuthError(res, error);
+  }
+});
+
+router.post("/api/auth/email/verify", async (req, res) => {
+  if (!isAuthProviderConfigured("email")) {
+    return res.status(503).json({ error: "EMAIL_AUTH_NOT_CONFIGURED" });
+  }
+
+  const email = normalizeEmail(req.body?.email);
+  const code = String(req.body?.code || "").replace(/\D/g, "");
+  const legalVersion = req.body?.legalVersion;
+
+  if (!email || !/^\d{6}$/.test(code)) {
+    return res.status(400).json({ error: "EMAIL_AUTH_CODE_INVALID" });
+  }
+
+  if (req.body?.legalAccepted !== true || legalVersion !== LEGAL_AGREEMENT_VERSION) {
+    return res.status(400).json({ error: "LEGAL_AGREEMENT_REQUIRED" });
+  }
+
+  try {
+    const user = await verifyEmailLoginCode({ email, code, legalVersion });
+    const sessionUser = mapUserForSession(user);
+
+    await new Promise((resolve, reject) => {
+      req.logIn(sessionUser, (error) => (error ? reject(error) : resolve()));
+    });
+
+    await completeLogin(req);
+    return res.json({ ok: true });
+  } catch (error) {
+    return sendEmailAuthError(res, error);
+  }
 });
 
 router.get("/auth/google", requireConfiguredProvider("google"), (req, res, next) => {

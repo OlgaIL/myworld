@@ -21,8 +21,20 @@ const AUTH_PROVIDER_FLAGS = {
   yandex: readOptionalBoolean(process.env.YANDEX_AUTH_ENABLED),
   vk: readOptionalBoolean(process.env.VK_AUTH_ENABLED),
   sber: readOptionalBoolean(process.env.SBER_AUTH_ENABLED),
-  mts: readOptionalBoolean(process.env.MTS_AUTH_ENABLED)
+  mts: readOptionalBoolean(process.env.MTS_AUTH_ENABLED),
+  email: readOptionalBoolean(process.env.EMAIL_AUTH_ENABLED)
 };
+
+export const EMAIL_AUTH_CODE_TTL_MINUTES = Number(process.env.EMAIL_AUTH_CODE_TTL_MINUTES || 10);
+export const EMAIL_AUTH_RESEND_SECONDS = Number(process.env.EMAIL_AUTH_RESEND_SECONDS || 60);
+export const EMAIL_AUTH_MAX_ATTEMPTS = Number(process.env.EMAIL_AUTH_MAX_ATTEMPTS || 5);
+export const EMAIL_AUTH_EMAIL_REQUESTS_PER_HOUR = Number(process.env.EMAIL_AUTH_EMAIL_REQUESTS_PER_HOUR || 5);
+export const EMAIL_AUTH_IP_REQUESTS_PER_HOUR = Number(process.env.EMAIL_AUTH_IP_REQUESTS_PER_HOUR || 20);
+export const SMTP_HOST = process.env.SMTP_HOST || "";
+export const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+export const SMTP_SECURE = process.env.SMTP_SECURE !== "false";
+export const SMTP_USER = process.env.SMTP_USER || "";
+export const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 
 export const OCR_PROVIDER = process.env.OCR_PROVIDER || "google";
 export const AI_PROVIDER = process.env.AI_PROVIDER || "openai";

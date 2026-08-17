@@ -49,6 +49,7 @@ import { listAccessRequestsForAdmin, updateAccessRequestStatus } from "../reposi
 import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
+import { isAuthProviderConfigured } from "../auth/providers.js";
 
 const router = Router();
 
@@ -85,7 +86,8 @@ function getUserAuthProviders(user) {
     user.yandex_id && "Яндекс",
     user.vk_id && "VK ID",
     user.sber_id && "Сбер ID",
-    user.mts_id && "МТС ID"
+    user.mts_id && "МТС ID",
+    user.email_verified_at && "Email"
   ].filter(Boolean);
 }
 
@@ -181,6 +183,12 @@ function getAuthProviderSettings() {
       label: "МТС ID",
       enabled: isAuthProviderEnabled("mts"),
       configured: Boolean(MTS_CLIENT_ID && MTS_CLIENT_SECRET)
+    },
+    {
+      id: "email",
+      label: "Email",
+      enabled: isAuthProviderEnabled("email"),
+      configured: isAuthProviderConfigured("email")
     }
   ];
 }

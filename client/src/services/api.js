@@ -26,6 +26,19 @@ export async function loginWithProvider(providerId, acquisitionContext = {}) {
   window.location.href = `${API_URL}/auth/${encodeURIComponent(providerId)}`;
 }
 
+export function requestEmailLoginCode(email, acquisitionContext = {}) {
+  return axios.post(`${API_URL}/api/auth/email/request`, { email, acquisitionContext }).then((res) => res.data);
+}
+
+export function verifyEmailLoginCode({ email, code, legalVersion }) {
+  return axios.post(`${API_URL}/api/auth/email/verify`, {
+    email,
+    code,
+    legalAccepted: true,
+    legalVersion
+  }).then((res) => res.data);
+}
+
 export function logout() {
   window.location.href = `${API_URL}/logout`;
 }
