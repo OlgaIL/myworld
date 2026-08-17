@@ -189,14 +189,11 @@ function DocumentPage({
 
           {showGuestSaveCta && (
             <section className="guest-login-cta" aria-label="Сохранить запись в личном архиве">
-              <p>
-                <strong>Сохранить запись в личном архиве</strong>
-                <br />
-                После регистрации — ещё 30 обработок бесплатно.
-              </p>
+              <h2>Сохраните запись в личном архиве</h2>
               <div className="guest-login-cta__actions">
-                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
+                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} compact />
               </div>
+              <p>После регистрации — ещё 30 обработок бесплатно.</p>
             </section>
           )}
         </section>

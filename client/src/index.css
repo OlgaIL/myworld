@@ -2510,13 +2510,20 @@ button {
 }
 
 .guest-login-cta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  justify-items: start;
+  gap: 10px;
   margin: 22px 0 0;
   padding: 20px 0 0;
   border-top: 1px solid #d0d5dd;
+}
+
+.guest-login-cta h2 {
+  margin: 0;
+  color: #344054;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .guest-login-cta p {
@@ -2528,9 +2535,28 @@ button {
 
 .guest-login-cta__actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
+  min-width: 0;
+}
+
+.guest-login-cta__actions .auth-provider-buttons {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.auth-provider-buttons--compact .auth-provider-buttons__option {
+  gap: 5px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.auth-provider-buttons--compact .auth-menu__icon {
+  flex-basis: 18px;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
 }
 
 .fab-upload {
@@ -4236,19 +4262,6 @@ button {
 
   .admin-user-row__side {
     align-items: flex-start;
-  }
-}
-
-@media (max-width: 900px) {
-  .guest-login-cta {
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: flex-start;
-  }
-
-  .guest-login-cta__actions {
-    width: 100%;
-    justify-content: flex-start;
   }
 }
 
