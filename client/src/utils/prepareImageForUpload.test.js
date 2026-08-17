@@ -71,6 +71,41 @@ test("keeps the original image when createImageBitmap fails", async () => {
   assert.equal(events.at(-1).details.errorName, "Error");
 });
 
+test("uses the Image element fallback when createImageBitmap fails", async () => {
+  const previousFile = globalThis.File;
+  let fallbackClosed = false;
+  globalThis.File = class TestFile {
+    constructor(parts, name, options) {
+      this.size = parts[0].size;
+      this.name = name;
+      this.type = options.type;
+    }
+  };
+
+  try {
+    const file = createFile({ size: 2_000_000 });
+    const events = [];
+    const result = await prepareImageForUpload(file, {
+      onDiagnostic: (event, details) => events.push({ event, details }),
+      createImageBitmapFn: async () => { throw new Error("bitmap unavailable"); },
+      loadImageElementFn: async () => ({
+        drawable: {},
+        width: 3000,
+        height: 1500,
+        close: () => { fallbackClosed = true; }
+      }),
+      createCanvas: () => createCanvas({ size: 850_000 })
+    });
+
+    assert.equal(result.size, 850_000);
+    assert.equal(fallbackClosed, true);
+    assert.equal(events.at(-1).event, "image_prepare_resized");
+    assert.equal(events.at(-1).details.preparationMethod, "image_element_fallback");
+  } finally {
+    globalThis.File = previousFile;
+  }
+});
+
 test("keeps the original image when canvas returns no blob or a larger blob", async () => {
   const file = createFile({ size: 2_000_000 });
   const imageFactory = async () => ({ width: 3000, height: 1500, close() {} });

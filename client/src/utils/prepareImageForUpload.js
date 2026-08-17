@@ -57,6 +57,46 @@ function canvasToBlob(canvas, type, quality) {
   });
 }
 
+function loadImageElement(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof Image !== "function" || typeof URL?.createObjectURL !== "function") {
+      reject(new Error("Image element fallback is unavailable"));
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    function revokeObjectUrl() {
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    image.onload = () => {
+      const width = image.naturalWidth || image.width;
+      const height = image.naturalHeight || image.height;
+
+      if (!width || !height) {
+        revokeObjectUrl();
+        reject(new Error("Image element returned empty dimensions"));
+        return;
+      }
+
+      resolve({
+        drawable: image,
+        width,
+        height,
+        close: revokeObjectUrl
+      });
+    };
+    image.onerror = () => {
+      revokeObjectUrl();
+      reject(new Error("Image element could not decode the file"));
+    };
+    image.decoding = "async";
+    image.src = objectUrl;
+  });
+}
+
 function safeErrorDetails(error) {
   return {
     errorName: String(error?.name || "Error").slice(0, 80),
@@ -69,6 +109,7 @@ export async function prepareImageForUpload(file, options = {}) {
     uploadAttemptId = "",
     onDiagnostic,
     createImageBitmapFn = globalThis.createImageBitmap,
+    loadImageElementFn = loadImageElement,
     createCanvas = () => document.createElement("canvas")
   } = options;
   const startedAt = Date.now();
@@ -95,25 +136,65 @@ export async function prepareImageForUpload(file, options = {}) {
     return file;
   }
 
+  let imageSource = null;
+  let preparationMethod = "image_bitmap";
+  let primaryDecodeError = null;
+
   try {
     if (typeof createImageBitmapFn !== "function") {
       throw new Error("createImageBitmap is unavailable");
     }
 
-    const image = await createImageBitmapFn(file);
-    const { width, height, shouldResize } = getTargetSize(image.width, image.height);
-    const sourceWidth = image.width;
-    const sourceHeight = image.height;
+    const bitmap = await createImageBitmapFn(file);
+    imageSource = {
+      drawable: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      close: () => bitmap.close?.()
+    };
+  } catch (error) {
+    primaryDecodeError = error;
+    preparationMethod = "image_element_fallback";
+
+    try {
+      imageSource = await loadImageElementFn(file);
+    } catch (fallbackError) {
+      log("image_prepare_failed_original_used", {
+        resultSizeBytes: originalSizeBytes,
+        originalUsed: true,
+        preparationMethod,
+        primaryErrorName: safeErrorDetails(primaryDecodeError).errorName,
+        primaryErrorMessage: safeErrorDetails(primaryDecodeError).errorMessage,
+        ...safeErrorDetails(fallbackError)
+      });
+      return file;
+    }
+  }
+
+  let imageClosed = false;
+
+  function closeImage() {
+    if (!imageClosed) {
+      imageSource?.close?.();
+      imageClosed = true;
+    }
+  }
+
+  try {
+    const { width, height, shouldResize } = getTargetSize(imageSource.width, imageSource.height);
+    const sourceWidth = imageSource.width;
+    const sourceHeight = imageSource.height;
 
     if (!shouldResize && file.type === "image/jpeg") {
-      image.close?.();
+      closeImage();
       log("image_prepare_skipped_not_smaller", {
         sourceWidth,
         sourceHeight,
         resultWidth: width,
         resultHeight: height,
         resultSizeBytes: originalSizeBytes,
-        originalUsed: true
+        originalUsed: true,
+        preparationMethod
       });
       return file;
     }
@@ -125,20 +206,21 @@ export async function prepareImageForUpload(file, options = {}) {
     const context = canvas.getContext("2d");
 
     if (!context) {
-      image.close?.();
+      closeImage();
       log("image_prepare_failed_original_used", {
         sourceWidth,
         sourceHeight,
         resultSizeBytes: originalSizeBytes,
         originalUsed: true,
+        preparationMethod,
         errorName: "CanvasContextUnavailable",
         errorMessage: "Canvas 2D context is unavailable"
       });
       return file;
     }
 
-    context.drawImage(image, 0, 0, width, height);
-    image.close?.();
+    context.drawImage(imageSource.drawable, 0, 0, width, height);
+    closeImage();
 
     const blob = await canvasToBlob(canvas, "image/jpeg", IMAGE_JPEG_QUALITY);
 
@@ -150,6 +232,7 @@ export async function prepareImageForUpload(file, options = {}) {
         resultHeight: height,
         resultSizeBytes: 0,
         originalUsed: true,
+        preparationMethod,
         errorName: "CanvasBlobUnavailable",
         errorMessage: "Canvas produced no blob"
       });
@@ -163,7 +246,8 @@ export async function prepareImageForUpload(file, options = {}) {
         resultWidth: width,
         resultHeight: height,
         resultSizeBytes: blob.size,
-        originalUsed: true
+        originalUsed: true,
+        preparationMethod
       });
       return file;
     }
@@ -175,13 +259,16 @@ export async function prepareImageForUpload(file, options = {}) {
       resultWidth: width,
       resultHeight: height,
       resultSizeBytes: preparedFile.size,
-      originalUsed: false
+      originalUsed: false,
+      preparationMethod
     });
     return preparedFile;
   } catch (error) {
+    closeImage();
     log("image_prepare_failed_original_used", {
       resultSizeBytes: originalSizeBytes,
       originalUsed: true,
+      preparationMethod,
       ...safeErrorDetails(error)
     });
     return file;
