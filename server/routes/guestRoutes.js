@@ -33,6 +33,47 @@ import { getProcessingServiceGuardError } from "../utils/photos.js";
 
 const router = Router();
 
+function getUploadAttemptId(req) {
+  const headerValue = String(req.get("X-Upload-Attempt-ID") || "").trim();
+
+  if (/^[a-zA-Z0-9_-]{8,80}$/.test(headerValue)) {
+    return headerValue;
+  }
+
+  return `server-${crypto.randomUUID()}`;
+}
+
+function getSafeUserAgent(req) {
+  const userAgent = String(req.get("user-agent") || "").toLowerCase();
+
+  return {
+    platform: userAgent.includes("android")
+      ? "android"
+      : userAgent.includes("iphone") || userAgent.includes("ipad")
+        ? "ios"
+        : userAgent.includes("windows")
+          ? "windows"
+          : userAgent.includes("mac os")
+            ? "macos"
+            : "other",
+    browser: userAgent.includes("yabrowser")
+      ? "yandex"
+      : userAgent.includes("edg/")
+        ? "edge"
+        : userAgent.includes("firefox")
+          ? "firefox"
+          : userAgent.includes("chrome") || userAgent.includes("crios")
+            ? "chrome"
+            : userAgent.includes("safari")
+              ? "safari"
+              : "other"
+  };
+}
+
+function hasGuestSessionCookie(req) {
+  return Boolean(parseCookies(req.headers.cookie || "")[GUEST_SESSION_COOKIE_NAME]);
+}
+
 const storage = multer.diskStorage({
   destination: uploadsDir,
   filename: (req, file, cb) => {
@@ -269,12 +310,64 @@ router.get("/api/guest/documents/:id/file", async (req, res) => {
 });
 
 router.post("/api/guest/upload", (req, res) => {
-  const timer = createRequestTimer("guest-upload");
+  const uploadAttemptId = getUploadAttemptId(req);
+  const timer = createRequestTimer("guest-upload", { uploadAttemptId });
+  const requestStartedAt = Date.now();
+  let responseFinished = false;
+
+  res.setHeader("X-Upload-Attempt-ID", uploadAttemptId);
+  timer.log("upload_request_received", {
+    method: req.method,
+    path: req.path,
+    contentLength: Number(req.get("content-length") || 0),
+    contentType: String(req.get("content-type") || "").split(";")[0].slice(0, 80),
+    userAgent: getSafeUserAgent(req),
+    guestSessionPresent: hasGuestSessionCookie(req)
+  });
+
+  req.once("aborted", () => {
+    timer.log("upload_request_aborted", {
+      durationMs: Date.now() - requestStartedAt
+    });
+  });
+
+  req.once("error", (error) => {
+    timer.log("upload_request_error", {
+      durationMs: Date.now() - requestStartedAt,
+      errorName: String(error?.name || "Error").slice(0, 80),
+      errorMessage: String(error?.message || "").replace(/[\r\n\t]+/g, " ").slice(0, 160)
+    });
+  });
+
+  res.once("finish", () => {
+    responseFinished = true;
+    timer.log("upload_response_finished", {
+      status: res.statusCode,
+      durationMs: Date.now() - requestStartedAt
+    });
+  });
+
+  res.once("close", () => {
+    if (!responseFinished) {
+      timer.log("upload_response_closed", {
+        status: res.statusCode,
+        durationMs: Date.now() - requestStartedAt,
+        responseFinished: false
+      });
+    }
+  });
+
+  timer.log("multipart_read_started");
 
   upload.single("photo")(req, res, async function (err) {
     if (err) {
       timer.log("multer_error", {
-        errorCode: err.code || err.message
+        errorCode: String(err.code || "UPLOAD_ERROR").slice(0, 80),
+        errorType: err.code === "LIMIT_FILE_SIZE"
+          ? "LIMIT_FILE_SIZE"
+          : err.code === "INVALID_FILE_TYPE" || err.message === "INVALID_FILE_TYPE"
+            ? "INVALID_FILE_TYPE"
+            : "OTHER"
       });
 
       if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "FILE_TOO_LARGE" });
@@ -288,7 +381,6 @@ router.post("/api/guest/upload", (req, res) => {
     }
 
     timer.log("file_received", {
-      filename: req.file.filename,
       mimeType: req.file.mimetype,
       sizeBytes: req.file.size
     });

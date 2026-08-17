@@ -2,6 +2,11 @@ import { useRef, useState } from "react";
 import { UPLOAD_STAGE_MESSAGES } from "../constants/uploadStages";
 import { trackGoal } from "../services/analytics";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
+import {
+  createUploadAttemptId,
+  logUploadDiagnostic,
+  reportGuestUploadFailure
+} from "../utils/uploadDiagnostics";
 
 export function useGuestUpload({
   uploadAllowed,
@@ -41,6 +46,14 @@ export function useGuestUpload({
     let recognizingTimer = null;
     let preparingTimer = null;
     const uploadMode = replaceDocumentIdRef.current ? "replace" : "new";
+    const uploadAttemptId = createUploadAttemptId();
+    const reportDiagnostic = (diagnosticEvent, details = {}) => {
+      logUploadDiagnostic(diagnosticEvent, details);
+
+      if (diagnosticEvent === "upload_failed") {
+        reportGuestUploadFailure(details);
+      }
+    };
 
     try {
       setUploading(true);
@@ -49,7 +62,10 @@ export function useGuestUpload({
       trackGoal("guest_upload_start", { upload_mode: uploadMode });
       onUploadStart?.();
       setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
-      const uploadFile = await prepareImageForUpload(file);
+      const uploadFile = await prepareImageForUpload(file, {
+        uploadAttemptId,
+        onDiagnostic: reportDiagnostic
+      });
       setUploadMessage(UPLOAD_STAGE_MESSAGES.uploading);
       recognizingTimer = window.setTimeout(() => {
         setUploadMessage(UPLOAD_STAGE_MESSAGES.recognizing);
@@ -58,7 +74,9 @@ export function useGuestUpload({
         setUploadMessage(UPLOAD_STAGE_MESSAGES.preparing);
       }, 4500);
       const guestState = await addGuestDocument(uploadFile, {
-        replaceDocumentId: replaceDocumentIdRef.current
+        replaceDocumentId: replaceDocumentIdRef.current,
+        uploadAttemptId,
+        onDiagnostic: reportDiagnostic
       });
       const processedDocument = guestState?.document;
       const readableText = processedDocument?.cleanText || processedDocument?.text || "";

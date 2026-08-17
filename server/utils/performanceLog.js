@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-export function createRequestTimer(scope) {
+export function createRequestTimer(scope, context = {}) {
   const requestId = crypto.randomBytes(4).toString("hex");
   const startedAt = Date.now();
   let lastStepAt = startedAt;
@@ -8,7 +8,9 @@ export function createRequestTimer(scope) {
   function log(step, details = {}) {
     const now = Date.now();
     const payload = {
+      timestamp: new Date(now).toISOString(),
       requestId,
+      ...context,
       step,
       elapsedMs: now - startedAt,
       stepMs: now - lastStepAt,

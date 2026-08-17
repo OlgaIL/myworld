@@ -52,28 +52,66 @@ export function getGuestDocument() {
 }
 
 export function uploadGuestPhoto(file, options = {}) {
-  const { onProgress, replaceDocumentId } = options;
+  const { onProgress, replaceDocumentId, uploadAttemptId = "", onDiagnostic } = options;
   const formData = new FormData();
   formData.append("photo", file);
+  const startedAt = Date.now();
+  let progressLogged = false;
 
   if (replaceDocumentId) {
     formData.append("replaceDocumentId", replaceDocumentId);
   }
 
+  onDiagnostic?.("upload_request_started", {
+    uploadAttemptId,
+    preparedSizeBytes: file.size,
+    mimeType: file.type
+  });
+
   return axios
     .post(`${API_URL}/api/guest/upload`, formData, {
       headers: {
-        "Content-Type": "multipart/form-data"
+        "Content-Type": "multipart/form-data",
+        "X-Upload-Attempt-ID": uploadAttemptId
       },
       onUploadProgress: (progressEvent) => {
+        if (!progressLogged) {
+          progressLogged = true;
+          onDiagnostic?.("upload_progress_received", {
+            uploadAttemptId,
+            preparedSizeBytes: file.size,
+            mimeType: file.type
+          });
+        }
+
         if (onProgress && progressEvent.total) {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           onProgress(percent);
         }
       }
     })
-    .then((res) => res.data)
+    .then((res) => {
+      onDiagnostic?.("upload_response_received", {
+        uploadAttemptId,
+        status: res.status,
+        durationMs: Date.now() - startedAt,
+        preparedSizeBytes: file.size,
+        mimeType: file.type
+      });
+      return res.data;
+    })
     .catch((err) => {
+      onDiagnostic?.("upload_failed", {
+        uploadAttemptId,
+        stage: progressLogged ? "wait_response" : "upload_body",
+        status: err.response?.status || 0,
+        hasResponse: Boolean(err.response),
+        durationMs: Date.now() - startedAt,
+        preparedSizeBytes: file.size,
+        mimeType: file.type,
+        error: err
+      });
+
       if (err.response) {
         if (err.response.status === 409 && err.response.data?.error === "GUEST_LIMIT_REACHED") {
           throw new Error("GUEST_LIMIT_REACHED");

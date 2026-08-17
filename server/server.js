@@ -26,6 +26,7 @@ import guestRoutes from "./routes/guestRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
 import processingHistoryRoutes from "./routes/processingHistoryRoutes.js";
+import clientDiagnosticsRoutes from "./routes/clientDiagnosticsRoutes.js";
 
 let databaseStatus = {
   configured: isDatabaseConfigured(),
@@ -80,6 +81,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use(authRoutes);
+app.use(clientDiagnosticsRoutes);
 app.use(accessRequestRoutes);
 app.use(adminRoutes);
 app.use(guestRoutes);
