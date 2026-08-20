@@ -96,6 +96,9 @@ function App() {
     monthOptions,
     dayOptions,
     filteredPhotos,
+    hiddenPhotosCount,
+    nextPhotosCount,
+    showMorePhotos,
     selectBrowseMode,
     resetCategory,
     selectCategory: applyCategoryFilter,
@@ -193,6 +196,7 @@ function App() {
         authProviders={authProviders}
         onProviderLogin={requestProviderLogin}
         onLogout={logout}
+        logoLinkEnabled={Boolean(documentName)}
       />
 
       {!user && (
@@ -250,6 +254,8 @@ function App() {
               yearOptions={yearOptions}
               monthOptions={monthOptions}
               dayOptions={dayOptions}
+              hiddenPhotosCount={hiddenPhotosCount}
+              nextPhotosCount={nextPhotosCount}
               selectBrowseMode={selectBrowseMode}
               resetCategory={resetCategory}
               resetTopicFilters={resetTopicFilters}
@@ -261,7 +267,8 @@ function App() {
               selectYear={selectYear}
               selectMonth={selectMonth}
               selectDay={selectDay}
-              toggleTags={toggleTags}
+            toggleTags={toggleTags}
+            showMorePhotos={showMorePhotos}
               fileInputRef={fileInputRef}
               onRequestUpload={requestCabinetUpload}
               handleUpload={handleUpload}

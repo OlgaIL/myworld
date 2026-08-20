@@ -106,6 +106,7 @@ function mapAdminUser(user) {
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
     recordsProcessedTotal: Number(user.records_processed_total || 0),
+    recordLimit: USER_RECORD_LIMIT,
     processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,
     acquisitionContext: user.acquisition_context || null,

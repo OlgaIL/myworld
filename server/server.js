@@ -6,7 +6,6 @@ import cors from "cors";
 import passport from "./auth/passport.js";
 import { checkDatabaseConnection, isDatabaseConfigured } from "./db/index.js";
 import {
-  CLIENT_URL,
   PROCESSING_ALLOWLIST_EMAILS,
   PROCESSING_ENABLED,
   PROCESSING_FREE_MODE,
@@ -27,6 +26,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
 import processingHistoryRoutes from "./routes/processingHistoryRoutes.js";
 import clientDiagnosticsRoutes from "./routes/clientDiagnosticsRoutes.js";
+import { buildCorsOptions } from "./middleware/corsOptions.js";
 
 let databaseStatus = {
   configured: isDatabaseConfigured(),
@@ -39,20 +39,7 @@ const app = express();
 
 app.set("passport", passport);
 
-const allowedOrigins = new Set(
-  [CLIENT_URL, "http://localhost:5173", "http://127.0.0.1:5173"].filter(Boolean)
-);
-
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) {
-      return callback(null, origin || true);
-    }
-
-    return callback(null, false);
-  },
-  credentials: true
-}));
+app.use(cors(buildCorsOptions()));
 app.use(express.json());
 app.use(session({ secret: SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());

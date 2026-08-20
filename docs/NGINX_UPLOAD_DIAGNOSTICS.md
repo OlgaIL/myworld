@@ -35,6 +35,31 @@ sudo systemctl reload nginx
 sudo tail -f /var/log/nginx/word2you-upload-access.log
 ```
 
-При поиске инцидента 14 августа 2026 года в 11:47 по Москве используйте окно примерно `08:42-08:52 UTC`.
+## 4. Проверить CORS для upload-заголовка
+
+Конфигурация Nginx в репозитории не хранится: CORS отвечает Node.js через middleware `cors`,
+а Nginx должен только проксировать OPTIONS-запрос к приложению.
+
+После публикации выполните с компьютера:
+
+```bash
+curl -i -X OPTIONS https://word2you.ru/api/guest/upload \
+  -H "Origin: https://word2you.ru" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type,x-upload-attempt-id"
+```
+
+В ответе должны быть:
+
+```text
+Access-Control-Allow-Origin: https://word2you.ru
+Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE
+Access-Control-Allow-Headers: content-type,x-upload-attempt-id
+```
+
+Если OPTIONS возвращает 404/405 или не доходит до Node.js, проверьте, что в Nginx
+для домена нет отдельного `location` или правила, перехватывающего OPTIONS.
+
+Для инцидента 18 августа 2026 года в 12:26 по Москве используйте окно примерно `09:20-09:35 UTC`.
 
 Примеры полезных статусов: `499` — клиент закрыл соединение до ответа, `502` — Nginx не получил корректный ответ от Node, `504` — истёк таймаут ожидания upstream.

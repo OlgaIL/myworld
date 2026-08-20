@@ -759,6 +759,16 @@ button {
   font-size: 14px;
 }
 
+@media (max-width: 780px) {
+  .profile__hint--package > span {
+    display: block;
+  }
+
+  .profile__hint--package .profile__hint-separator {
+    display: none;
+  }
+}
+
 .profile__logout {
   border-color: #d7dce5;
   background: #fff;
@@ -3627,6 +3637,36 @@ button {
 .admin-status--new {
   background: #ecfdf3;
   color: #027a48;
+}
+
+.cabinet-gallery-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 24px 0 8px;
+}
+
+.cabinet-gallery-more__button {
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 1px solid #cbd2dc;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cabinet-gallery-more__button:hover {
+  border-color: #172033;
+  background: #172033;
+  color: #fff;
+}
+
+.cabinet-gallery-more__count {
+  color: #657085;
+  font-size: 14px;
 }
 
 .admin-status--yookassa {

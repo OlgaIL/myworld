@@ -2,6 +2,19 @@ import { useMemo, useState } from "react";
 
 const UNCATEGORIZED_SECTION = "Без раздела";
 const UNCATEGORIZED_TOPIC = "Без темы";
+const DEFAULT_PHOTOS_PAGE_SIZE = 30;
+
+function readPhotosPageSize(value) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed)) {
+    return DEFAULT_PHOTOS_PAGE_SIZE;
+  }
+
+  return Math.min(Math.max(parsed, 5), 100);
+}
+
+const PHOTOS_PAGE_SIZE = readPhotosPageSize(import.meta.env.VITE_ARCHIVE_PAGE_SIZE);
 
 function normalizeSearchValue(value) {
   return String(value || "").trim().toLowerCase();
@@ -82,6 +95,7 @@ export function useCabinetFilters(photos) {
   const [activeMonth, setActiveMonth] = useState("");
   const [activeDay, setActiveDay] = useState("");
   const [showTags, setShowTags] = useState(false);
+  const [visiblePhotosLimit, setVisiblePhotosLimit] = useState(PHOTOS_PAGE_SIZE);
 
   const sectionOptions = useMemo(
     () => getCountOptions(photos.map((photo) => normalizeValue(photo?.section, UNCATEGORIZED_SECTION))),
@@ -195,23 +209,42 @@ export function useCabinetFilters(photos) {
     normalizedSearchQuery
   ]);
 
+  const visiblePhotos = useMemo(
+    () => filteredPhotos.slice(0, visiblePhotosLimit),
+    [filteredPhotos, visiblePhotosLimit]
+  );
+  const hiddenPhotosCount = Math.max(filteredPhotos.length - visiblePhotos.length, 0);
+  const nextPhotosCount = Math.min(hiddenPhotosCount, PHOTOS_PAGE_SIZE);
+
+  function resetVisiblePhotos() {
+    setVisiblePhotosLimit(PHOTOS_PAGE_SIZE);
+  }
+
+  function updateSearchQuery(value) {
+    setSearchQuery(value);
+    resetVisiblePhotos();
+  }
+
   function resetTopicFilters() {
     setActiveSection("");
     setActiveTopic("");
     setActiveTag("");
     setShowTags(false);
+    resetVisiblePhotos();
   }
 
   function resetDateFilters() {
     setActiveYear("");
     setActiveMonth("");
     setActiveDay("");
+    resetVisiblePhotos();
   }
 
   function selectBrowseMode(mode) {
     setBrowseMode(mode);
     setActiveCategory("");
     setSearchQuery("");
+    resetVisiblePhotos();
 
     if (mode === "topics") {
       resetDateFilters();
@@ -228,6 +261,7 @@ export function useCabinetFilters(photos) {
     setActiveTopic("");
     setActiveTag("");
     setShowTags(false);
+    resetVisiblePhotos();
     resetDateFilters();
   }
 
@@ -236,6 +270,7 @@ export function useCabinetFilters(photos) {
     setActiveTopic(topic);
     setActiveTag("");
     setShowTags(false);
+    resetVisiblePhotos();
   }
 
   function selectYear(year) {
@@ -243,22 +278,26 @@ export function useCabinetFilters(photos) {
     setActiveYear(year);
     setActiveMonth("");
     setActiveDay("");
+    resetVisiblePhotos();
   }
 
   function selectMonth(month) {
     setSearchQuery("");
     setActiveMonth(month);
     setActiveDay("");
+    resetVisiblePhotos();
   }
 
   function selectDay(day) {
     setSearchQuery("");
     setActiveDay(day);
+    resetVisiblePhotos();
   }
 
   function selectCategory(category) {
     setSearchQuery("");
     setActiveCategory(category);
+    resetVisiblePhotos();
     resetTopicFilters();
     resetDateFilters();
   }
@@ -268,6 +307,7 @@ export function useCabinetFilters(photos) {
     setBrowseMode("topics");
     setActiveTag(tag);
     setShowTags(true);
+    resetVisiblePhotos();
     resetDateFilters();
   }
 
@@ -278,11 +318,26 @@ export function useCabinetFilters(photos) {
       }
       return !current;
     });
+    resetVisiblePhotos();
+  }
+
+  function resetCategory() {
+    setActiveCategory("");
+    resetVisiblePhotos();
+  }
+
+  function resetTag() {
+    setActiveTag("");
+    resetVisiblePhotos();
+  }
+
+  function showMorePhotos() {
+    setVisiblePhotosLimit((current) => current + PHOTOS_PAGE_SIZE);
   }
 
   return {
     searchQuery,
-    setSearchQuery,
+    setSearchQuery: updateSearchQuery,
     browseMode,
     activeCategory,
     activeSection,
@@ -298,14 +353,17 @@ export function useCabinetFilters(photos) {
     yearOptions,
     monthOptions,
     dayOptions,
-    filteredPhotos,
+    filteredPhotos: visiblePhotos,
+    hiddenPhotosCount,
+    nextPhotosCount,
+    showMorePhotos,
     selectBrowseMode,
-    resetCategory: () => setActiveCategory(""),
+    resetCategory,
     selectCategory,
     resetTopicFilters,
     selectSection,
     selectTopic,
-    resetTag: () => setActiveTag(""),
+    resetTag,
     selectTag,
     resetDateFilters,
     selectYear,

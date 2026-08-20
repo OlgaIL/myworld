@@ -15,6 +15,7 @@ import {
   updateAdminAccessRequestStatus,
   updateAdminUserProcessingAccess
 } from "../services/adminApi";
+import { getProcessingUsageText } from "../utils/processingAccessText";
 
 function formatDate(value) {
   if (!value) {
@@ -209,6 +210,7 @@ function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUse
               </span>
               <span className="admin-user-row__side">
                 <span>{user.documentsCount} док.</span>
+                <span>{getProcessingUsageText(user)}</span>
                 <span>{getAccessLabel(user)}</span>
                 {savedUserId === user.id && (
                   <span className="admin-user-row__saved">✓ изменения сохранены</span>
@@ -341,10 +343,33 @@ function AdminUserDetails({ user, onSaved }) {
       <div className="admin-current-access">
         <span>Текущий доступ</span>
         <div className="admin-current-access__value">
-          <strong>{getProductAccessLabel({ ...user, processingEnabled, accessExpiresAt })}</strong>
+          <div>
+            <strong>{getProductAccessLabel({
+              ...user,
+              processingEnabled,
+              processingQuota,
+              processingUsed,
+              accessExpiresAt
+            })}</strong>
+            <p className="admin-muted">
+              {getProcessingUsageText({
+                ...user,
+                processingEnabled,
+                processingQuota,
+                processingUsed,
+                accessExpiresAt
+              })}
+            </p>
+          </div>
           <AdminCopyButton
             label="Скопировать статус доступа"
-            value={getProductAccessLabel({ ...user, processingEnabled, accessExpiresAt })}
+            value={getProductAccessLabel({
+              ...user,
+              processingEnabled,
+              processingQuota,
+              processingUsed,
+              accessExpiresAt
+            })}
           />
         </div>
       </div>

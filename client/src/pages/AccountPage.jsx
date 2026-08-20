@@ -27,7 +27,7 @@ function getAccessTitle(user) {
   }
 
   if (Number(user?.packageQuota || 0) > 0) {
-    return "Баланс обработок";
+    return "Платный пакет";
   }
 
   return "Бесплатный пакет";
@@ -268,6 +268,7 @@ function AccountPage() {
           <h2>{accountStatusHeading}</h2>
           {accountAccessTitle !== accountStatusHeading && <strong>{accountAccessTitle}</strong>}
           <p>{getAccessStatus(user)}</p>
+          <p>Документов в архиве: {Number(user.recordsStored || 0)}</p>
           {!showRequestedPackage && (
             <button
               className="account-refresh-button"

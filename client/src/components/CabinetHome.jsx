@@ -38,6 +38,8 @@ function CabinetHome({
   yearOptions,
   monthOptions,
   dayOptions,
+  hiddenPhotosCount,
+  nextPhotosCount,
   selectBrowseMode,
   resetCategory,
   resetTopicFilters,
@@ -50,6 +52,7 @@ function CabinetHome({
   selectMonth,
   selectDay,
   toggleTags,
+  showMorePhotos,
   fileInputRef,
   onRequestUpload,
   handleUpload,
@@ -72,7 +75,7 @@ function CabinetHome({
             Загрузить запись
           </button>
           <p className="guest-hero__counter upload-panel__counter">
-            Загружено записей: {recordsUsed}
+            Документов в архиве: {recordsUsed}
           </p>
           {!uploading && <AccessLimitMessage user={user} />}
         </section>
@@ -137,6 +140,14 @@ function CabinetHome({
             onSelectCategory={onSelectCategory}
             onSelectTag={onSelectTag}
           />
+          {hiddenPhotosCount > 0 && (
+            <div className="cabinet-gallery-more">
+              <button className="cabinet-gallery-more__button" type="button" onClick={showMorePhotos}>
+                Показать ещё {nextPhotosCount}
+              </button>
+              <span className="cabinet-gallery-more__count">Осталось: {hiddenPhotosCount}</span>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -147,7 +158,7 @@ function CabinetHome({
           />
           <div className="cabinet-empty-state__meta">
             <p className="guest-hero__counter upload-panel__counter">
-              Загружено записей: {recordsUsed}
+              Документов в архиве: {recordsUsed}
             </p>
             {!uploading && <AccessLimitMessage user={user} />}
           </div>

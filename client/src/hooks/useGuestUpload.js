@@ -59,7 +59,10 @@ export function useGuestUpload({
       setUploading(true);
       setReplacingDocumentId(replaceDocumentIdRef.current);
       setError("");
-      trackGoal("guest_upload_start", { upload_mode: uploadMode });
+      trackGoal("guest_upload_start", {
+        upload_mode: uploadMode,
+        upload_attempt_id: uploadAttemptId
+      });
       onUploadStart?.();
       setUploadMessage(UPLOAD_STAGE_MESSAGES.preparingImage);
       const uploadFile = await prepareImageForUpload(file, {
@@ -82,7 +85,10 @@ export function useGuestUpload({
       const readableText = processedDocument?.cleanText || processedDocument?.text || "";
 
       if (processedDocument?.status === "processed" && readableText.trim()) {
-        trackGoal("guest_upload_success", { upload_mode: uploadMode });
+        trackGoal("guest_upload_success", {
+          upload_mode: uploadMode,
+          upload_attempt_id: uploadAttemptId
+        });
       }
       window.clearTimeout(recognizingTimer);
       window.clearTimeout(preparingTimer);

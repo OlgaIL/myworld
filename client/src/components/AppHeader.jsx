@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import AuthMenu from "./AuthMenu";
+import { getAvailableProcessingCount } from "../utils/processingAccessText";
 
 function formatShortAccessDate(value) {
   if (!value) {
@@ -23,11 +24,17 @@ function getProfileAccessText(user, recordsUsed, recordLimit) {
   }
 
   if (Number(user?.packageQuota || 0) > 0) {
-    const totalRemaining = Number(user?.recordsRemaining || 0) + Number(user?.packageRemaining || 0);
-    return `Баланс · ${totalRemaining} обработок`;
+    const totalRemaining = getAvailableProcessingCount(user, recordsUsed, recordLimit);
+    return {
+      label: "Платный пакет",
+      details: `доступно ${totalRemaining} обработок`
+    };
   }
 
-  return `Бесплатный пакет · ${recordsUsed}/${recordLimit} обработок`;
+  return {
+    label: "Бесплатный пакет",
+    details: `доступно ${getAvailableProcessingCount(user, recordsUsed, recordLimit)} обработок`
+  };
 }
 
 function AppHeader({
@@ -37,13 +44,22 @@ function AppHeader({
   authProviders,
   onProviderLogin,
   onLogout,
-  profileLinkEnabled = true
+  profileLinkEnabled = true,
+  logoLinkEnabled = true
 }) {
+  const accessText = user ? getProfileAccessText(user, recordsUsed, recordLimit) : null;
+
   return (
     <header className="topbar">
-      <Link className="header__logo" to="/">
-        Word2you <span className="header__logo-accent">Записи</span>
-      </Link>
+      {logoLinkEnabled ? (
+        <Link className="header__logo" to="/">
+          Word2you <span className="header__logo-accent">Записи</span>
+        </Link>
+      ) : (
+        <span className="header__logo">
+          Word2you <span className="header__logo-accent">Записи</span>
+        </span>
+      )}
 
       {!user ? (
         <div className="topbar__actions">
@@ -63,7 +79,15 @@ function AppHeader({
             ) : (
               <span className="profile__name">{user.displayName}</span>
             )}
-            <span className="profile__hint">{getProfileAccessText(user, recordsUsed, recordLimit)}</span>
+            {typeof accessText === "string" ? (
+              <span className="profile__hint">{accessText}</span>
+            ) : (
+              <span className="profile__hint profile__hint--package">
+                <span>{accessText.label}</span>
+                <span className="profile__hint-separator"> · </span>
+                <span>{accessText.details}</span>
+              </span>
+            )}
           </div>
           <button className="profile__logout" type="button" onClick={onLogout}>
             Выйти

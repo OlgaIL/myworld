@@ -1,4 +1,9 @@
 import { trackGoal } from "../services/analytics";
+import {
+  buildGuestUploadFailureMetricParams,
+  buildGuestUploadFailurePayload,
+  getSafeErrorDetails
+} from "./uploadDiagnosticPayload";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -41,14 +46,6 @@ export function createUploadAttemptId() {
   return `upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
-export function getSafeErrorDetails(error) {
-  return {
-    errorName: truncate(error?.name || "Error", 80),
-    errorCode: truncate(error?.code || "", 80),
-    errorMessage: truncate(error?.message || "", 160)
-  };
-}
-
 export function getUploadClientContext() {
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
@@ -72,28 +69,20 @@ export function logUploadDiagnostic(event, details = {}) {
 }
 
 export function reportGuestUploadFailure(details = {}) {
-  const payload = {
-    event: "upload_failed",
-    uploadAttemptId: truncate(details.uploadAttemptId, 80),
-    stage: truncate(details.stage || "wait_response", 32),
-    status: Number.isInteger(details.status) ? details.status : 0,
-    durationMs: Math.max(0, Math.round(Number(details.durationMs) || 0)),
-    hasResponse: Boolean(details.hasResponse),
-    preparedSizeBytes: Math.max(0, Math.round(Number(details.preparedSizeBytes) || 0)),
-    mimeType: truncate(details.mimeType, 80),
-    ...getSafeErrorDetails(details.error),
-    ...getUploadClientContext()
-  };
+  const payload = buildGuestUploadFailurePayload(details, getUploadClientContext());
 
-  trackGoal("guest_upload_failed", {
-    stage: payload.stage,
-    status: payload.status,
-    has_response: payload.hasResponse ? 1 : 0,
-    online: payload.online ? 1 : 0,
-    platform: payload.platformFamily,
-    browser: payload.browserFamily,
-    connection: payload.connectionType
-  });
+  try {
+    const metricSent = trackGoal("guest_upload_failed", buildGuestUploadFailureMetricParams(payload));
+    logUploadDiagnostic("upload_failure_metric", {
+      uploadAttemptId: payload.uploadAttemptId,
+      sent: metricSent
+    });
+  } catch (error) {
+    logUploadDiagnostic("upload_failure_metric_error", {
+      uploadAttemptId: payload.uploadAttemptId,
+      errorName: getSafeErrorDetails(error).errorName
+    });
+  }
 
   logUploadDiagnostic("upload_failed", payload);
 
