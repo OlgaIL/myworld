@@ -759,6 +759,31 @@ button {
   font-size: 14px;
 }
 
+.profile__balance {
+  display: block;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #dce2e9;
+}
+
+.profile__balance-value {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2f855a;
+  transition: width 200ms ease, background-color 200ms ease;
+}
+
+.profile__balance--warning .profile__balance-value {
+  background: #d97706;
+}
+
+.profile__balance--danger .profile__balance-value {
+  background: #c2413b;
+}
+
 @media (max-width: 780px) {
   .profile__hint--package > span {
     display: block;

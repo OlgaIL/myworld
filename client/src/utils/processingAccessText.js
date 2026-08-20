@@ -10,6 +10,25 @@ export function getAvailableProcessingCount(user, recordsUsed = 0, recordLimit =
   return Math.max(Number(recordLimit || 0) - Number(recordsUsed || 0), 0);
 }
 
+export function getProcessingBalanceProgress(user, recordsUsed = 0, recordLimit = 0) {
+  if (user?.unlimitedAccess || user?.processingEnabled || user?.extendedAccessActive) {
+    return null;
+  }
+
+  const freeLimit = Math.max(Number(user?.recordLimit ?? recordLimit ?? 0), 0);
+  const packageQuota = Math.max(Number(user?.packageQuota || 0), 0);
+  const total = freeLimit + packageQuota;
+  const available = Math.min(getAvailableProcessingCount(user, recordsUsed, recordLimit), total);
+  const percentage = total > 0 ? Math.round((available / total) * 100) : 0;
+
+  return {
+    available,
+    total,
+    percentage,
+    tone: percentage <= 5 ? "danger" : percentage <= 20 ? "warning" : "healthy"
+  };
+}
+
 export function getProcessingUsageText(user) {
   const processedTotal = Math.max(Number(user?.recordsProcessedTotal || 0), 0);
   const quota = Math.max(Number(user?.processingQuota || 0), 0);

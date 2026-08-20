@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   getAvailableProcessingCount,
+  getProcessingBalanceProgress,
   getProcessingUsageText
 } from "./processingAccessText.js";
 
@@ -20,4 +21,16 @@ test("formats free, paid and unlimited processing usage", () => {
     getProcessingUsageText({ processingEnabled: true, recordsProcessedTotal: 125 }),
     "Обработок: 125 всего"
   );
+});
+
+test("builds balance progress for free and paid access", () => {
+  assert.deepEqual(
+    getProcessingBalanceProgress({ recordsRemaining: 15, recordLimit: 30 }),
+    { available: 15, total: 30, percentage: 50, tone: "healthy" }
+  );
+  assert.deepEqual(
+    getProcessingBalanceProgress({ packageQuota: 50, packageRemaining: 0, recordsRemaining: 4, recordLimit: 30 }),
+    { available: 4, total: 80, percentage: 5, tone: "danger" }
+  );
+  assert.equal(getProcessingBalanceProgress({ unlimitedAccess: true, recordLimit: 30 }), null);
 });

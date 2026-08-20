@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import AuthMenu from "./AuthMenu";
-import { getAvailableProcessingCount } from "../utils/processingAccessText";
+import {
+  getAvailableProcessingCount,
+  getProcessingBalanceProgress
+} from "../utils/processingAccessText";
 
 function formatShortAccessDate(value) {
   if (!value) {
@@ -48,6 +51,7 @@ function AppHeader({
   logoLinkEnabled = true
 }) {
   const accessText = user ? getProfileAccessText(user, recordsUsed, recordLimit) : null;
+  const balanceProgress = user ? getProcessingBalanceProgress(user, recordsUsed, recordLimit) : null;
 
   return (
     <header className="topbar">
@@ -86,6 +90,22 @@ function AppHeader({
                 <span>{accessText.label}</span>
                 <span className="profile__hint-separator"> · </span>
                 <span>{accessText.details}</span>
+              </span>
+            )}
+            {balanceProgress && (
+              <span
+                className={`profile__balance profile__balance--${balanceProgress.tone}`}
+                role="progressbar"
+                aria-label={`Осталось ${balanceProgress.available} из ${balanceProgress.total} обработок`}
+                aria-valuemin="0"
+                aria-valuemax={balanceProgress.total}
+                aria-valuenow={balanceProgress.available}
+                title={`Осталось ${balanceProgress.available} из ${balanceProgress.total} обработок`}
+              >
+                <span
+                  className="profile__balance-value"
+                  style={{ width: `${balanceProgress.percentage}%` }}
+                />
               </span>
             )}
           </div>
