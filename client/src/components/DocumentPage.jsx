@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
+import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import AuthProviderButtons from "./AuthProviderButtons";
+import HourglassIcon from "./HourglassIcon";
 
 function formatCreatedAt(value) {
   if (!value) {
@@ -75,7 +77,11 @@ function DocumentPage({
   onSelectCategory,
   onSelectTag,
   authProviders = [],
-  onProviderLogin
+  onProviderLogin,
+  improvementRequest = null,
+  improvementRequestLoading = false,
+  improvementRequestError = "",
+  onRequestImprovement
 }) {
   const [showOcrText, setShowOcrText] = useState(false);
 
@@ -100,6 +106,16 @@ function DocumentPage({
   const hasTags = Array.isArray(info?.tags) && info.tags.length > 0;
   const hasSideMeta = Boolean(info?.category || hasTags);
   const showGuestSaveCta = Boolean(onProviderLogin && authProviders.length > 0);
+  const improvementStatusMeta = getImprovementRequestStatusMeta(improvementRequest?.status);
+  const improvementAvailable = (
+    info?.status === "processed" && info?.textQuality === "low_confidence"
+  ) || (
+    info?.status === "no_text" && info?.textQuality === "no_meaningful_text"
+  );
+  const showImprovementSection = improvementAvailable || Boolean(improvementRequest);
+  const canRequestImprovement = Boolean(onRequestImprovement)
+    && improvementAvailable
+    && (!improvementRequest || improvementRequest.status === "cancelled");
 
   return (
     <main className="document-page">
@@ -112,6 +128,12 @@ function DocumentPage({
         {statusMeta && (
           <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
             {statusMeta.label}
+          </p>
+        )}
+        {improvementStatusMeta?.cardLabel && (
+          <p className={`gallery__improvement-badge gallery__improvement-badge--${improvementStatusMeta.tone}`}>
+            {improvementStatusMeta.tone === "pending" && <HourglassIcon />}
+            {improvementStatusMeta.cardLabel}
           </p>
         )}
       </div>
@@ -186,6 +208,31 @@ function DocumentPage({
               </div>
             )}
           </section>
+
+          {showImprovementSection && (
+            <section className="document-improvement" aria-label="Улучшение распознавания">
+              {improvementRequestLoading && (
+                <p className="document-improvement__loading">Проверяем статус запроса...</p>
+              )}
+
+              {!improvementRequestLoading && improvementStatusMeta && (
+                <div className={`document-improvement__status document-improvement__status--${improvementStatusMeta.tone}`}>
+                  <strong>{improvementStatusMeta.label}</strong>
+                  <span>{improvementStatusMeta.details}</span>
+                </div>
+              )}
+
+              {improvementRequestError && (
+                <p className="document-improvement__error">{improvementRequestError}</p>
+              )}
+
+              {!improvementRequestLoading && canRequestImprovement && (
+                <button className="document-improvement__button" type="button" onClick={onRequestImprovement}>
+                  Запросить улучшение результата
+                </button>
+              )}
+            </section>
+          )}
 
           {showGuestSaveCta && (
             <section className="guest-login-cta" aria-label="Сохранить запись в личном архиве">

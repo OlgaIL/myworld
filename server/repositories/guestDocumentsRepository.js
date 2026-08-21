@@ -41,9 +41,20 @@ export async function findLatestGuestDocumentBySessionId(guestSessionId) {
     `
       select
         gd.*,
-        (p.id is not null) as claimed_photo_exists
+        (p.id is not null) as claimed_photo_exists,
+        rir.id as improvement_request_id,
+        rir.status as improvement_request_status,
+        rir.created_at as improvement_request_created_at,
+        rir.updated_at as improvement_request_updated_at
       from guest_documents gd
       left join photos p on p.id = gd.claimed_photo_id
+      left join lateral (
+        select id, status, created_at, updated_at
+        from recognition_improvement_requests
+        where photo_id = gd.claimed_photo_id
+        order by created_at desc
+        limit 1
+      ) rir on true
       where gd.guest_session_id = $1
       order by gd.created_at desc
       limit 1

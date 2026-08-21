@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { getPhotoStatusMeta } from "../constants/documentStatuses";
+import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
+import HourglassIcon from "./HourglassIcon";
 
 function CloseIcon() {
   return (
@@ -58,8 +60,10 @@ function PhotoCard({
   onRequestDelete,
   onSelectCategory,
   onSelectTag,
+  improvementRequest,
 }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
+  const improvementStatusMeta = getImprovementRequestStatusMeta(improvementRequest?.status);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
   const readableText = info?.cleanText || info?.text || "";
   const isPendingUpload = Boolean(photo.isPendingUpload);
@@ -105,6 +109,12 @@ function PhotoCard({
         ) : statusMeta && (
           <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
             {statusMeta.label}
+          </p>
+        )}
+        {!isPendingUpload && improvementStatusMeta?.cardLabel && (
+          <p className={`gallery__improvement-badge gallery__improvement-badge--${improvementStatusMeta.tone}`}>
+            {improvementStatusMeta.tone === "pending" && <HourglassIcon />}
+            {improvementStatusMeta.cardLabel}
           </p>
         )}
       </div>
@@ -262,7 +272,8 @@ function arePhotoCardPropsEqual(prev, next) {
     prev.onOpenDocument === next.onOpenDocument &&
     prev.onRequestDelete === next.onRequestDelete &&
     prev.onSelectCategory === next.onSelectCategory &&
-    prev.onSelectTag === next.onSelectTag
+    prev.onSelectTag === next.onSelectTag &&
+    prev.improvementRequest === next.improvementRequest
   );
 }
 

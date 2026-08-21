@@ -26,6 +26,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
 import processingHistoryRoutes from "./routes/processingHistoryRoutes.js";
 import clientDiagnosticsRoutes from "./routes/clientDiagnosticsRoutes.js";
+import improvementRequestRoutes from "./routes/improvementRequestRoutes.js";
 import { buildCorsOptions } from "./middleware/corsOptions.js";
 
 let databaseStatus = {
@@ -75,6 +76,7 @@ app.use(guestRoutes);
 app.use(paymentRoutes);
 app.use(photoRoutes);
 app.use(processingHistoryRoutes);
+app.use(improvementRequestRoutes);
 
 app.use(express.static(clientDistDir));
 app.use((req, res) => res.sendFile(`${clientDistDir}/index.html`));

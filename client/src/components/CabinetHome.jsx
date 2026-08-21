@@ -18,6 +18,7 @@ function CabinetHome({
   photosCount,
   pendingPhotos,
   filteredPhotos,
+  improvementRequestsByDocumentId,
   uploadMessage,
   uploading,
   recordUploadAllowed,
@@ -132,6 +133,7 @@ function CabinetHome({
           <Gallery
             photos={filteredPhotos}
             pendingPhotos={pendingPhotos}
+            improvementRequestsByDocumentId={improvementRequestsByDocumentId}
             onOpen={onOpenImage}
             onOpenDocument={onOpenDocument}
             onDelete={onDelete}

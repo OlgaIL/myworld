@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PhotoCard from "./PhotoCard";
 import { getPhotoInfo } from "../services/api";
 
@@ -24,10 +24,13 @@ function getPhotoListInfo(photo) {
   };
 }
 
-function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocument, onDelete, uploadMessage = "", emptyMessage = "Пока тут пусто. Загрузите ваши фото.", onSelectCategory, onSelectTag }) {
+function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequestsByDocumentId = {}, onOpen, onOpenDocument, onDelete, uploadMessage = "", emptyMessage = "Пока тут пусто. Загрузите ваши фото.", onSelectCategory, onSelectTag }) {
   const [infoMap, setInfoMap] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
-  const pendingQueue = pendingPhotos.length > 0 ? pendingPhotos : (pendingPhoto ? [pendingPhoto] : []);
+  const pendingQueue = useMemo(
+    () => (pendingPhotos.length > 0 ? pendingPhotos : (pendingPhoto ? [pendingPhoto] : [])),
+    [pendingPhoto, pendingPhotos]
+  );
   const visiblePhotos = useMemo(() => {
     const pendingServerNames = new Set(pendingQueue.map((photo) => photo.serverName).filter(Boolean));
     return photos.filter((photo) => !pendingServerNames.has(photo.name));
@@ -142,6 +145,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], onOpen, onOpenDocum
             onRequestDelete={setPendingDelete}
             onSelectCategory={onSelectCategory}
             onSelectTag={onSelectTag}
+            improvementRequest={improvementRequestsByDocumentId[photo.name] || null}
           />
         ))}
       </section>

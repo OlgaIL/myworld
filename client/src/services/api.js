@@ -277,3 +277,21 @@ export function getProcessingHistory() {
       throw new Error("Сервер недоступен");
     });
 }
+
+export function getPhotoImprovementRequests(documentId) {
+  return axios
+    .get(`${API_URL}/api/photos/${encodeURIComponent(documentId)}/improvement-requests`)
+    .then((res) => res.data);
+}
+
+export function getImprovementRequests() {
+  return axios
+    .get(`${API_URL}/api/improvement-requests`)
+    .then((res) => res.data);
+}
+
+export function createImprovementRequest(documentId, payload) {
+  return axios
+    .post(`${API_URL}/api/photos/${encodeURIComponent(documentId)}/improvement-requests`, payload)
+    .then((res) => res.data);
+}

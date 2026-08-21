@@ -1,5 +1,7 @@
 import { getGuestDocumentStatusMeta } from "../constants/documentStatuses";
+import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import { getGuestDocumentFileUrl } from "../services/api";
+import HourglassIcon from "./HourglassIcon";
 
 function ZoomIcon() {
   return (
@@ -26,6 +28,7 @@ function formatCreatedAt(value) {
 
 function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocument, onUploadAnother }) {
   const statusMeta = getGuestDocumentStatusMeta(document.status);
+  const improvementStatusMeta = getImprovementRequestStatusMeta(document.improvementRequest?.status);
   const fileUrl = getGuestDocumentFileUrl(document.id, document.updatedAt || document.filename);
   const createdAtLabel = formatCreatedAt(document.createdAt);
   const readableText = document.cleanText || document.text || "";
@@ -55,6 +58,12 @@ function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocume
         <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
           {statusMeta.label}
         </p>
+        {improvementStatusMeta?.cardLabel && (
+          <p className={`gallery__improvement-badge gallery__improvement-badge--${improvementStatusMeta.tone}`}>
+            {improvementStatusMeta.tone === "pending" && <HourglassIcon />}
+            {improvementStatusMeta.cardLabel}
+          </p>
+        )}
       </div>
 
       <div className="gallery__body">

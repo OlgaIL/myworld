@@ -22,6 +22,15 @@ export function parseCookies(cookieHeader = "") {
 }
 
 export function mapGuestDocumentInfo(document) {
+  const improvementRequest = document.improvement_request_id
+    ? {
+        id: String(document.improvement_request_id),
+        status: document.improvement_request_status,
+        createdAt: document.improvement_request_created_at,
+        updatedAt: document.improvement_request_updated_at
+      }
+    : null;
+
   return {
     id: String(document.id),
     filename: document.filename,
@@ -39,7 +48,8 @@ export function mapGuestDocumentInfo(document) {
     error: document.error_message || null,
     createdAt: document.created_at,
     updatedAt: document.updated_at,
-    expiresAt: document.expires_at
+    expiresAt: document.expires_at,
+    improvementRequest
   };
 }
 

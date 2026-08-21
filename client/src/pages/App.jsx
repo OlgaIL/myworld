@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
 import DocumentPage from "../components/DocumentPage";
 import GuestHome from "../components/GuestHome";
+import ImprovementRequestModal from "../components/ImprovementRequestModal";
 import LegalAgreementModal from "../components/LegalAgreementModal";
 import Modal from "../components/Modal";
 import PageFooter from "../components/PageFooter";
@@ -14,10 +15,38 @@ import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
 import { useGuestUpload } from "../hooks/useGuestUpload";
+import { useImprovementRequest } from "../hooks/useImprovementRequest";
+import { useImprovementRequests } from "../hooks/useImprovementRequests";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
 import { trackGoal } from "../services/analytics";
 import { getPhotoUrl } from "../services/api";
+
+const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
+
+function rememberPendingImprovementDocument(documentId) {
+  try {
+    window.sessionStorage.setItem(PENDING_IMPROVEMENT_DOCUMENT_KEY, documentId);
+  } catch {
+    // Login should continue even when session storage is unavailable.
+  }
+}
+
+function getPendingImprovementDocument() {
+  try {
+    return window.sessionStorage.getItem(PENDING_IMPROVEMENT_DOCUMENT_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function clearPendingImprovementDocument() {
+  try {
+    window.sessionStorage.removeItem(PENDING_IMPROVEMENT_DOCUMENT_KEY);
+  } catch {
+    // Nothing else is required when storage is unavailable.
+  }
+}
 
 function App() {
   const navigate = useNavigate();
@@ -36,6 +65,8 @@ function App() {
   });
   const [activePhoto, setActivePhoto] = useState(null);
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
+  const [improvementModalMode, setImprovementModalMode] = useState(null);
+  const [guestImprovementDocumentId, setGuestImprovementDocumentId] = useState("");
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
@@ -78,6 +109,19 @@ function App() {
     : null;
   const activeDocumentInfo = activeDocumentPhoto || null;
   const {
+    requestsByDocumentId: improvementRequestsByDocumentId,
+    upsertRequest: upsertImprovementRequest
+  } = useImprovementRequests(Boolean(user));
+  const {
+    request: improvementRequest,
+    loading: improvementRequestLoading,
+    submitting: improvementRequestSubmitting,
+    error: improvementRequestError,
+    submitRequest: submitImprovementRequest
+  } = useImprovementRequest(documentName, Boolean(user && documentName), {
+    onRequestChanged: upsertImprovementRequest
+  });
+  const {
     searchQuery,
     setSearchQuery,
     browseMode,
@@ -114,13 +158,39 @@ function App() {
     toggleTags
   } = useCabinetFilters(photos);
 
-  const requestProviderLogin = useCallback((providerId) => {
+  const requestProviderLogin = useCallback((providerId, options = {}) => {
     if (!user && guestDocuments.length > 0) {
       trackGoal("auth_click_after_upload", { provider: providerId });
     }
 
-    requestLegalAgreement(() => loginWithProvider(providerId));
+    requestLegalAgreement(() => {
+      if (options.improvementDocumentId) {
+        rememberPendingImprovementDocument(options.improvementDocumentId);
+      }
+      loginWithProvider(providerId);
+    });
   }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const pendingDocumentId = getPendingImprovementDocument();
+    if (!pendingDocumentId) {
+      return;
+    }
+
+    if (documentName === pendingDocumentId) {
+      clearPendingImprovementDocument();
+      const timeoutId = window.setTimeout(() => setImprovementModalMode("request"), 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    if (photos.some((photo) => photo.name === pendingDocumentId)) {
+      navigate(`/documents/${encodeURIComponent(pendingDocumentId)}`);
+    }
+  }, [documentName, navigate, photos, user]);
 
   const requestCabinetUpload = useCallback(() => {
     requestLegalAgreement(() => fileInputRef.current?.click());
@@ -148,6 +218,32 @@ function App() {
     navigate("/");
   }, [applyTagFilter, navigate, resetCopied]);
 
+  function openGuestImprovementRequest(document) {
+    if (!document?.filename) {
+      return;
+    }
+    setGuestImprovementDocumentId(document.filename);
+    setImprovementModalMode("auth");
+  }
+
+  function loginForImprovement(providerId) {
+    setImprovementModalMode(null);
+    requestProviderLogin(providerId, {
+      improvementDocumentId: guestImprovementDocumentId
+    });
+  }
+
+  async function handleImprovementRequestSubmit({ comment }) {
+    try {
+      const created = await submitImprovementRequest({ comment });
+      if (created) {
+        setImprovementModalMode(null);
+      }
+    } catch {
+      // The hook keeps the modal open and exposes a user-facing error.
+    }
+  }
+
   function renderGuestState() {
     if (activeGuestDocument) {
       return (
@@ -160,6 +256,8 @@ function App() {
           onCopy={handleDocumentCopy}
           authProviders={authProviders}
           onProviderLogin={requestProviderLogin}
+          improvementRequest={activeGuestDocument.improvementRequest || null}
+          onRequestImprovement={() => openGuestImprovementRequest(activeGuestDocument)}
         />
       );
     }
@@ -226,6 +324,10 @@ function App() {
               onCopy={handleDocumentCopy}
               onSelectCategory={selectCategory}
               onSelectTag={selectTag}
+              improvementRequest={improvementRequest}
+              improvementRequestLoading={improvementRequestLoading}
+              improvementRequestError={improvementRequestError}
+              onRequestImprovement={() => setImprovementModalMode("request")}
             />
           ) : (
             <CabinetHome
@@ -234,6 +336,7 @@ function App() {
               photosCount={photosCount}
               pendingPhotos={pendingPhotos}
               filteredPhotos={filteredPhotos}
+              improvementRequestsByDocumentId={improvementRequestsByDocumentId}
               uploadMessage={uploadMessage}
               uploading={uploading}
               recordUploadAllowed={recordUploadAllowed}
@@ -267,8 +370,8 @@ function App() {
               selectYear={selectYear}
               selectMonth={selectMonth}
               selectDay={selectDay}
-            toggleTags={toggleTags}
-            showMorePhotos={showMorePhotos}
+              toggleTags={toggleTags}
+              showMorePhotos={showMorePhotos}
               fileInputRef={fileInputRef}
               onRequestUpload={requestCabinetUpload}
               handleUpload={handleUpload}
@@ -289,6 +392,18 @@ function App() {
           accepting={legalAgreementAccepting}
           onAccept={acceptLegalAgreement}
           onClose={closeLegalAgreement}
+        />
+      )}
+
+      {improvementModalMode && (
+        <ImprovementRequestModal
+          requiresAuth={improvementModalMode === "auth"}
+          authProviders={authProviders}
+          submitting={improvementRequestSubmitting}
+          error={improvementRequestError}
+          onProviderLogin={loginForImprovement}
+          onSubmit={handleImprovementRequestSubmit}
+          onClose={() => setImprovementModalMode(null)}
         />
       )}
 
