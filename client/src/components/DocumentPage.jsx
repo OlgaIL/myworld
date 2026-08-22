@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
+import { capitalizeFormattedLine } from "../utils/formattedText";
 import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import AuthProviderButtons from "./AuthProviderButtons";
 import GuestDocumentSaveCta from "./GuestDocumentSaveCta";
@@ -72,10 +73,10 @@ function LockIcon() {
 function getFormattedText(content) {
   return (content?.blocks || []).map((block) => {
     if (block.type === "list") {
-      return block.items.map((item) => `- ${item}`).join("\n");
+      return block.items.map((item) => `- ${capitalizeFormattedLine(item)}`).join("\n");
     }
 
-    return block.text || "";
+    return capitalizeFormattedLine(block.text);
   }).filter(Boolean).join("\n\n");
 }
 
@@ -94,18 +95,20 @@ function FormattedContent({ content }) {
     <div className="document-page__formatted-content">
       {content.blocks.map((block, index) => {
         if (block.type === "heading") {
-          return <h3 key={`${block.type}-${index}`}>{block.text}</h3>;
+          return <h3 key={`${block.type}-${index}`}>{capitalizeFormattedLine(block.text)}</h3>;
         }
 
         if (block.type === "list") {
           return (
             <ul key={`${block.type}-${index}`}>
-              {block.items.map((item, itemIndex) => <li key={`${item}-${itemIndex}`}>{item}</li>)}
+              {block.items.map((item, itemIndex) => (
+                <li key={`${item}-${itemIndex}`}>{capitalizeFormattedLine(item)}</li>
+              ))}
             </ul>
           );
         }
 
-        return <p key={`${block.type}-${index}`}>{block.text}</p>;
+        return <p key={`${block.type}-${index}`}>{capitalizeFormattedLine(block.text)}</p>;
       })}
     </div>
   );
