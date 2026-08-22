@@ -97,11 +97,15 @@ export function trackGoal(goalName, params = {}) {
     return false;
   }
 
-  window.ym(Number(YANDEX_METRIKA_ID), "reachGoal", goalName, {
-    ...getAcquisitionContext(),
-    ...params
-  });
-  return true;
+  try {
+    window.ym(Number(YANDEX_METRIKA_ID), "reachGoal", goalName, {
+      ...getAcquisitionContext(),
+      ...params
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function trackGoalOnce(goalName, uniqueKey, params = {}) {

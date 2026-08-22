@@ -160,7 +160,10 @@ function App() {
 
   const requestProviderLogin = useCallback((providerId, options = {}) => {
     if (!user && guestDocuments.length > 0) {
-      trackGoal("auth_click_after_upload", { provider: providerId });
+      trackGoal("auth_click_after_upload", {
+        provider: providerId,
+        ...(options.placement ? { placement: options.placement } : {})
+      });
     }
 
     requestLegalAgreement(() => {
@@ -170,6 +173,10 @@ function App() {
       loginWithProvider(providerId);
     });
   }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
+
+  const requestGuestDocumentLogin = useCallback((providerId) => {
+    requestProviderLogin(providerId, { placement: "document_before_text" });
+  }, [requestProviderLogin]);
 
   useEffect(() => {
     if (!user) {
@@ -255,7 +262,7 @@ function App() {
           onOpenImage={setActivePhoto}
           onCopy={handleDocumentCopy}
           authProviders={authProviders}
-          onProviderLogin={requestProviderLogin}
+          onProviderLogin={requestGuestDocumentLogin}
           improvementRequest={activeGuestDocument.improvementRequest || null}
           onRequestImprovement={() => openGuestImprovementRequest(activeGuestDocument)}
         />

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
+import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import AuthProviderButtons from "./AuthProviderButtons";
+import GuestDocumentSaveCta from "./GuestDocumentSaveCta";
 import HourglassIcon from "./HourglassIcon";
 
 function formatCreatedAt(value) {
@@ -174,7 +176,13 @@ function DocumentPage({
   const readableText = activeTextVariant?.text || "";
   const hasTags = Array.isArray(info?.tags) && info.tags.length > 0;
   const hasSideMeta = Boolean(info?.category || hasTags);
-  const showGuestSaveCta = Boolean(onProviderLogin && authProviders.length > 0);
+  const showGuestSaveCta = canShowGuestDocumentSaveCta({
+    isAuthenticated,
+    documentStatus: info?.status,
+    recognizedText: processedText || ocrText,
+    providers: authProviders,
+    onProviderLogin
+  });
   const improvementStatusMeta = getImprovementRequestStatusMeta(improvementRequest?.status);
   const improvementAvailable = (
     info?.status === "processed" && info?.hasRecognitionErrors === true
@@ -233,6 +241,15 @@ function DocumentPage({
           )}
 
           {info?.notes && <p className="gallery__ai-note">{info.notes}</p>}
+
+          {showGuestSaveCta && (
+            <GuestDocumentSaveCta
+              documentId={info?.id || photo.name}
+              documentStatus={info?.status}
+              providers={authProviders}
+              onProviderLogin={onProviderLogin}
+            />
+          )}
 
           <section className="document-page__text">
             {textVariants.length > 1 && (
@@ -316,15 +333,6 @@ function DocumentPage({
             </section>
           )}
 
-          {showGuestSaveCta && (
-            <section className="guest-login-cta" aria-label="Сохранить запись в личном архиве">
-              <h2>Сохраните запись в личном архиве</h2>
-              <div className="guest-login-cta__actions">
-                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} compact />
-              </div>
-              <p>После регистрации — ещё 30 обработок бесплатно.</p>
-            </section>
-          )}
         </section>
 
         <aside className="document-page__side">

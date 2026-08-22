@@ -18,6 +18,7 @@ export function useGuestDocumentPageData(document) {
         url: fileUrl
       },
       info: {
+        id: document.id,
         status: document.status,
         title: document.title || "Запись",
         summary: document.summary || "",

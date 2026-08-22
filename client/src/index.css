@@ -2578,6 +2578,68 @@ button {
   gap: 6px;
 }
 
+.guest-document-save-cta {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #d7dce5;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.guest-document-save-cta__copy {
+  display: grid;
+  gap: 7px;
+}
+
+.guest-document-save-cta__copy h2 {
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.guest-document-save-cta__copy p,
+.guest-document-save-cta__footnote {
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.guest-document-save-cta__actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guest-document-save-cta__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 1px solid #cbd2dc;
+  border-radius: 8px;
+  background: #fff;
+  color: #273142;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.guest-document-save-cta__button:hover {
+  border-color: #98a2b3;
+  background: #f1f4f8;
+}
+
+.guest-document-save-cta__button .auth-menu__icon {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+}
+
 .auth-provider-buttons--compact .auth-provider-buttons__option {
   gap: 5px;
   min-height: 32px;
@@ -2592,6 +2654,16 @@ button {
   width: 18px;
   height: 18px;
   font-size: 11px;
+}
+
+@media (max-width: 620px) {
+  .guest-document-save-cta__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guest-document-save-cta__button {
+    width: 100%;
+  }
 }
 
 .fab-upload {
@@ -4969,6 +5041,14 @@ button {
 }
 
 @media (max-width: 450px) {
+  .guest-document-save-cta {
+    padding: 16px;
+  }
+
+  .guest-document-save-cta__button {
+    min-height: 48px;
+  }
+
   .topbar {
     flex-direction: column;
     align-items: flex-start;

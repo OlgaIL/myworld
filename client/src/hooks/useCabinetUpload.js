@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { UPLOAD_STAGE_MESSAGES } from "../constants/uploadStages";
+import { trackGoal } from "../services/analytics";
 import { processPhoto } from "../services/api";
 import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
@@ -96,7 +97,10 @@ export function useCabinetUpload({
               });
             }, 2500);
 
-            await processPhoto(uploadedPhotoName);
+            const processingResult = await processPhoto(uploadedPhotoName);
+            if (processingResult?.status === "processed") {
+              trackGoal("account_upload_success", { source: "cabinet_upload" });
+            }
             window.clearTimeout(preparingTimer);
             preparingTimer = null;
           }
