@@ -164,6 +164,12 @@ async function enrichGuestDocumentWithAi({ text, timer }) {
       topic: "",
       tags: [],
       cleanText: text,
+      formattedContent: {
+        blocks: [{ type: "paragraph", text }]
+      },
+      hasTable: false,
+      hasFormulas: false,
+      hasRecognitionErrors: true,
       textQuality: "low_confidence",
       notes: "Текст распознан, но краткое описание временно недоступно."
     };
@@ -521,6 +527,10 @@ router.post("/api/guest/upload", (req, res) => {
           topic: aiResult.topic,
           tags: aiResult.tags,
           cleanText: aiResult.cleanText,
+          formattedContent: aiResult.formattedContent,
+          hasTable: aiResult.hasTable,
+          hasFormulas: aiResult.hasFormulas,
+          hasRecognitionErrors: aiResult.hasRecognitionErrors,
           textQuality: aiResult.textQuality,
           aiNotes: aiResult.notes,
           errorMessage: null,
@@ -618,6 +628,10 @@ router.post("/api/guest/upload", (req, res) => {
         topic: aiResult.topic,
         tags: aiResult.tags,
         cleanText: aiResult.cleanText,
+        formattedContent: aiResult.formattedContent,
+        hasTable: aiResult.hasTable,
+        hasFormulas: aiResult.hasFormulas,
+        hasRecognitionErrors: aiResult.hasRecognitionErrors,
         textQuality: aiResult.textQuality,
         aiNotes: aiResult.notes,
         errorMessage: null,

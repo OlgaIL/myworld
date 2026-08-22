@@ -9,6 +9,7 @@ import {
   YANDEX_AI_ENABLED,
   YANDEX_OCR_ENABLED
 } from "../config/env.js";
+import { formatAiNotesForDisplay } from "./aiNotes.js";
 
 export function mapPhotoInfo(photo) {
   return {
@@ -24,7 +25,14 @@ export function mapPhotoInfo(photo) {
     topic: photo.topic || "",
     tags: Array.isArray(photo.tags) ? photo.tags : [],
     textQuality: photo.text_quality || "",
-    notes: photo.ai_notes || "",
+    notes: formatAiNotesForDisplay(photo.ai_notes),
+    formattedContent: photo.formatted_content && Array.isArray(photo.formatted_content.blocks)
+      ? photo.formatted_content
+      : null,
+    formattedAt: photo.formatted_at || null,
+    hasTable: Boolean(photo.has_table),
+    hasFormulas: Boolean(photo.has_formulas),
+    hasRecognitionErrors: Boolean(photo.has_recognition_errors),
     error: photo.error_message || null,
     createdAt: photo.created_at
   };

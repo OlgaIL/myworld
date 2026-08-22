@@ -28,6 +28,30 @@ export function getAdminProcessingCredits() {
   return axios.get(`${API_URL}/admin-api/processing-credits`).then((res) => res.data);
 }
 
+export function getAdminImprovementRequests() {
+  return axios.get(`${API_URL}/admin-api/improvement-requests`).then((res) => res.data);
+}
+
+export function getAdminImprovementRequest(id) {
+  return axios.get(`${API_URL}/admin-api/improvement-requests/${id}`).then((res) => res.data);
+}
+
+export function getAdminImprovementRequestImageUrl(id) {
+  return `${API_URL}/admin-api/improvement-requests/${encodeURIComponent(id)}/file`;
+}
+
+export function updateAdminImprovementRequestStatus(id, status) {
+  return axios
+    .patch(`${API_URL}/admin-api/improvement-requests/${id}/status`, { status })
+    .then((res) => res.data);
+}
+
+export function completeAdminImprovementRequest(id, result) {
+  return axios
+    .patch(`${API_URL}/admin-api/improvement-requests/${id}/result`, result)
+    .then((res) => res.data);
+}
+
 export function getAdminSettings() {
   return axios.get(`${API_URL}/admin-api/settings`).then((res) => res.data);
 }

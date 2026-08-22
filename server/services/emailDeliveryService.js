@@ -34,6 +34,8 @@ export async function sendEmailLoginCode({ email, code, ttlMinutes = 10 }) {
       <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${code}</p>
       <p>Код действует ${ttlMinutes} минут.</p>
       <p>Если вы не запрашивали код, просто игнорируйте это письмо.</p>
+      <p>https://word2you.ru/</p>
+
     `
   });
 }

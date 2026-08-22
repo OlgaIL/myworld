@@ -24,8 +24,8 @@ before(async () => {
 
   await query(
     `
-      insert into photos (user_id, filename, storage_path, status, text_quality)
-      values ($1, $2, $3, 'processed', 'low_confidence')
+      insert into photos (user_id, filename, storage_path, status, text_quality, has_recognition_errors)
+      values ($1, $2, $3, 'processed', 'low_confidence', true)
     `,
     [userId, filename, `test/${testId}.jpg`]
   );

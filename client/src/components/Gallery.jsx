@@ -19,6 +19,11 @@ function getPhotoListInfo(photo) {
     tags: Array.isArray(photo.tags) ? photo.tags : [],
     textQuality: photo.textQuality || "",
     notes: photo.notes || "",
+    formattedContent: photo.formattedContent || null,
+    formattedAt: photo.formattedAt || null,
+    hasTable: Boolean(photo.hasTable),
+    hasFormulas: Boolean(photo.hasFormulas),
+    hasRecognitionErrors: Boolean(photo.hasRecognitionErrors),
     error: photo.error || null,
     createdAt: photo.createdAt || null
   };
@@ -77,6 +82,11 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequests
               tags: Array.isArray(info.tags) ? info.tags : [],
               textQuality: info.textQuality || "",
               notes: info.notes || "",
+              formattedContent: info.formattedContent || null,
+              formattedAt: info.formattedAt || null,
+              hasTable: Boolean(info.hasTable),
+              hasFormulas: Boolean(info.hasFormulas),
+              hasRecognitionErrors: Boolean(info.hasRecognitionErrors),
               error: info.error || null,
               createdAt: info.createdAt || null
             }

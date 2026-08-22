@@ -14,7 +14,7 @@ export const IMPROVEMENT_REQUEST_STATUS_META = {
   improved: {
     label: "Улучшенная версия готова",
     cardLabel: "Улучшение готово",
-    details: "Откройте документ повторно, чтобы увидеть обновлённый результат.",
+    details: "Улучшенный вариант доступен во вкладках документа.",
     tone: "success"
   },
   not_improvable: {

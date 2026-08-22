@@ -29,6 +29,9 @@ export function useGuestDocumentPageData(document) {
         cleanText: document.cleanText || "",
         textQuality: document.textQuality || "",
         notes: document.notes || "",
+        hasTable: Boolean(document.hasTable),
+        hasFormulas: Boolean(document.hasFormulas),
+        hasRecognitionErrors: Boolean(document.hasRecognitionErrors),
         error: document.error || null,
         createdAt: document.createdAt || null
       }

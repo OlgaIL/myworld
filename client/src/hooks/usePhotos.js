@@ -17,6 +17,11 @@ function getPhotosSnapshot(photos) {
       cleanText: photo.cleanText,
       textQuality: photo.textQuality,
       notes: photo.notes,
+      formattedContent: photo.formattedContent,
+      formattedAt: photo.formattedAt,
+      hasTable: photo.hasTable,
+      hasFormulas: photo.hasFormulas,
+      hasRecognitionErrors: photo.hasRecognitionErrors,
       error: photo.error,
       createdAt: photo.createdAt
     }))

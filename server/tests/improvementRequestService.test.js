@@ -23,11 +23,12 @@ test("rejects comments longer than the database limit", () => {
   );
 });
 
-test("allows requests for low-confidence and no-meaningful-text photos", () => {
-  assert.equal(canRequestPhotoImprovement({ status: "processed", text_quality: "low_confidence" }), true);
-  assert.equal(canRequestPhotoImprovement({ status: "processed", text_quality: "full_text" }), false);
+test("allows requests for recognition errors and no-meaningful-text photos", () => {
+  assert.equal(canRequestPhotoImprovement({ status: "processed", text_quality: "fragment", has_recognition_errors: true }), true);
+  assert.equal(canRequestPhotoImprovement({ status: "processed", text_quality: "low_confidence", has_recognition_errors: false }), false);
+  assert.equal(canRequestPhotoImprovement({ status: "processed", text_quality: "full_text", has_recognition_errors: false }), false);
   assert.equal(canRequestPhotoImprovement({ status: "no_text", text_quality: "no_meaningful_text" }), true);
-  assert.equal(canRequestPhotoImprovement({ status: "processing", text_quality: "low_confidence" }), false);
+  assert.equal(canRequestPhotoImprovement({ status: "processing", has_recognition_errors: true }), false);
 });
 
 test("maps only public request fields", () => {
@@ -49,4 +50,20 @@ test("maps only public request fields", () => {
   assert.equal(mapped.documentId, "photo.jpg");
   assert.equal(mapped.consentVersion, "2026-08-21");
   assert.equal("storagePath" in mapped, false);
+});
+
+test("exposes text versions only for a completed improvement", () => {
+  const pending = mapImprovementRequest({ id: 1, status: "in_review" });
+  const improved = mapImprovementRequest({
+    id: 2,
+    status: "improved",
+    original_ocr_text: "OCR",
+    original_clean_text: "Первый текст",
+    improved_text: "Улучшенный текст"
+  });
+
+  assert.equal("improvedText" in pending, false);
+  assert.equal(improved.originalOcrText, "OCR");
+  assert.equal(improved.originalCleanText, "Первый текст");
+  assert.equal(improved.improvedText, "Улучшенный текст");
 });

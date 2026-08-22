@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AdminAccessRequests from "../components/AdminAccessRequests";
+import AdminImprovementRequests from "../components/AdminImprovementRequests";
 import AdminProcessingCredits from "../components/AdminProcessingCredits";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import {
   createAdminManualProcessingCredit,
   getAdminAccessRequests,
+  getAdminImprovementRequests,
   getAdminProcessingCredits,
   getAdminSession,
   getAdminSettings,
@@ -13,6 +15,7 @@ import {
   loginAdmin,
   logoutAdmin,
   updateAdminAccessRequestStatus,
+  updateAdminImprovementRequestStatus,
   updateAdminUserProcessingAccess
 } from "../services/adminApi";
 import { getProcessingUsageText } from "../utils/processingAccessText";
@@ -174,7 +177,7 @@ function AdminLogin({ onLogin }) {
   );
 }
 
-function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUser, onSelectUser }) {
+function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUser, improvementCountsByUser, onSelectUser }) {
   return (
     <section className="admin-users">
       <h2>Пользователи</h2>
@@ -196,6 +199,11 @@ function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUse
                   {requestCountsByUser.get(user.id) > 0 && (
                     <span className="admin-user-row__request">
                       {requestCountsByUser.get(user.id) === 1 ? "заявка" : `${requestCountsByUser.get(user.id)} заявок`}
+                    </span>
+                  )}
+                  {improvementCountsByUser.get(user.id) > 0 && (
+                    <span className="admin-user-row__improvement">
+                      {improvementCountsByUser.get(user.id)} на улучшение
                     </span>
                   )}
                 </span>
@@ -489,6 +497,7 @@ function AdminDashboard({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [processingCredits, setProcessingCredits] = useState([]);
+  const [improvementRequests, setImprovementRequests] = useState([]);
   const [settings, setSettings] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -496,6 +505,7 @@ function AdminDashboard({ onLogout }) {
   const [savedUserId, setSavedUserId] = useState(null);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [creditsLoading, setCreditsLoading] = useState(true);
+  const [improvementsLoading, setImprovementsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const userDetailsRef = useRef(null);
@@ -508,17 +518,20 @@ function AdminDashboard({ onLogout }) {
         setLoading(true);
         setRequestsLoading(true);
         setCreditsLoading(true);
+        setImprovementsLoading(true);
         setError("");
-        const [loadedUsers, loadedRequests, loadedSettings, loadedCredits] = await Promise.all([
+        const [loadedUsers, loadedRequests, loadedSettings, loadedCredits, loadedImprovements] = await Promise.all([
           getAdminUsers(),
           getAdminAccessRequests(),
           getAdminSettings(),
-          getAdminProcessingCredits()
+          getAdminProcessingCredits(),
+          getAdminImprovementRequests()
         ]);
         setUsers(loadedUsers);
         setAccessRequests(Array.isArray(loadedRequests) ? loadedRequests : []);
         setSettings(loadedSettings);
         setProcessingCredits(Array.isArray(loadedCredits) ? loadedCredits : []);
+        setImprovementRequests(Array.isArray(loadedImprovements) ? loadedImprovements : []);
         setSelectedUserId((current) => current || loadedUsers[0]?.id || null);
       } catch {
         setError("Не удалось загрузить данные админки.");
@@ -526,6 +539,7 @@ function AdminDashboard({ onLogout }) {
         setLoading(false);
         setRequestsLoading(false);
         setCreditsLoading(false);
+        setImprovementsLoading(false);
       }
     }
 
@@ -568,6 +582,10 @@ function AdminDashboard({ onLogout }) {
     () => processingCredits.filter((credit) => credit.source === "yookassa").length,
     [processingCredits]
   );
+  const newImprovementRequestsCount = useMemo(
+    () => improvementRequests.filter((request) => request.status === "submitted").length,
+    [improvementRequests]
+  );
   const requestCountsByUser = useMemo(() => {
     const counts = new Map();
 
@@ -581,6 +599,19 @@ function AdminDashboard({ onLogout }) {
 
     return counts;
   }, [safeAccessRequests]);
+  const improvementCountsByUser = useMemo(() => {
+    const counts = new Map();
+
+    improvementRequests.forEach((request) => {
+      if (!request.userId || !["submitted", "in_review"].includes(request.status)) {
+        return;
+      }
+
+      counts.set(request.userId, (counts.get(request.userId) || 0) + 1);
+    });
+
+    return counts;
+  }, [improvementRequests]);
 
   function handleSaved(updatedUser) {
     setSelectedUser(null);
@@ -641,6 +672,20 @@ function AdminDashboard({ onLogout }) {
     console.info(`Granted package ${packageTitle} to user ${userId}`);
   }
 
+  async function handleTakeImprovementInReview(requestId) {
+    const updated = await updateAdminImprovementRequestStatus(requestId, "in_review");
+    setImprovementRequests((current) => current.map((request) => (
+      String(request.id) === String(updated.id) ? { ...request, ...updated } : request
+    )));
+    return updated;
+  }
+
+  function handleCompleteImprovement(updated) {
+    setImprovementRequests((current) => current.map((request) => (
+      String(request.id) === String(updated.id) ? { ...request, ...updated } : request
+    )));
+  }
+
   async function handleLogout() {
     await logoutAdmin();
     onLogout();
@@ -689,6 +734,13 @@ function AdminDashboard({ onLogout }) {
         >
           Начисления
         </button>
+        <button
+          className={`admin-tabs__button ${activeTab === "improvements" ? "admin-tabs__button--active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("improvements")}
+        >
+          Улучшения{newImprovementRequestsCount > 0 ? ` · ${newImprovementRequestsCount}` : ""}
+        </button>
       </nav>
 
       <section className="admin-overview">
@@ -707,6 +759,10 @@ function AdminDashboard({ onLogout }) {
         <button type="button" onClick={() => setActiveTab("credits")}>
           <span>Оплаты ЮKassa</span>
           <strong>{paidCreditsCount}</strong>
+        </button>
+        <button type="button" onClick={() => setActiveTab("improvements")}>
+          <span>Новые улучшения</span>
+          <strong>{newImprovementRequestsCount}</strong>
         </button>
       </section>
 
@@ -736,6 +792,16 @@ function AdminDashboard({ onLogout }) {
             />
           )}
 
+          {activeTab === "improvements" && (
+            <AdminImprovementRequests
+              requests={improvementRequests}
+              loading={improvementsLoading}
+              onTakeInReview={handleTakeImprovementInReview}
+              onComplete={handleCompleteImprovement}
+              onSelectUser={handleSelectUser}
+            />
+          )}
+
           {activeTab === "users" && (
             <div className="admin-layout" ref={userDetailsRef}>
               <AdminUsersList
@@ -743,6 +809,7 @@ function AdminDashboard({ onLogout }) {
               selectedUserId={selectedId}
               savedUserId={savedUserId}
               requestCountsByUser={requestCountsByUser}
+              improvementCountsByUser={improvementCountsByUser}
               onSelectUser={handleSelectUser}
             />
               <AdminUserDetails user={selectedUser} onSaved={handleSaved} />

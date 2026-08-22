@@ -214,6 +214,49 @@ function buildImageDataUrl(imagePath) {
 const ALLOWED_CATEGORIES = new Set(AI_CATEGORIES);
 const ALLOWED_SECTIONS = new Set(AI_SECTIONS);
 const ALLOWED_TEXT_QUALITY = new Set(AI_TEXT_QUALITY_VALUES);
+const ALLOWED_FORMATTED_BLOCK_TYPES = new Set(["heading", "paragraph", "list"]);
+
+function buildFallbackFormattedContent(text) {
+  const blocks = String(text || "")
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => ({ type: "paragraph", text: part }));
+
+  return { blocks };
+}
+
+export function normalizeFormattedContent(value, fallbackText = "") {
+  const blocks = Array.isArray(value?.blocks)
+    ? value.blocks.flatMap((block) => {
+      if (!block || !ALLOWED_FORMATTED_BLOCK_TYPES.has(block.type)) {
+        return [];
+      }
+
+      if (block.type === "list") {
+        const items = Array.isArray(block.items)
+          ? block.items.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim()).slice(0, 100)
+          : [];
+        return items.length > 0 ? [{ type: "list", items }] : [];
+      }
+
+      const text = typeof block.text === "string" ? block.text.trim() : "";
+      return text ? [{ type: block.type, text }] : [];
+    }).slice(0, 100)
+    : [];
+
+  return blocks.length > 0 ? { blocks } : buildFallbackFormattedContent(fallbackText);
+}
+
+export function formattedContentToText(content) {
+  return (content?.blocks || []).map((block) => {
+    if (block.type === "list") {
+      return block.items.map((item) => `- ${item}`).join("\n");
+    }
+
+    return block.text || "";
+  }).filter(Boolean).join("\n\n");
+}
 
 function normalizeCategory(value) {
   if (typeof value !== "string") {
@@ -250,7 +293,7 @@ function normalizeTextQuality(value) {
   return ALLOWED_TEXT_QUALITY.has(textQuality) ? textQuality : "low_confidence";
 }
 
-function parseAIResponse(raw) {
+export function parseAIResponse(raw) {
   try {
     const jsonStart = raw.indexOf("{");
     const jsonEnd = raw.lastIndexOf("}");
@@ -261,6 +304,9 @@ function parseAIResponse(raw) {
 
     const jsonString = raw.slice(jsonStart, jsonEnd + 1);
     const parsed = JSON.parse(jsonString);
+    const formattedContent = normalizeFormattedContent(parsed.formattedContent, parsed.cleanText);
+    const cleanText = formattedContentToText(formattedContent);
+    const textQuality = normalizeTextQuality(parsed.textQuality);
 
     return {
       title: typeof parsed.title === "string" ? parsed.title : "",
@@ -270,8 +316,14 @@ function parseAIResponse(raw) {
       topic: normalizeTopic(parsed.topic),
       tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag) => typeof tag === "string").slice(0, 7) : [],
       ocrText: typeof parsed.ocrText === "string" ? parsed.ocrText : "",
-      cleanText: typeof parsed.cleanText === "string" ? parsed.cleanText : "",
-      textQuality: normalizeTextQuality(parsed.textQuality),
+      cleanText,
+      formattedContent,
+      hasTable: parsed.hasTable === true,
+      hasFormulas: parsed.hasFormulas === true,
+      hasRecognitionErrors: parsed.hasRecognitionErrors === true
+        || textQuality === "low_confidence"
+        || textQuality === "no_meaningful_text",
+      textQuality,
       notes: typeof parsed.notes === "string" ? parsed.notes : ""
     };
   } catch (error) {
@@ -290,6 +342,10 @@ function errorResult(message) {
     tags: [],
     ocrText: "",
     cleanText: "",
+    formattedContent: { blocks: [] },
+    hasTable: false,
+    hasFormulas: false,
+    hasRecognitionErrors: false,
     textQuality: "",
     notes: "",
     error: message

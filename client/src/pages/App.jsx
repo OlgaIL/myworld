@@ -328,6 +328,7 @@ function App() {
               improvementRequestLoading={improvementRequestLoading}
               improvementRequestError={improvementRequestError}
               onRequestImprovement={() => setImprovementModalMode("request")}
+              isAuthenticated
             />
           ) : (
             <CabinetHome

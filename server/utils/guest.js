@@ -1,4 +1,5 @@
 import { GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS } from "../config/env.js";
+import { formatAiNotesForDisplay } from "./aiNotes.js";
 
 export const GUEST_SESSION_COOKIE_NAME = "guest_session_token";
 
@@ -44,7 +45,10 @@ export function mapGuestDocumentInfo(document) {
     topic: document.topic || "",
     tags: Array.isArray(document.tags) ? document.tags : [],
     textQuality: document.text_quality || "",
-    notes: document.ai_notes || "",
+    notes: formatAiNotesForDisplay(document.ai_notes),
+    hasTable: Boolean(document.has_table),
+    hasFormulas: Boolean(document.has_formulas),
+    hasRecognitionErrors: Boolean(document.has_recognition_errors),
     error: document.error_message || null,
     createdAt: document.created_at,
     updatedAt: document.updated_at,

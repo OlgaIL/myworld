@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { timingSafeEqual } from "crypto";
+import fs from "fs";
+import path from "path";
 import {
   ADMIN_ENABLED,
   ADMIN_LOGIN,
@@ -46,6 +48,12 @@ import {
   YANDEX_FOLDER_ID
 } from "../config/private-env.js";
 import { listAccessRequestsForAdmin, updateAccessRequestStatus } from "../repositories/accessRequestsRepository.js";
+import {
+  completeImprovementRequestForAdmin,
+  findImprovementRequestForAdmin,
+  listImprovementRequestsForAdmin,
+  updateImprovementRequestStatusForAdmin
+} from "../repositories/improvementRequestsRepository.js";
 import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
@@ -150,6 +158,44 @@ function mapAdminProcessingCreditEvent(event) {
     amountValue: event.amount_value === null || event.amount_value === undefined ? null : Number(event.amount_value),
     currency: event.currency || "",
     paymentStatus: event.payment_status || ""
+  };
+}
+
+function mapAdminImprovementRequest(request, { includeDocument = false } = {}) {
+  const mapped = {
+    id: String(request.id),
+    userId: request.user_id,
+    email: request.email || "",
+    displayName: request.display_name || "",
+    documentId: request.filename,
+    documentTitle: request.title || "Запись",
+    documentStatus: request.photo_status,
+    textQuality: request.text_quality || "",
+    status: request.status,
+    comment: request.user_comment || "",
+    createdAt: request.created_at,
+    updatedAt: request.updated_at,
+    startedAt: request.started_at,
+    completedAt: request.completed_at
+  };
+
+  if (!includeDocument) {
+    return mapped;
+  }
+
+  return {
+    ...mapped,
+    mimeType: request.mime_type || "",
+    ocrText: request.ocr_text || "",
+    cleanText: request.clean_text || "",
+    summary: request.summary || "",
+    notes: request.ai_notes || "",
+    originalOcrText: request.original_ocr_text || request.ocr_text || "",
+    originalCleanText: request.original_clean_text || request.clean_text || "",
+    improvedText: request.improved_text || "",
+    adminComment: request.admin_comment || "",
+    documentCreatedAt: request.photo_created_at,
+    imageUrl: `/admin-api/improvement-requests/${request.id}/file`
   };
 }
 
@@ -296,6 +342,84 @@ router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {
 router.get("/admin-api/processing-credits", requireAdmin, async (req, res) => {
   const events = await listProcessingCreditEventsForAdmin();
   return res.json(events.map(mapAdminProcessingCreditEvent));
+});
+
+router.get("/admin-api/improvement-requests", requireAdmin, async (req, res) => {
+  const requests = await listImprovementRequestsForAdmin();
+  return res.json(requests.map((request) => mapAdminImprovementRequest(request)));
+});
+
+router.get("/admin-api/improvement-requests/:id", requireAdmin, async (req, res) => {
+  const request = await findImprovementRequestForAdmin(req.params.id);
+
+  if (!request) {
+    return res.status(404).json({ error: "IMPROVEMENT_REQUEST_NOT_FOUND" });
+  }
+
+  return res.json(mapAdminImprovementRequest(request, { includeDocument: true }));
+});
+
+router.get("/admin-api/improvement-requests/:id/file", requireAdmin, async (req, res) => {
+  const request = await findImprovementRequestForAdmin(req.params.id);
+
+  if (!request || !request.storage_path || !fs.existsSync(request.storage_path)) {
+    return res.status(404).json({ error: "IMPROVEMENT_REQUEST_FILE_NOT_FOUND" });
+  }
+
+  return res.sendFile(path.resolve(request.storage_path));
+});
+
+router.patch("/admin-api/improvement-requests/:id/status", requireAdmin, async (req, res) => {
+  const status = String(req.body?.status || "");
+
+  if (status !== "in_review") {
+    return res.status(400).json({ error: "INVALID_IMPROVEMENT_REQUEST_STATUS" });
+  }
+
+  const updated = await updateImprovementRequestStatusForAdmin(req.params.id, status);
+
+  if (!updated) {
+    return res.status(404).json({ error: "IMPROVEMENT_REQUEST_NOT_FOUND" });
+  }
+
+  const request = await findImprovementRequestForAdmin(req.params.id);
+  return res.json(mapAdminImprovementRequest(request || updated, { includeDocument: true }));
+});
+
+router.patch("/admin-api/improvement-requests/:id/result", requireAdmin, async (req, res) => {
+  const status = String(req.body?.status || "");
+  const improvedText = String(req.body?.improvedText || "").trim();
+  const adminComment = String(req.body?.adminComment || "").trim();
+
+  if (!new Set(["improved", "not_improvable"]).has(status)) {
+    return res.status(400).json({ error: "INVALID_IMPROVEMENT_REQUEST_STATUS" });
+  }
+
+  if (status === "improved" && !improvedText) {
+    return res.status(400).json({ error: "IMPROVED_TEXT_REQUIRED" });
+  }
+
+  if (adminComment.length > 2000) {
+    return res.status(400).json({ error: "ADMIN_COMMENT_TOO_LONG" });
+  }
+
+  const result = await completeImprovementRequestForAdmin({
+    id: req.params.id,
+    status,
+    improvedText,
+    adminComment
+  });
+
+  if (!result) {
+    return res.status(404).json({ error: "IMPROVEMENT_REQUEST_NOT_FOUND" });
+  }
+
+  if (result.conflict) {
+    return res.status(409).json({ error: "IMPROVEMENT_REQUEST_NOT_IN_REVIEW" });
+  }
+
+  const request = await findImprovementRequestForAdmin(req.params.id);
+  return res.json(mapAdminImprovementRequest(request || result.request, { includeDocument: true }));
 });
 
 router.get("/admin-api/settings", requireAdmin, (req, res) => {

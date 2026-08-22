@@ -16,14 +16,14 @@ export function validateImprovementRequestInput(body) {
 
 export function canRequestPhotoImprovement(photo) {
   return (
-    photo?.status === "processed" && photo?.text_quality === "low_confidence"
+    photo?.status === "processed" && photo?.has_recognition_errors === true
   ) || (
     photo?.status === "no_text" && photo?.text_quality === "no_meaningful_text"
   );
 }
 
 export function mapImprovementRequest(request, documentId = null) {
-  return {
+  const mapped = {
     id: String(request.id),
     documentId: documentId || request.filename || null,
     status: request.status,
@@ -35,4 +35,12 @@ export function mapImprovementRequest(request, documentId = null) {
     startedAt: request.started_at,
     completedAt: request.completed_at
   };
+
+  if (request.status === "improved") {
+    mapped.originalOcrText = request.original_ocr_text || "";
+    mapped.originalCleanText = request.original_clean_text || "";
+    mapped.improvedText = request.improved_text || "";
+  }
+
+  return mapped;
 }

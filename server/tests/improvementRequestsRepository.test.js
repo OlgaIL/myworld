@@ -3,9 +3,13 @@ import crypto from "node:crypto";
 import { after, before, test } from "node:test";
 import { closeDatabaseConnection, query } from "../db/index.js";
 import {
+  completeImprovementRequestForAdmin,
   createImprovementRequest,
+  findImprovementRequestForAdmin,
+  listImprovementRequestsForAdmin,
   listImprovementRequestsForPhoto,
-  listImprovementRequestsForUser
+  listImprovementRequestsForUser,
+  updateImprovementRequestStatusForAdmin
 } from "../repositories/improvementRequestsRepository.js";
 
 const testId = crypto.randomUUID();
@@ -28,8 +32,8 @@ before(async () => {
 
   const photo = await query(
     `
-      insert into photos (user_id, filename, storage_path, status)
-      values ($1, $2, $3, 'processed')
+      insert into photos (user_id, filename, storage_path, status, ocr_text, clean_text, text_quality)
+      values ($1, $2, $3, 'processed', 'Исходное распознавание', 'Первый результат', 'low_confidence')
       returning id
     `,
     [userId, `improvement-${testId}.jpg`, `test/${testId}.jpg`]
@@ -61,12 +65,52 @@ test("keeps one active request and exposes request history", async () => {
   assert.equal(first.created, true);
   assert.equal(repeated.created, false);
   assert.equal(repeated.request.id, first.request.id);
+  assert.equal(first.request.original_ocr_text, "Исходное распознавание");
+  assert.equal(first.request.original_clean_text, "Первый результат");
 
   const photoRequests = await listImprovementRequestsForPhoto({ userId, photoId });
   const userRequests = await listImprovementRequestsForUser(userId);
   assert.equal(photoRequests.length, 1);
   assert.equal(userRequests.length, 1);
   assert.equal(userRequests[0].filename, `improvement-${testId}.jpg`);
+});
+
+test("stores the original version and publishes an improved result atomically", async () => {
+  const request = (await listImprovementRequestsForPhoto({ userId, photoId }))[0];
+  await updateImprovementRequestStatusForAdmin(request.id, "in_review");
+  const result = await completeImprovementRequestForAdmin({
+    id: request.id,
+    status: "improved",
+    improvedText: "Исправленный результат",
+    adminComment: "Проверено вручную"
+  });
+  const photo = await query("select clean_text, formatted_content, formatted_at, text_quality from photos where id = $1", [photoId]);
+  const detail = await findImprovementRequestForAdmin(request.id);
+
+  assert.equal(result.conflict, false);
+  assert.equal(detail.status, "improved");
+  assert.equal(detail.original_clean_text, "Первый результат");
+  assert.equal(detail.improved_text, "Исправленный результат");
+  assert.equal(detail.admin_comment, "Проверено вручную");
+  assert.equal(photo.rows[0].clean_text, "Исправленный результат");
+  assert.deepEqual(photo.rows[0].formatted_content, {
+    blocks: [{ type: "paragraph", text: "Исправленный результат" }]
+  });
+  assert.ok(photo.rows[0].formatted_at);
+  assert.equal(photo.rows[0].text_quality, "full_text");
+});
+
+test("lists completed request details for admin", async () => {
+  const requests = await listImprovementRequestsForAdmin();
+  const request = requests.find((item) => String(item.photo_id) === String(photoId));
+
+  assert.ok(request);
+  assert.equal(request.email, `improvement-${testId}@example.test`);
+
+  const detail = await findImprovementRequestForAdmin(request.id);
+
+  assert.equal(detail.filename, `improvement-${testId}.jpg`);
+  assert.equal(detail.status, "improved");
 });
 
 test("removes requests when the source document is deleted", async () => {
