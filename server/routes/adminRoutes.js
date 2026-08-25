@@ -176,7 +176,8 @@ function mapAdminImprovementRequest(request, { includeDocument = false } = {}) {
     createdAt: request.created_at,
     updatedAt: request.updated_at,
     startedAt: request.started_at,
-    completedAt: request.completed_at
+    completedAt: request.completed_at,
+    viewedAt: request.viewed_at
   };
 
   if (!includeDocument) {

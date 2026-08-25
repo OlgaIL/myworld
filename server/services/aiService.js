@@ -226,6 +226,10 @@ function buildFallbackFormattedContent(text) {
   return { blocks };
 }
 
+function normalizeFormattedBlockText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
 export function normalizeFormattedContent(value, fallbackText = "") {
   const blocks = Array.isArray(value?.blocks)
     ? value.blocks.flatMap((block) => {
@@ -235,12 +239,28 @@ export function normalizeFormattedContent(value, fallbackText = "") {
 
       if (block.type === "list") {
         const items = Array.isArray(block.items)
-          ? block.items.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim()).slice(0, 100)
+          ? block.items
+            .filter((item) => typeof item === "string" && item.trim())
+            .map(normalizeFormattedBlockText)
+            .filter(Boolean)
+            .slice(0, 100)
           : [];
         return items.length > 0 ? [{ type: "list", items }] : [];
       }
 
-      const text = typeof block.text === "string" ? block.text.trim() : "";
+      if (typeof block.text !== "string") {
+        return [];
+      }
+
+      if (block.type === "paragraph") {
+        return block.text
+          .split(/\n\s*\n/)
+          .map(normalizeFormattedBlockText)
+          .filter(Boolean)
+          .map((text) => ({ type: "paragraph", text }));
+      }
+
+      const text = normalizeFormattedBlockText(block.text);
       return text ? [{ type: block.type, text }] : [];
     }).slice(0, 100)
     : [];

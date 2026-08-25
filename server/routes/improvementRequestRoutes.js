@@ -4,7 +4,8 @@ import { findPhotoByFilenameAndUser } from "../repositories/photosRepository.js"
 import {
   createImprovementRequest,
   listImprovementRequestsForPhoto,
-  listImprovementRequestsForUser
+  listImprovementRequestsForUser,
+  markCompletedImprovementRequestsViewedForPhoto
 } from "../repositories/improvementRequestsRepository.js";
 import {
   canRequestPhotoImprovement,
@@ -12,6 +13,7 @@ import {
   mapImprovementRequest,
   validateImprovementRequestInput
 } from "../services/improvementRequestService.js";
+import { sendImprovementRequestNotification } from "../services/emailDeliveryService.js";
 
 const router = Router();
 
@@ -31,6 +33,11 @@ router.get("/api/photos/:id/improvement-requests", requireAuthenticatedUser, asy
     if (!photo) {
       return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
     }
+
+    await markCompletedImprovementRequestsViewedForPhoto({
+      userId: req.user.id,
+      photoId: photo.id
+    });
 
     const requests = await listImprovementRequestsForPhoto({
       userId: req.user.id,
@@ -66,6 +73,17 @@ router.post("/api/photos/:id/improvement-requests", requireAuthenticatedUser, as
     });
     if (!result.request) {
       throw new Error("Active improvement request was not found after conflict");
+    }
+
+    if (result.created) {
+      const notifyAdmin = req.app.locals.sendImprovementRequestNotification
+        || sendImprovementRequestNotification;
+      Promise.resolve(notifyAdmin({
+        requestId: result.request.id,
+        documentTitle: photo.title || "Запись"
+      })).catch((notificationError) => {
+        console.error("Improvement request notification error:", notificationError);
+      });
     }
 
     return res

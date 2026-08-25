@@ -43,12 +43,14 @@ test("maps only public request fields", () => {
     updated_at: "2026-08-21T09:00:00.000Z",
     started_at: null,
     completed_at: null,
+    viewed_at: null,
     storage_path: "C:/private/photo.jpg"
   });
 
   assert.equal(mapped.id, "12");
   assert.equal(mapped.documentId, "photo.jpg");
   assert.equal(mapped.consentVersion, "2026-08-21");
+  assert.equal(mapped.viewedAt, null);
   assert.equal("storagePath" in mapped, false);
 });
 

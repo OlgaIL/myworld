@@ -63,6 +63,20 @@ export async function listImprovementRequestsForPhoto({ userId, photoId }) {
   return result.rows;
 }
 
+export async function markCompletedImprovementRequestsViewedForPhoto({ userId, photoId }) {
+  await query(
+    `
+      update recognition_improvement_requests
+      set viewed_at = now(), updated_at = now()
+      where user_id = $1
+        and photo_id = $2
+        and status in ('improved', 'not_improvable')
+        and viewed_at is null
+    `,
+    [userId, photoId]
+  );
+}
+
 export async function listImprovementRequestsForUser(userId) {
   const result = await query(
     `

@@ -68,3 +68,22 @@ test("keeps compatibility with an older cleanText response", () => {
     ]
   });
 });
+
+test("separates paragraph blocks and joins wrapped list item lines", () => {
+  const content = normalizeFormattedContent({
+    blocks: [
+      { type: "paragraph", text: "Первый абзац\n\nВторой\nабзац" },
+      { type: "list", items: ["Длинный пункт,\nкоторый перенесён на новую строку"] },
+      { type: "heading", text: "  Общий\nзаголовок  " }
+    ]
+  });
+
+  assert.deepEqual(content, {
+    blocks: [
+      { type: "paragraph", text: "Первый абзац" },
+      { type: "paragraph", text: "Второй абзац" },
+      { type: "list", items: ["Длинный пункт, который перенесён на новую строку"] },
+      { type: "heading", text: "Общий заголовок" }
+    ]
+  });
+});

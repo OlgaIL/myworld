@@ -10,6 +10,8 @@ let appServer;
 let baseUrl;
 let userId;
 let filename;
+let requestId;
+const notifications = [];
 
 before(async () => {
   const table = await query("select to_regclass('public.recognition_improvement_requests') as table_name");
@@ -36,6 +38,9 @@ before(async () => {
     req.user = { id: userId };
     next();
   });
+  app.locals.sendImprovementRequestNotification = async (payload) => {
+    notifications.push(payload);
+  };
   app.use(improvementRequestRoutes);
 
   await new Promise((resolve) => {
@@ -80,8 +85,10 @@ test("creates one request and returns it for repeated submissions", async () => 
   assert.equal(createdResponse.status, 201);
   assert.equal(repeatedResponse.status, 200);
   assert.equal(repeated.id, created.id);
+  requestId = created.id;
   assert.equal(created.comment, "Ошибка во втором столбце");
   assert.equal(created.consentVersion, "2026-08-21");
+  assert.deepEqual(notifications, [{ requestId: created.id, documentTitle: "Запись" }]);
 });
 
 test("returns request history for the document and user", async () => {
@@ -97,4 +104,23 @@ test("returns request history for the document and user", async () => {
   assert.equal(photoRequests.length, 1);
   assert.equal(userRequests.length, 1);
   assert.equal(userRequests[0].documentId, filename);
+});
+
+test("marks a completed result as viewed only when its document is opened", async () => {
+  await query(
+    `
+      update recognition_improvement_requests
+      set status = 'improved', completed_at = now(), viewed_at = null
+      where id = $1
+    `,
+    [requestId]
+  );
+
+  const listResponse = await fetch(`${baseUrl}/api/improvement-requests`);
+  const beforeOpen = (await listResponse.json())[0];
+  assert.equal(beforeOpen.viewedAt, null);
+
+  const documentResponse = await fetch(`${baseUrl}/api/photos/${filename}/improvement-requests`);
+  const afterOpen = (await documentResponse.json())[0];
+  assert.ok(afterOpen.viewedAt);
 });

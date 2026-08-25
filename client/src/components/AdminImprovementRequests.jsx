@@ -203,6 +203,14 @@ function AdminImprovementRequests({ requests = [], loading, onTakeInReview, onCo
 
                 <dl className="admin-improvement-detail__meta">
                   <div><dt>Запрошено</dt><dd>{formatDateTime(detail.createdAt)}</dd></div>
+                  {detail.startedAt && <div><dt>Взято в работу</dt><dd>{formatDateTime(detail.startedAt)}</dd></div>}
+                  {detail.completedAt && <div><dt>Ответ отправлен</dt><dd>{formatDateTime(detail.completedAt)}</dd></div>}
+                  {detail.completedAt && (
+                    <div>
+                      <dt>Просмотр результата</dt>
+                      <dd>{detail.viewedAt ? formatDateTime(detail.viewedAt) : "Просмотр не зафиксирован"}</dd>
+                    </div>
+                  )}
                   <div><dt>Качество</dt><dd>{TEXT_QUALITY_LABELS[detail.textQuality] || detail.textQuality || "—"}</dd></div>
                   <div><dt>Документ</dt><dd>{detail.documentId}</dd></div>
                 </dl>
@@ -214,11 +222,29 @@ function AdminImprovementRequests({ requests = [], loading, onTakeInReview, onCo
                   </section>
                 )}
 
-                <img
-                  className="admin-improvement-detail__image"
-                  src={getAdminImprovementRequestImageUrl(detail.id)}
-                  alt="Документ для повторной проверки"
-                />
+                <div className="admin-improvement-detail__image-preview">
+                  <a
+                    className="admin-improvement-detail__image-link"
+                    href={getAdminImprovementRequestImageUrl(detail.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Открыть исходное изображение в новой вкладке"
+                  >
+                    <img
+                      className="admin-improvement-detail__image"
+                      src={getAdminImprovementRequestImageUrl(detail.id)}
+                      alt="Документ для повторной проверки"
+                    />
+                  </a>
+                  <a
+                    className="admin-improvement-detail__image-open"
+                    href={getAdminImprovementRequestImageUrl(detail.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Открыть оригинал в новой вкладке
+                  </a>
+                </div>
 
                 {detail.status === "in_review" && (
                   <section className="admin-improvement-editor">

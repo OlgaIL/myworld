@@ -1,5 +1,13 @@
 import nodemailer from "nodemailer";
-import { SMTP_FROM, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER } from "../config/env.js";
+import {
+  CLIENT_URL,
+  IMPROVEMENT_NOTIFICATION_EMAIL,
+  SMTP_FROM,
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_SECURE,
+  SMTP_USER
+} from "../config/env.js";
 import { SMTP_PASSWORD } from "../config/private-env.js";
 
 let transporter = null;
@@ -38,4 +46,24 @@ export async function sendEmailLoginCode({ email, code, ttlMinutes = 10 }) {
 
     `
   });
+}
+
+export async function sendImprovementRequestNotification({ requestId, documentTitle = "Запись" }) {
+  if (!IMPROVEMENT_NOTIFICATION_EMAIL) {
+    return false;
+  }
+
+  const adminUrl = `${String(CLIENT_URL || "https://word2you.ru").replace(/\/$/, "")}/admin-control`;
+  await getTransporter().sendMail({
+    from: SMTP_FROM,
+    to: IMPROVEMENT_NOTIFICATION_EMAIL,
+    subject: `Новый запрос на улучшение №${requestId}`,
+    text: [
+      `Получен новый запрос на улучшение №${requestId}.`,
+      `Документ: ${documentTitle || "Запись"}.`,
+      `Открыть очередь: ${adminUrl}`
+    ].join("\n")
+  });
+
+  return true;
 }

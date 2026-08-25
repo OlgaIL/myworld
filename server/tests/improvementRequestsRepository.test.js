@@ -9,6 +9,7 @@ import {
   listImprovementRequestsForAdmin,
   listImprovementRequestsForPhoto,
   listImprovementRequestsForUser,
+  markCompletedImprovementRequestsViewedForPhoto,
   updateImprovementRequestStatusForAdmin
 } from "../repositories/improvementRequestsRepository.js";
 
@@ -92,12 +93,17 @@ test("stores the original version and publishes an improved result atomically", 
   assert.equal(detail.original_clean_text, "Первый результат");
   assert.equal(detail.improved_text, "Исправленный результат");
   assert.equal(detail.admin_comment, "Проверено вручную");
+  assert.equal(detail.viewed_at, null);
   assert.equal(photo.rows[0].clean_text, "Исправленный результат");
   assert.deepEqual(photo.rows[0].formatted_content, {
     blocks: [{ type: "paragraph", text: "Исправленный результат" }]
   });
   assert.ok(photo.rows[0].formatted_at);
   assert.equal(photo.rows[0].text_quality, "full_text");
+
+  await markCompletedImprovementRequestsViewedForPhoto({ userId, photoId });
+  const viewed = await findImprovementRequestForAdmin(request.id);
+  assert.ok(viewed.viewed_at);
 });
 
 test("lists completed request details for admin", async () => {
