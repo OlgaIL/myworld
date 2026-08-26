@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildManualFormattedContent,
   capitalizeFormattedLine,
   formatFormattedLine,
   normalizeFormattedTypography
@@ -46,4 +47,30 @@ test("restores separator spaces without changing dots used for missing letters",
 
 test("formats a block consistently for display and copying", () => {
   assert.equal(formatFormattedLine("  «новый\nабзац» "), "«Новый абзац»");
+});
+
+test("preserves deliberate lines and headings in manually improved text", () => {
+  assert.deepEqual(
+    buildManualFormattedContent("Заявление\nоб установлении факта\n\n- Первый пункт\n- Второй пункт"),
+    {
+      blocks: [
+        { type: "heading", text: "Заявление" },
+        { type: "paragraph", text: "об установлении факта" },
+        { type: "list", items: ["Первый пункт", "Второй пункт"] }
+      ]
+    }
+  );
+});
+
+test("keeps short form fields as paragraphs instead of headings", () => {
+  assert.deepEqual(
+    buildManualFormattedContent("Госпошлина: рублей\nЗаявление\nОсновной текст"),
+    {
+      blocks: [
+        { type: "paragraph", text: "Госпошлина: рублей" },
+        { type: "heading", text: "Заявление" },
+        { type: "paragraph", text: "Основной текст" }
+      ]
+    }
+  );
 });

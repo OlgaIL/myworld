@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
-import { formatFormattedLine } from "../utils/formattedText";
+import { buildManualFormattedContent, formatFormattedLine } from "../utils/formattedText";
 import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import AuthProviderButtons from "./AuthProviderButtons";
 import GuestDocumentSaveCta from "./GuestDocumentSaveCta";
@@ -160,7 +160,7 @@ function DocumentPage({
     : null;
   const formattedContent = isAuthenticated
     ? improvedText.trim()
-      ? buildFallbackFormattedContent(improvedText)
+      ? buildManualFormattedContent(improvedText)
       : storedFormattedContent || buildFallbackFormattedContent(originalText)
     : null;
   const formattedText = getFormattedText(formattedContent);

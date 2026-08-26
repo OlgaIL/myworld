@@ -25,3 +25,53 @@ export function normalizeFormattedTypography(value) {
 export function formatFormattedLine(value) {
   return capitalizeFormattedLine(normalizeFormattedTypography(value));
 }
+
+function isLikelyManualHeading(line, hasFollowingLine) {
+  if (!hasFollowingLine || line.length > 60 || /[:]/.test(line) || /[.,;!?]$/.test(line) || /\d/.test(line)) {
+    return false;
+  }
+
+  const words = line.split(/\s+/).filter(Boolean);
+  return words.length > 0
+    && words.length <= 5
+    && /^\p{Lu}/u.test(line);
+}
+
+export function buildManualFormattedContent(value) {
+  const lines = String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.trim());
+  const blocks = [];
+  let listItems = [];
+
+  function flushList() {
+    if (listItems.length > 0) {
+      blocks.push({ type: "list", items: listItems });
+      listItems = [];
+    }
+  }
+
+  lines.forEach((line, index) => {
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    const listMatch = line.match(/^[-•]\s+(.+)$/u);
+    if (listMatch) {
+      listItems.push(listMatch[1]);
+      return;
+    }
+
+    flushList();
+    const hasFollowingLine = lines.slice(index + 1).some(Boolean);
+    blocks.push({
+      type: isLikelyManualHeading(line, hasFollowingLine) ? "heading" : "paragraph",
+      text: line
+    });
+  });
+  flushList();
+
+  return blocks.length > 0 ? { blocks } : null;
+}
