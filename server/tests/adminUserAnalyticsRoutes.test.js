@@ -77,6 +77,9 @@ test("maps compact and detailed user analytics without personal Metrika paramete
   assert.ok(listed.lastProcessingAt);
   assert.equal(listed.firstDeviceType, "mobile");
   assert.equal(listed.metrikaClientId, "987654321");
+  assert.equal(listed.metrikaVisitsCount, null);
+  assert.equal(listed.metrikaVisitsStatus, "disabled");
+  assert.equal(listed.metrikaVisitsPeriodStart, "2026-01-01");
   assert.equal(listed.documentsCreatedTotal, 5);
   assert.equal(listed.documentsDeletedTotal, 5);
   assert.equal(listed.documentsHistoryComplete, true);

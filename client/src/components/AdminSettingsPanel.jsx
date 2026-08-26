@@ -34,6 +34,7 @@ function AdminSettingsPanel({ settings }) {
 
   const authProviders = Array.isArray(settings.auth?.providers) ? settings.auth.providers : [];
   const processingProviders = settings.processing?.providers || {};
+  const metrika = settings.analytics?.metrika || {};
 
   return (
     <section className="admin-settings">
@@ -126,6 +127,24 @@ function AdminSettingsPanel({ settings }) {
                 enabled={settings.payments?.yookassa?.enabled}
                 configured={settings.payments?.yookassa?.configured}
               />
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-settings__card">
+          <h3>Аналитика</h3>
+          <div className="admin-settings__list">
+            <div className="admin-settings__row">
+              <span>API Метрики</span>
+              <ProviderStatus enabled={metrika.enabled} configured={metrika.configured} />
+            </div>
+            <div className="admin-settings__row">
+              <span>Счётчик</span>
+              <strong>{metrika.counterId || "не задан"}</strong>
+            </div>
+            <div className="admin-settings__row">
+              <span>Визиты с даты</span>
+              <strong>{metrika.visitsStartDate || "не задано"}</strong>
             </div>
           </div>
         </div>

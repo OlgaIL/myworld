@@ -73,6 +73,13 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 export const YOOKASSA_ENABLED = process.env.YOOKASSA_ENABLED === "true";
 export const YOOKASSA_RETURN_URL = process.env.YOOKASSA_RETURN_URL || `${CLIENT_URL || ""}/account`;
 export const YOOKASSA_MOCK_SUCCESS = process.env.YOOKASSA_MOCK_SUCCESS === "true";
+export const YANDEX_METRIKA_API_ENABLED = process.env.YANDEX_METRIKA_API_ENABLED === "true";
+export const YANDEX_METRIKA_COUNTER_ID = String(process.env.YANDEX_METRIKA_COUNTER_ID || "109386353").trim();
+export const YANDEX_METRIKA_VISITS_START_DATE = /^\d{4}-\d{2}-\d{2}$/.test(
+  String(process.env.YANDEX_METRIKA_VISITS_START_DATE || "")
+)
+  ? String(process.env.YANDEX_METRIKA_VISITS_START_DATE)
+  : "2026-01-01";
 export const PROCESSING_ALLOWLIST_EMAILS = (process.env.PROCESSING_ALLOWLIST_EMAILS || "")
   .split(",")
   .map((email) => email.trim().toLowerCase())

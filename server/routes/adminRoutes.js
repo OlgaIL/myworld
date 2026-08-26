@@ -24,6 +24,9 @@ import {
   YOOKASSA_ENABLED,
   YANDEX_AI_ENABLED,
   YANDEX_GPT_MODEL_URI,
+  YANDEX_METRIKA_API_ENABLED,
+  YANDEX_METRIKA_COUNTER_ID,
+  YANDEX_METRIKA_VISITS_START_DATE,
   YANDEX_OCR_ENABLED,
   YANDEX_OCR_LANGUAGE_CODES,
   YANDEX_OCR_MODEL,
@@ -45,7 +48,8 @@ import {
   YANDEX_API_KEY,
   YANDEX_CLIENT_ID,
   YANDEX_CLIENT_SECRET,
-  YANDEX_FOLDER_ID
+  YANDEX_FOLDER_ID,
+  YANDEX_METRIKA_API_TOKEN
 } from "../config/private-env.js";
 import { listAccessRequestsForAdmin, updateAccessRequestStatus } from "../repositories/accessRequestsRepository.js";
 import {
@@ -57,6 +61,7 @@ import {
 import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
+import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
 import { isAuthProviderConfigured } from "../auth/providers.js";
 
 const router = Router();
@@ -99,10 +104,16 @@ function getUserAuthProviders(user) {
   ].filter(Boolean);
 }
 
-function mapAdminUser(user) {
+function mapAdminUser(user, { metrikaVisits = null } = {}) {
   if (!user) {
     return null;
   }
+
+  const metrikaClientId = user.metrika_client_id || "";
+  const visitsStatus = metrikaClientId ? metrikaVisits?.status || "unavailable" : "no_client_id";
+  const visitsCount = visitsStatus === "ok"
+    ? Number(metrikaVisits?.visitsByClientId?.[metrikaClientId] || 0)
+    : null;
 
   return {
     id: user.id,
@@ -118,7 +129,10 @@ function mapAdminUser(user) {
     firstDeviceType: user.first_device_type || "",
     firstDeviceOs: user.first_device_os || "",
     firstDeviceBrowser: user.first_device_browser || "",
-    metrikaClientId: user.metrika_client_id || "",
+    metrikaClientId,
+    metrikaVisitsCount: visitsCount,
+    metrikaVisitsStatus: visitsStatus,
+    metrikaVisitsPeriodStart: metrikaVisits?.periodStart || YANDEX_METRIKA_VISITS_START_DATE,
     documentsCreatedTotal: Number(user.documents_created_total || 0),
     documentsDeletedTotal: Number(user.documents_deleted_total || 0),
     documentsHistoryComplete: Boolean(user.documents_history_complete),
@@ -304,8 +318,20 @@ function getAdminSettings() {
         enabled: YOOKASSA_ENABLED,
         configured: Boolean(YOOKASSA_SHOP_ID && YOOKASSA_SECRET_KEY)
       }
+    },
+    analytics: {
+      metrika: {
+        enabled: YANDEX_METRIKA_API_ENABLED,
+        configured: Boolean(YANDEX_METRIKA_COUNTER_ID && YANDEX_METRIKA_API_TOKEN),
+        counterId: YANDEX_METRIKA_COUNTER_ID,
+        visitsStartDate: YANDEX_METRIKA_VISITS_START_DATE
+      }
     }
   };
+}
+
+async function loadMetrikaVisitsForUsers(users) {
+  return getMetrikaVisitsByClientIds(users.map((user) => user.metrika_client_id));
 }
 
 router.post("/admin-api/login", (req, res) => {
@@ -340,7 +366,8 @@ router.get("/admin-api/me", (req, res) => {
 
 router.get("/admin-api/users", requireAdmin, async (req, res) => {
   const users = await listUsersForAdmin();
-  return res.json(users.map(mapAdminUser));
+  const metrikaVisits = await loadMetrikaVisitsForUsers(users);
+  return res.json(users.map((user) => mapAdminUser(user, { metrikaVisits })));
 });
 
 router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {
@@ -461,7 +488,8 @@ router.get("/admin-api/users/:id", requireAdmin, async (req, res) => {
     return res.status(404).json({ error: "USER_NOT_FOUND" });
   }
 
-  return res.json(mapAdminUser(user));
+  const metrikaVisits = await loadMetrikaVisitsForUsers([user]);
+  return res.json(mapAdminUser(user, { metrikaVisits }));
 });
 
 router.patch("/admin-api/users/:id/processing-access", requireAdmin, async (req, res) => {

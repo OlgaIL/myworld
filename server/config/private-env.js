@@ -18,3 +18,4 @@ export const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID;
 export const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY;
 export const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
 export const EMAIL_OTP_SECRET = process.env.EMAIL_OTP_SECRET;
+export const YANDEX_METRIKA_API_TOKEN = process.env.YANDEX_METRIKA_API_TOKEN;

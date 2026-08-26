@@ -60,6 +60,36 @@ function getWebvisorUrl() {
   return `https://metrika.yandex.ru/visor?period=week&id=${encodeURIComponent(METRIKA_COUNTER_ID)}`;
 }
 
+function getMetrikaVisitsLabel(user) {
+  return user.metrikaVisitsStatus === "ok" && Number.isFinite(Number(user.metrikaVisitsCount))
+    ? String(Number(user.metrikaVisitsCount))
+    : "—";
+}
+
+function getMetrikaVisitsDescription(user) {
+  if (!user.metrikaClientId) {
+    return "Визиты: — · ClientID ещё не получен.";
+  }
+
+  if (user.metrikaVisitsStatus === "ok") {
+    return `Визиты: ${getMetrikaVisitsLabel(user)} · с ${formatAccessDate(user.metrikaVisitsPeriodStart)}.`;
+  }
+
+  if (user.metrikaVisitsStatus === "not_configured" || user.metrikaVisitsStatus === "disabled") {
+    return "Визиты: — · API Метрики не настроен.";
+  }
+
+  return "Визиты: — · Метрика временно недоступна.";
+}
+
+function copyClientIdForWebvisor(clientId) {
+  if (!clientId || !navigator.clipboard?.writeText) {
+    return;
+  }
+
+  navigator.clipboard.writeText(clientId).catch(() => {});
+}
+
 function formatAccessDate(value) {
   if (!value) {
     return "";
@@ -235,7 +265,7 @@ function AdminUsersList({
                 <span className="admin-user-row__metrics">
                   <span>Регистрация: {formatCompactDateTime(user.createdAt)}</span>
                   <span>Последняя обработка: {formatCompactDateTime(user.lastProcessingAt)}</span>
-                  <span>Визиты: —</span>
+                  <span>Визиты: {getMetrikaVisitsLabel(user)}</span>
                   <span>Источник: {getAcquisitionSourceLabel(acquisition)}</span>
                   <span>Фраза: {acquisition.utm_term || "—"}</span>
                   <span>Устройство: {user.firstDeviceType || "—"}</span>
@@ -259,8 +289,10 @@ function AdminUsersList({
                   target="_blank"
                   rel="noreferrer"
                   aria-disabled={!user.metrikaClientId}
+                  title={user.metrikaClientId ? "ClientID будет скопирован" : "ClientID ещё не получен"}
                   onClick={(event) => {
                     if (!user.metrikaClientId) event.preventDefault();
+                    else copyClientIdForWebvisor(user.metrikaClientId);
                   }}
                 >
                   Вебвизор
@@ -468,7 +500,7 @@ function AdminUserDetails({ user, onSaved }) {
         <div className="admin-current-access__value">
           <div>
             <strong>ClientID: {user.metrikaClientId || "ещё не получен"}</strong>
-            <p className="admin-muted">Визиты: — · точный подсчёт появится после подключения API Метрики.</p>
+            <p className="admin-muted">{getMetrikaVisitsDescription(user)}</p>
           </div>
           {user.metrikaClientId && <AdminCopyButton label="Скопировать ClientID" value={user.metrikaClientId} />}
         </div>
@@ -478,11 +510,13 @@ function AdminUserDetails({ user, onSaved }) {
           target="_blank"
           rel="noreferrer"
           aria-disabled={!user.metrikaClientId}
+          title={user.metrikaClientId ? "ClientID будет скопирован" : "ClientID ещё не получен"}
           onClick={(event) => {
             if (!user.metrikaClientId) event.preventDefault();
+            else copyClientIdForWebvisor(user.metrikaClientId);
           }}
         >
-          Открыть Вебвизор
+          Скопировать ClientID и открыть Вебвизор
         </a>
       </div>
 
