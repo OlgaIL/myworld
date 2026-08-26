@@ -11,7 +11,7 @@ import {
 import {
   getAcquisitionContext,
   getAnalyticsDeviceContext,
-  requestMetrikaClientId,
+  requestMetrikaClientIdWhenReady,
   setAuthenticatedMetrikaUser,
   trackGoal
 } from "../services/analytics";
@@ -96,7 +96,7 @@ export function useAuth() {
     saveAnalyticsIdentity(deviceContext).catch(() => {
       // Analytics must never block authentication or product usage.
     });
-    requestMetrikaClientId((metrikaClientId) => {
+    const cancelClientIdRequest = requestMetrikaClientIdWhenReady((metrikaClientId) => {
       if (!metrikaClientId) {
         return;
       }
@@ -105,6 +105,8 @@ export function useAuth() {
         // Analytics must never block authentication or product usage.
       });
     });
+
+    return cancelClientIdRequest;
   }, [user?.id]);
 
   const defaultProvider = authProviders[0];

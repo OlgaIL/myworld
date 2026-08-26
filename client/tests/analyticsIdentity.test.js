@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   getAnalyticsDeviceContext,
   requestMetrikaClientId,
+  requestMetrikaClientIdWhenReady,
   setAuthenticatedMetrikaUser
 } from "../src/services/analytics.js";
 
@@ -25,6 +26,31 @@ test("gets ClientID through a callback and tolerates unavailable Metrika", () =>
   assert.equal(requestMetrikaClientId((value) => { received = value; }, ym), true);
   assert.equal(received, "1234567890");
   assert.equal(requestMetrikaClientId(() => {}, null), false);
+});
+
+test("waits for Metrika before requesting ClientID", () => {
+  const scheduled = [];
+  let lookupCount = 0;
+  let receivedClientId = "";
+  const ym = (counterId, command, callback) => {
+    assert.equal(command, "getClientID");
+    callback("456789");
+  };
+
+  requestMetrikaClientIdWhenReady((clientId) => {
+    receivedClientId = clientId;
+  }, {
+    maxAttempts: 3,
+    getYm: () => {
+      lookupCount += 1;
+      return lookupCount === 1 ? null : ym;
+    },
+    schedule: (handler) => scheduled.push(handler)
+  });
+
+  assert.equal(scheduled.length, 1);
+  scheduled.shift()();
+  assert.equal(receivedClientId, "456789");
 });
 
 test("normalizes mobile, tablet and browser information without personal data", () => {

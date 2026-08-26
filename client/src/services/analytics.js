@@ -171,6 +171,39 @@ export function requestMetrikaClientId(callback, ymOverride) {
   }
 }
 
+export function requestMetrikaClientIdWhenReady(callback, {
+  maxAttempts = 20,
+  retryDelayMs = 250,
+  getYm = () => getMetrikaFunction(),
+  schedule = (handler, delay) => window.setTimeout(handler, delay)
+} = {}) {
+  let cancelled = false;
+  let attempts = 0;
+
+  const tryRequest = () => {
+    if (cancelled) {
+      return;
+    }
+
+    attempts += 1;
+    const ym = getYm();
+
+    if (requestMetrikaClientId(callback, ym)) {
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      schedule(tryRequest, retryDelayMs);
+    }
+  };
+
+  tryRequest();
+
+  return () => {
+    cancelled = true;
+  };
+}
+
 export function getAnalyticsDeviceContext(navigatorValue = typeof navigator !== "undefined" ? navigator : null) {
   const userAgent = String(navigatorValue?.userAgent || "").toLowerCase();
   const platform = String(navigatorValue?.userAgentData?.platform || navigatorValue?.platform || "").toLowerCase();
