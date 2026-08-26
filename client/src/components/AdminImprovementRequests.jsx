@@ -38,7 +38,15 @@ function getStatusLabel(status) {
   return STATUS_LABELS[status] || status;
 }
 
-function AdminImprovementRequests({ requests = [], loading, onTakeInReview, onComplete, onSelectUser }) {
+function AdminImprovementRequests({
+  requests = [],
+  loading,
+  onTakeInReview,
+  onComplete,
+  onSelectUser,
+  filterUser = null,
+  onClearUserFilter
+}) {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -139,6 +147,13 @@ function AdminImprovementRequests({ requests = [], loading, onTakeInReview, onCo
         </div>
         {newRequestsCount > 0 && <span className="admin-badge">{newRequestsCount} новых</span>}
       </div>
+
+      {filterUser && (
+        <div className="admin-improvements__filter">
+          <span>Пользователь: {filterUser.email || filterUser.displayName || filterUser.id}</span>
+          <button className="admin-button" type="button" onClick={onClearUserFilter}>Показать все</button>
+        </div>
+      )}
 
       {loading ? (
         <p className="admin-muted">Загружаем заявки...</p>

@@ -3,7 +3,12 @@ import { CLIENT_URL } from "../config/env.js";
 import { getConfiguredAuthProviders, isAuthProviderConfigured } from "../auth/providers.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
-import { mapUserForSession, saveUserAcquisitionContext, updateUserLegalAgreement } from "../repositories/usersRepository.js";
+import {
+  mapUserForSession,
+  saveUserAcquisitionContext,
+  saveUserAnalyticsIdentity,
+  updateUserLegalAgreement
+} from "../repositories/usersRepository.js";
 import { claimGuestDocumentForUser } from "../services/guestClaimService.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 import {
@@ -18,6 +23,9 @@ import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess 
 const router = Router();
 const LEGAL_AGREEMENT_VERSION = "2026-07-15";
 const ACQUISITION_KEYS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid", "landing_path", "captured_at"]);
+const DEVICE_TYPES = new Set(["mobile", "desktop", "tablet", "unknown"]);
+const DEVICE_OS_VALUES = new Set(["android", "ios", "windows", "macos", "linux", "other"]);
+const DEVICE_BROWSER_VALUES = new Set(["yandex", "chrome", "safari", "firefox", "edge", "other"]);
 
 function sanitizeAcquisitionContext(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -29,6 +37,20 @@ function sanitizeAcquisitionContext(value) {
       .filter(([key, item]) => ACQUISITION_KEYS.has(key) && typeof item === "string" && item.trim())
       .map(([key, item]) => [key, item.trim().slice(0, key === "landing_path" ? 1500 : 500)])
   );
+}
+
+function sanitizeAnalyticsIdentity(value) {
+  const metrikaClientId = String(value?.metrikaClientId || "").trim();
+  const deviceType = String(value?.deviceType || "").trim().toLowerCase();
+  const deviceOs = String(value?.deviceOs || "").trim().toLowerCase();
+  const deviceBrowser = String(value?.deviceBrowser || "").trim().toLowerCase();
+
+  return {
+    metrikaClientId: /^\d{1,64}$/.test(metrikaClientId) ? metrikaClientId : null,
+    deviceType: DEVICE_TYPES.has(deviceType) ? deviceType : null,
+    deviceOs: DEVICE_OS_VALUES.has(deviceOs) ? deviceOs : null,
+    deviceBrowser: DEVICE_BROWSER_VALUES.has(deviceBrowser) ? deviceBrowser : null
+  };
 }
 
 function redirectWithAuthError(res, providerId, errorCode = "oauth_failed") {
@@ -120,6 +142,22 @@ router.get("/api/auth-providers", (req, res) => {
 router.post("/api/acquisition", (req, res) => {
   req.session.acquisitionContext = sanitizeAcquisitionContext(req.body?.context);
   return res.status(204).send();
+});
+
+router.post("/api/analytics/identity", requireAuthenticatedUser, async (req, res) => {
+  const identity = sanitizeAnalyticsIdentity(req.body);
+
+  if (!identity.metrikaClientId && !identity.deviceType && !identity.deviceOs && !identity.deviceBrowser) {
+    return res.status(400).json({ error: "INVALID_ANALYTICS_IDENTITY" });
+  }
+
+  try {
+    await saveUserAnalyticsIdentity(req.user.id, identity);
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Save analytics identity error:", error.message);
+    return res.status(500).json({ error: "ANALYTICS_IDENTITY_SAVE_FAILED" });
+  }
 });
 
 router.post("/api/auth/email/request", async (req, res) => {

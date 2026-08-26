@@ -1,6 +1,6 @@
 import { createPhoto, updatePhotoProcessingResult } from "../repositories/photosRepository.js";
 import { listActiveGuestDocumentsBySessionId, markGuestDocumentClaimed } from "../repositories/guestDocumentsRepository.js";
-import { findUserById, incrementUserRecordsProcessedTotal } from "../repositories/usersRepository.js";
+import { findUserById } from "../repositories/usersRepository.js";
 import { findGuestSessionByToken, markGuestSessionConverted } from "../repositories/guestSessionsRepository.js";
 import { enrichWithPipeline, getProcessingPipelineForUser } from "./processingPipelineService.js";
 import { GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, parseCookies } from "../utils/guest.js";
@@ -100,10 +100,6 @@ export async function claimGuestDocumentForUser(req) {
     await markGuestDocumentClaimed(guestDocument.id, claimedPhoto.id);
 
     if (!canRunAiForGuestClaim(freshUser, guestDocument, pipeline)) {
-      if (claimedPhoto.status === "processed") {
-        await incrementUserRecordsProcessedTotal(userId);
-      }
-
       claimedPhotos.push(claimedPhoto);
       continue;
     }
@@ -139,7 +135,6 @@ export async function claimGuestDocumentForUser(req) {
       errorMessage: null,
       processedAt: new Date()
     });
-    await incrementUserRecordsProcessedTotal(userId);
     claimedPhotos.push(processedPhoto);
   }
 

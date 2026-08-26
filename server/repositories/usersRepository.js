@@ -191,6 +191,30 @@ export async function saveUserAcquisitionContext(userId, context) {
   return result.rows[0] || null;
 }
 
+export async function saveUserAnalyticsIdentity(userId, {
+  metrikaClientId = null,
+  deviceType = null,
+  deviceOs = null,
+  deviceBrowser = null
+}) {
+  const result = await query(
+    `
+      update users
+      set
+        metrika_client_id = coalesce(metrika_client_id, $2),
+        first_device_type = coalesce(first_device_type, $3),
+        first_device_os = coalesce(first_device_os, $4),
+        first_device_browser = coalesce(first_device_browser, $5),
+        updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [userId, metrikaClientId, deviceType, deviceOs, deviceBrowser]
+  );
+
+  return result.rows[0] || null;
+}
+
 export async function listUsersForAdmin() {
   const result = await query(
     `
@@ -209,6 +233,14 @@ export async function listUsersForAdmin() {
         users.processing_quota,
         users.processing_used,
         users.records_processed_total,
+        users.last_processing_at,
+        users.first_device_type,
+        users.first_device_os,
+        users.first_device_browser,
+        users.metrika_client_id,
+        users.documents_created_total,
+        users.documents_deleted_total,
+        users.documents_history_complete,
         users.processing_mode,
         users.access_expires_at,
         users.acquisition_context,
@@ -245,6 +277,14 @@ export async function findUserForAdmin(userId) {
         users.processing_quota,
         users.processing_used,
         users.records_processed_total,
+        users.last_processing_at,
+        users.first_device_type,
+        users.first_device_os,
+        users.first_device_browser,
+        users.metrika_client_id,
+        users.documents_created_total,
+        users.documents_deleted_total,
+        users.documents_history_complete,
         users.processing_mode,
         users.access_expires_at,
         users.acquisition_context,
@@ -338,12 +378,13 @@ export async function consumeProcessingAccess(userId) {
   });
 }
 
-export async function incrementUserRecordsProcessedTotal(userId) {
-  const result = await query(
+export async function incrementUserRecordsProcessedTotalWithClient(client, userId) {
+  const result = await client.query(
     `
       update users
       set
         records_processed_total = records_processed_total + 1,
+        last_processing_at = now(),
         processing_used = case
           when
             processing_enabled = false
@@ -361,6 +402,10 @@ export async function incrementUserRecordsProcessedTotal(userId) {
   );
 
   return result.rows[0] || null;
+}
+
+export async function incrementUserRecordsProcessedTotal(userId) {
+  return withTransaction((client) => incrementUserRecordsProcessedTotalWithClient(client, userId));
 }
 
 export async function updateUserLegalAgreement(userId, legalVersion) {

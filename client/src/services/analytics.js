@@ -1,5 +1,6 @@
-const YANDEX_METRIKA_ID = import.meta.env.VITE_YANDEX_METRIKA_ID || "109386353";
-const shouldUseYandexMetrika = import.meta.env.PROD && YANDEX_METRIKA_ID;
+const analyticsEnv = import.meta.env || {};
+const YANDEX_METRIKA_ID = analyticsEnv.VITE_YANDEX_METRIKA_ID || "109386353";
+const shouldUseYandexMetrika = analyticsEnv.PROD && YANDEX_METRIKA_ID;
 const ACQUISITION_STORAGE_KEY = "word2you_acquisition_context";
 const GOAL_STORAGE_PREFIX = "word2you_goal_once:";
 const ACQUISITION_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
@@ -126,4 +127,73 @@ export function trackGoalOnce(goalName, uniqueKey, params = {}) {
   } catch {
     trackGoal(goalName, params);
   }
+}
+
+function getMetrikaFunction(override) {
+  if (typeof override === "function") {
+    return override;
+  }
+
+  return typeof window !== "undefined" && typeof window.ym === "function" ? window.ym : null;
+}
+
+export function setAuthenticatedMetrikaUser(userId, ymOverride) {
+  const ym = getMetrikaFunction(ymOverride);
+  if (!userId || !ym) {
+    return false;
+  }
+
+  try {
+    ym(Number(YANDEX_METRIKA_ID), "setUserID", String(userId));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function requestMetrikaClientId(callback, ymOverride) {
+  const ym = getMetrikaFunction(ymOverride);
+  if (!ym || typeof callback !== "function") {
+    return false;
+  }
+
+  try {
+    ym(Number(YANDEX_METRIKA_ID), "getClientID", (clientId) => {
+      try {
+        callback(String(clientId || ""));
+      } catch {
+        // Analytics callbacks must never affect the product flow.
+      }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getAnalyticsDeviceContext(navigatorValue = typeof navigator !== "undefined" ? navigator : null) {
+  const userAgent = String(navigatorValue?.userAgent || "").toLowerCase();
+  const platform = String(navigatorValue?.userAgentData?.platform || navigatorValue?.platform || "").toLowerCase();
+  const isTablet = userAgent.includes("ipad") || (userAgent.includes("android") && !userAgent.includes("mobile"));
+  const isMobile = !isTablet && (userAgent.includes("iphone") || userAgent.includes("android") || userAgent.includes("mobile"));
+
+  let deviceOs = "other";
+  if (userAgent.includes("android") || platform.includes("android")) deviceOs = "android";
+  else if (/iphone|ipad/.test(userAgent) || /iphone|ipad/.test(platform)) deviceOs = "ios";
+  else if (platform.includes("win") || userAgent.includes("windows")) deviceOs = "windows";
+  else if (platform.includes("mac") || userAgent.includes("mac os")) deviceOs = "macos";
+  else if (platform.includes("linux") || userAgent.includes("linux")) deviceOs = "linux";
+
+  let deviceBrowser = "other";
+  if (userAgent.includes("yabrowser")) deviceBrowser = "yandex";
+  else if (userAgent.includes("edg/")) deviceBrowser = "edge";
+  else if (userAgent.includes("firefox")) deviceBrowser = "firefox";
+  else if (userAgent.includes("chrome") || userAgent.includes("crios")) deviceBrowser = "chrome";
+  else if (userAgent.includes("safari")) deviceBrowser = "safari";
+
+  return {
+    deviceType: isTablet ? "tablet" : isMobile ? "mobile" : "desktop",
+    deviceOs,
+    deviceBrowser
+  };
 }

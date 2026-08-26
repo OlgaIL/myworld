@@ -10,9 +10,9 @@ import {
   findPhotoByFilenameAndUser,
   listPhotosByUser,
   updatePhotoProcessingResult,
+  updatePhotoProcessingResultAndRecordSuccess,
   updatePhotoStatus
 } from "../repositories/photosRepository.js";
-import { incrementUserRecordsProcessedTotal } from "../repositories/usersRepository.js";
 import {
   canProcessImageWithPipeline,
   enrichWithPipeline,
@@ -318,26 +318,29 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
         return res.json({ message: "No text detected", status: "no_text" });
       }
 
-      const updatedPhoto = await updatePhotoProcessingResult(photo.id, {
-        status: "processed",
-        ocrText: text,
-        title: aiResult.title,
-        summary: aiResult.summary,
-        category: aiResult.category,
-        section: aiResult.section,
-        topic: aiResult.topic,
-        tags: aiResult.tags,
-        cleanText: aiResult.cleanText,
-        formattedContent: aiResult.formattedContent,
-        hasTable: aiResult.hasTable,
-        hasFormulas: aiResult.hasFormulas,
-        hasRecognitionErrors: aiResult.hasRecognitionErrors,
-        textQuality: aiResult.textQuality,
-        aiNotes: aiResult.notes,
-        errorMessage: null,
-        processedAt: new Date()
+      const updatedPhoto = await updatePhotoProcessingResultAndRecordSuccess({
+        id: photo.id,
+        userId: req.user.id,
+        updates: {
+          status: "processed",
+          ocrText: text,
+          title: aiResult.title,
+          summary: aiResult.summary,
+          category: aiResult.category,
+          section: aiResult.section,
+          topic: aiResult.topic,
+          tags: aiResult.tags,
+          cleanText: aiResult.cleanText,
+          formattedContent: aiResult.formattedContent,
+          hasTable: aiResult.hasTable,
+          hasFormulas: aiResult.hasFormulas,
+          hasRecognitionErrors: aiResult.hasRecognitionErrors,
+          textQuality: aiResult.textQuality,
+          aiNotes: aiResult.notes,
+          errorMessage: null,
+          processedAt: new Date()
+        }
       });
-      await incrementUserRecordsProcessedTotal(req.user.id);
 
       timer.log("response_processed", {
         textLength: text.trim().length
@@ -435,26 +438,29 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       });
     }
 
-    const updatedPhoto = await updatePhotoProcessingResult(photo.id, {
-      status: "processed",
-      ocrText: text,
-      title: aiResult.title,
-      summary: aiResult.summary,
-      category: aiResult.category,
-      section: aiResult.section,
-      topic: aiResult.topic,
-      tags: aiResult.tags,
-      cleanText: aiResult.cleanText,
-      formattedContent: aiResult.formattedContent,
-      hasTable: aiResult.hasTable,
-      hasFormulas: aiResult.hasFormulas,
-      hasRecognitionErrors: aiResult.hasRecognitionErrors,
-      textQuality: aiResult.textQuality,
-      aiNotes: aiResult.notes,
-      errorMessage: null,
-      processedAt: new Date()
+    const updatedPhoto = await updatePhotoProcessingResultAndRecordSuccess({
+      id: photo.id,
+      userId: req.user.id,
+      updates: {
+        status: "processed",
+        ocrText: text,
+        title: aiResult.title,
+        summary: aiResult.summary,
+        category: aiResult.category,
+        section: aiResult.section,
+        topic: aiResult.topic,
+        tags: aiResult.tags,
+        cleanText: aiResult.cleanText,
+        formattedContent: aiResult.formattedContent,
+        hasTable: aiResult.hasTable,
+        hasFormulas: aiResult.hasFormulas,
+        hasRecognitionErrors: aiResult.hasRecognitionErrors,
+        textQuality: aiResult.textQuality,
+        aiNotes: aiResult.notes,
+        errorMessage: null,
+        processedAt: new Date()
+      }
     });
-    await incrementUserRecordsProcessedTotal(req.user.id);
 
     timer.log("response_processed", {
       textLength: text.trim().length

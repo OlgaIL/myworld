@@ -12,6 +12,10 @@ export function getAuthProviders() {
   return axios.get(`${API_URL}/api/auth-providers`).then((res) => res.data);
 }
 
+export function saveAnalyticsIdentity(identity) {
+  return axios.post(`${API_URL}/api/analytics/identity`, identity).then((res) => res.data);
+}
+
 export async function loginWithProvider(providerId, acquisitionContext = {}) {
   if (!/^[a-z][a-z0-9_-]*$/.test(String(providerId || ""))) {
     return;

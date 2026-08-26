@@ -5,9 +5,16 @@ import {
   loginWithProvider as redirectToProvider,
   logout,
   requestEmailLoginCode as requestEmailLoginCodeApi,
+  saveAnalyticsIdentity,
   verifyEmailLoginCode as verifyEmailLoginCodeApi
 } from "../services/api";
-import { getAcquisitionContext, trackGoal } from "../services/analytics";
+import {
+  getAcquisitionContext,
+  getAnalyticsDeviceContext,
+  requestMetrikaClientId,
+  setAuthenticatedMetrikaUser,
+  trackGoal
+} from "../services/analytics";
 import { LEGAL_AGREEMENT_VERSION } from "../constants/legalAgreement";
 
 const AUTH_PENDING_STORAGE_KEY = "word2you_auth_pending";
@@ -78,6 +85,27 @@ export function useAuth() {
 
     loadInitialAuthState();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    const deviceContext = getAnalyticsDeviceContext();
+    setAuthenticatedMetrikaUser(user.id);
+    saveAnalyticsIdentity(deviceContext).catch(() => {
+      // Analytics must never block authentication or product usage.
+    });
+    requestMetrikaClientId((metrikaClientId) => {
+      if (!metrikaClientId) {
+        return;
+      }
+
+      saveAnalyticsIdentity({ ...deviceContext, metrikaClientId }).catch(() => {
+        // Analytics must never block authentication or product usage.
+      });
+    });
+  }, [user?.id]);
 
   const defaultProvider = authProviders[0];
   const loginWithProvider = (providerId) => {

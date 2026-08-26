@@ -20,16 +20,44 @@ import {
 } from "../services/adminApi";
 import { getProcessingUsageText } from "../utils/processingAccessText";
 
-function formatDate(value) {
+const METRIKA_COUNTER_ID = import.meta.env.VITE_YANDEX_METRIKA_ID || "109386353";
+
+function formatCompactDateTime(value) {
   if (!value) {
     return "—";
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(new Date(value));
+}
+
+function getAcquisitionSourceLabel(context) {
+  const source = String(context?.utm_source || "").toLowerCase();
+  if (["yandex-direct", "ya-direct", "yandex_direct"].includes(source)) return "Директ";
+  if (!source) return "Не определён";
+  return context.utm_source;
+}
+
+function getDeviceLabel(user) {
+  return [user.firstDeviceType, user.firstDeviceOs, user.firstDeviceBrowser]
+    .filter(Boolean)
+    .join(" · ") || "—";
+}
+
+function getCompactProcessingUsage(user) {
+  if (user.processingEnabled) {
+    return "безлимит";
+  }
+
+  return `${Number(user.processingUsed || 0)}/${Number(user.processingQuota || 0)}`;
+}
+
+function getWebvisorUrl() {
+  return `https://metrika.yandex.ru/visor?period=week&id=${encodeURIComponent(METRIKA_COUNTER_ID)}`;
 }
 
 function formatAccessDate(value) {
@@ -56,24 +84,6 @@ function addOneMonth(value = new Date()) {
   const date = new Date(value);
   date.setMonth(date.getMonth() + 1);
   return date.toISOString().slice(0, 10);
-}
-
-function getAccessLabel(user) {
-  if (user.processingEnabled) {
-    return "Безлимит";
-  }
-
-  if (user.accessExpiresAt && new Date(user.accessExpiresAt).getTime() > Date.now()) {
-    return `До ${formatAccessDate(user.accessExpiresAt)}`;
-  }
-
-  const remaining = Math.max(Number(user.processingQuota || 0) - Number(user.processingUsed || 0), 0);
-
-  if (remaining > 0) {
-    return `Пакет: ${remaining} ост.`;
-  }
-
-  return "Бесплатный";
 }
 
 function getProductAccessLabel(user) {
@@ -177,7 +187,15 @@ function AdminLogin({ onLogin }) {
   );
 }
 
-function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUser, improvementCountsByUser, onSelectUser }) {
+function AdminUsersList({
+  users,
+  selectedUserId,
+  savedUserId,
+  requestCountsByUser,
+  improvementCountsByUser,
+  onSelectUser,
+  onShowImprovements
+}) {
   return (
     <section className="admin-users">
       <h2>Пользователи</h2>
@@ -186,24 +204,22 @@ function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUse
         <p className="admin-muted">Пользователей пока нет.</p>
       ) : (
         <div className="admin-users__list">
-          {users.map((user) => (
-            <button
+          {users.map((user) => {
+            const improvementCount = improvementCountsByUser.get(user.id) || 0;
+            const acquisition = user.acquisitionContext || {};
+
+            return (
+            <article
               className={`admin-user-row ${selectedUserId === user.id ? "admin-user-row--active" : ""}`}
-              type="button"
               key={user.id}
-              onClick={() => onSelectUser(user.id)}
             >
-              <span className="admin-user-row__main">
+              <button className="admin-user-row__select" type="button" onClick={() => onSelectUser(user.id)}>
+                <span className="admin-user-row__main">
                 <span className="admin-user-row__title">
                   <strong>{user.email || user.displayName || `Пользователь ${user.id}`}</strong>
                   {requestCountsByUser.get(user.id) > 0 && (
                     <span className="admin-user-row__request">
                       {requestCountsByUser.get(user.id) === 1 ? "заявка" : `${requestCountsByUser.get(user.id)} заявок`}
-                    </span>
-                  )}
-                  {improvementCountsByUser.get(user.id) > 0 && (
-                    <span className="admin-user-row__improvement">
-                      {improvementCountsByUser.get(user.id)} на улучшение
                     </span>
                   )}
                 </span>
@@ -215,17 +231,47 @@ function AdminUsersList({ users, selectedUserId, savedUserId, requestCountsByUse
                     ))}
                   </span>
                 )}
-              </span>
-              <span className="admin-user-row__side">
-                <span>{user.documentsCount} док.</span>
-                <span>{getProcessingUsageText(user)}</span>
-                <span>{getAccessLabel(user)}</span>
+                </span>
+                <span className="admin-user-row__metrics">
+                  <span>Регистрация: {formatCompactDateTime(user.createdAt)}</span>
+                  <span>Последняя обработка: {formatCompactDateTime(user.lastProcessingAt)}</span>
+                  <span>Визиты: —</span>
+                  <span>Источник: {getAcquisitionSourceLabel(acquisition)}</span>
+                  <span>Фраза: {acquisition.utm_term || "—"}</span>
+                  <span>Устройство: {user.firstDeviceType || "—"}</span>
+                  <span>Обработки: {getCompactProcessingUsage(user)}</span>
+                  <span>
+                    Документы: сейчас {user.documentsCount} / создано {user.documentsCreatedTotal} / удалено {user.documentsDeletedTotal}
+                  </span>
+                </span>
+              </button>
+              <div className="admin-user-row__actions">
+                <button
+                  className="admin-user-row__improvement"
+                  type="button"
+                  onClick={() => onShowImprovements(user.id)}
+                >
+                  Улучшения: {improvementCount}
+                </button>
+                <a
+                  className={`admin-user-row__webvisor ${user.metrikaClientId ? "" : "admin-user-row__webvisor--disabled"}`}
+                  href={user.metrikaClientId ? getWebvisorUrl() : undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-disabled={!user.metrikaClientId}
+                  onClick={(event) => {
+                    if (!user.metrikaClientId) event.preventDefault();
+                  }}
+                >
+                  Вебвизор
+                </a>
                 {savedUserId === user.id && (
                   <span className="admin-user-row__saved">✓ изменения сохранены</span>
                 )}
-              </span>
-            </button>
-          ))}
+              </div>
+            </article>
+            );
+          })}
         </div>
       )}
     </section>
@@ -335,16 +381,34 @@ function AdminUserDetails({ user, onSaved }) {
 
       <div className="admin-stats">
         <div>
-          <span>Записи</span>
+          <span>Документы сейчас</span>
           <strong>{user.documentsCount}</strong>
         </div>
         <div>
-          <span>Создан</span>
-          <strong>{formatDate(user.createdAt)}</strong>
+          <span>Обработано за всё время</span>
+          <strong>{user.recordsProcessedTotal}</strong>
         </div>
         <div>
-          <span>Последняя запись</span>
-          <strong>{formatDate(user.lastDocumentAt)}</strong>
+          <span>Регистрация</span>
+          <strong>{formatCompactDateTime(user.createdAt)}</strong>
+        </div>
+        <div>
+          <span>Последняя обработка</span>
+          <strong>{formatCompactDateTime(user.lastProcessingAt)}</strong>
+        </div>
+      </div>
+
+      <div className="admin-current-access">
+        <span>История документов</span>
+        <div className="admin-current-access__value">
+          <div>
+            <strong>
+              Сейчас {user.documentsCount} · создано {user.documentsCreatedTotal} · удалено {user.documentsDeletedTotal}
+            </strong>
+            {!user.documentsHistoryComplete && (
+              <p className="admin-muted">Для старого аккаунта создания восстановлены по текущему архиву, прежние удаления неизвестны.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -382,22 +446,45 @@ function AdminUserDetails({ user, onSaved }) {
         </div>
       </div>
 
-      {user.acquisitionContext && (
-        <div className="admin-current-access">
-          <span>Первый рекламный источник</span>
-          <div className="admin-current-access__value">
-            <strong>
-              {user.acquisitionContext.utm_source || "источник не указан"}
-              {user.acquisitionContext.utm_campaign ? ` · ${user.acquisitionContext.utm_campaign}` : ""}
-              {user.acquisitionContext.utm_term ? ` · ${user.acquisitionContext.utm_term}` : ""}
-            </strong>
-            <AdminCopyButton
-              label="Скопировать рекламный источник"
-              value={JSON.stringify(user.acquisitionContext)}
-            />
+      <div className="admin-current-access">
+        <span>Первое привлечение</span>
+        <dl className="admin-analytics-details">
+          <div><dt>Источник</dt><dd>{getAcquisitionSourceLabel(user.acquisitionContext)}</dd></div>
+          <div><dt>Кампания</dt><dd>{user.acquisitionContext?.utm_campaign || "—"}</dd></div>
+          <div><dt>Фраза</dt><dd>{user.acquisitionContext?.utm_term || "—"}</dd></div>
+          <div><dt>Landing path</dt><dd>{user.acquisitionContext?.landing_path || "—"}</dd></div>
+          <div><dt>Устройство</dt><dd>{getDeviceLabel(user)}</dd></div>
+        </dl>
+        {user.acquisitionContext && (
+          <AdminCopyButton
+            label="Скопировать полные UTM"
+            value={JSON.stringify(user.acquisitionContext)}
+          />
+        )}
+      </div>
+
+      <div className="admin-current-access">
+        <span>Яндекс Метрика</span>
+        <div className="admin-current-access__value">
+          <div>
+            <strong>ClientID: {user.metrikaClientId || "ещё не получен"}</strong>
+            <p className="admin-muted">Визиты: — · точный подсчёт появится после подключения API Метрики.</p>
           </div>
+          {user.metrikaClientId && <AdminCopyButton label="Скопировать ClientID" value={user.metrikaClientId} />}
         </div>
-      )}
+        <a
+          className={`admin-button ${user.metrikaClientId ? "" : "admin-button--disabled"}`}
+          href={user.metrikaClientId ? getWebvisorUrl() : undefined}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={!user.metrikaClientId}
+          onClick={(event) => {
+            if (!user.metrikaClientId) event.preventDefault();
+          }}
+        >
+          Открыть Вебвизор
+        </a>
+      </div>
 
       <form className="admin-access-form" onSubmit={handleSave}>
         <label className="admin-checkbox">
@@ -498,6 +585,7 @@ function AdminDashboard({ onLogout }) {
   const [accessRequests, setAccessRequests] = useState([]);
   const [processingCredits, setProcessingCredits] = useState([]);
   const [improvementRequests, setImprovementRequests] = useState([]);
+  const [improvementUserFilterId, setImprovementUserFilterId] = useState(null);
   const [settings, setSettings] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -603,7 +691,7 @@ function AdminDashboard({ onLogout }) {
     const counts = new Map();
 
     improvementRequests.forEach((request) => {
-      if (!request.userId || !["submitted", "in_review"].includes(request.status)) {
+      if (!request.userId) {
         return;
       }
 
@@ -612,6 +700,16 @@ function AdminDashboard({ onLogout }) {
 
     return counts;
   }, [improvementRequests]);
+  const filteredImprovementRequests = useMemo(
+    () => improvementUserFilterId
+      ? improvementRequests.filter((request) => String(request.userId) === String(improvementUserFilterId))
+      : improvementRequests,
+    [improvementRequests, improvementUserFilterId]
+  );
+  const improvementFilterUser = useMemo(
+    () => users.find((user) => String(user.id) === String(improvementUserFilterId)) || null,
+    [improvementUserFilterId, users]
+  );
 
   function handleSaved(updatedUser) {
     setSelectedUser(null);
@@ -631,6 +729,11 @@ function AdminDashboard({ onLogout }) {
     window.setTimeout(() => {
       userDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 0);
+  }
+
+  function handleShowUserImprovements(userId) {
+    setImprovementUserFilterId(userId);
+    setActiveTab("improvements");
   }
 
   async function handleMarkRequestReviewed(requestIds) {
@@ -737,7 +840,10 @@ function AdminDashboard({ onLogout }) {
         <button
           className={`admin-tabs__button ${activeTab === "improvements" ? "admin-tabs__button--active" : ""}`}
           type="button"
-          onClick={() => setActiveTab("improvements")}
+          onClick={() => {
+            setImprovementUserFilterId(null);
+            setActiveTab("improvements");
+          }}
         >
           Улучшения{newImprovementRequestsCount > 0 ? ` · ${newImprovementRequestsCount}` : ""}
         </button>
@@ -760,7 +866,10 @@ function AdminDashboard({ onLogout }) {
           <span>Оплаты ЮKassa</span>
           <strong>{paidCreditsCount}</strong>
         </button>
-        <button type="button" onClick={() => setActiveTab("improvements")}>
+        <button type="button" onClick={() => {
+          setImprovementUserFilterId(null);
+          setActiveTab("improvements");
+        }}>
           <span>Новые улучшения</span>
           <strong>{newImprovementRequestsCount}</strong>
         </button>
@@ -794,11 +903,13 @@ function AdminDashboard({ onLogout }) {
 
           {activeTab === "improvements" && (
             <AdminImprovementRequests
-              requests={improvementRequests}
+              requests={filteredImprovementRequests}
               loading={improvementsLoading}
               onTakeInReview={handleTakeImprovementInReview}
               onComplete={handleCompleteImprovement}
               onSelectUser={handleSelectUser}
+              filterUser={improvementFilterUser}
+              onClearUserFilter={() => setImprovementUserFilterId(null)}
             />
           )}
 
@@ -811,6 +922,7 @@ function AdminDashboard({ onLogout }) {
               requestCountsByUser={requestCountsByUser}
               improvementCountsByUser={improvementCountsByUser}
               onSelectUser={handleSelectUser}
+              onShowImprovements={handleShowUserImprovements}
             />
               <AdminUserDetails user={selectedUser} onSaved={handleSaved} />
             </div>

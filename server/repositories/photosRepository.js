@@ -1,4 +1,5 @@
-import { query } from "../db/index.js";
+import { query, withTransaction } from "../db/index.js";
+import { incrementUserRecordsProcessedTotalWithClient } from "./usersRepository.js";
 
 export async function createPhoto({
   userId,
@@ -27,8 +28,9 @@ export async function createPhoto({
   errorMessage = null,
   processedAt = null
 }) {
-  const result = await query(
-    `
+  return withTransaction(async (client) => {
+    const result = await client.query(
+      `
       insert into photos (
         user_id,
         filename,
@@ -58,37 +60,47 @@ export async function createPhoto({
       )
       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
       returning *
-    `,
-    [
-      userId,
-      filename,
-      storagePath,
-      mimeType,
-      sizeBytes,
-      status,
-      ocrProvider,
-      aiProvider,
-      ocrText,
-      title,
-      summary,
-      category,
-      section,
-      topic,
-      JSON.stringify(Array.isArray(tags) ? tags : []),
-      cleanText,
-      JSON.stringify(formattedContent || { blocks: [] }),
-      formattedAt,
-      Boolean(hasTable),
-      Boolean(hasFormulas),
-      Boolean(hasRecognitionErrors),
-      textQuality,
-      aiNotes,
-      errorMessage,
-      processedAt
-    ]
-  );
+      `,
+      [
+        userId,
+        filename,
+        storagePath,
+        mimeType,
+        sizeBytes,
+        status,
+        ocrProvider,
+        aiProvider,
+        ocrText,
+        title,
+        summary,
+        category,
+        section,
+        topic,
+        JSON.stringify(Array.isArray(tags) ? tags : []),
+        cleanText,
+        JSON.stringify(formattedContent || { blocks: [] }),
+        formattedAt,
+        Boolean(hasTable),
+        Boolean(hasFormulas),
+        Boolean(hasRecognitionErrors),
+        textQuality,
+        aiNotes,
+        errorMessage,
+        processedAt
+      ]
+    );
 
-  return result.rows[0];
+    await client.query(
+      `
+        update users
+        set documents_created_total = documents_created_total + 1, updated_at = now()
+        where id = $1
+      `,
+      [userId]
+    );
+
+    return result.rows[0] || null;
+  });
 }
 
 export async function listPhotosByUser(userId) {
@@ -146,7 +158,7 @@ export async function updatePhotoStatus(id, status, errorMessage = null) {
   return result.rows[0] || null;
 }
 
-export async function updatePhotoProcessingResult(id, updates) {
+async function updatePhotoProcessingResultWithExecutor(execute, id, updates) {
   const {
     status,
     ocrText,
@@ -168,7 +180,7 @@ export async function updatePhotoProcessingResult(id, updates) {
     processedAt = null
   } = updates;
 
-  const result = await query(
+  const result = await execute(
     `
       update photos
       set
@@ -220,7 +232,43 @@ export async function updatePhotoProcessingResult(id, updates) {
   return result.rows[0] || null;
 }
 
+export async function updatePhotoProcessingResult(id, updates) {
+  return updatePhotoProcessingResultWithExecutor(query, id, updates);
+}
+
+export async function updatePhotoProcessingResultAndRecordSuccess({ id, userId, updates }) {
+  return withTransaction(async (client) => {
+    const photo = await updatePhotoProcessingResultWithExecutor(
+      (text, params) => client.query(text, params),
+      id,
+      updates
+    );
+
+    if (!photo) {
+      return null;
+    }
+
+    await incrementUserRecordsProcessedTotalWithClient(client, userId);
+    return photo;
+  });
+}
+
 export async function deletePhoto(id) {
-  const result = await query("delete from photos where id = $1 returning *", [id]);
-  return result.rows[0] || null;
+  return withTransaction(async (client) => {
+    const result = await client.query("delete from photos where id = $1 returning *", [id]);
+    const deleted = result.rows[0] || null;
+
+    if (deleted) {
+      await client.query(
+        `
+          update users
+          set documents_deleted_total = documents_deleted_total + 1, updated_at = now()
+          where id = $1
+        `,
+        [deleted.user_id]
+      );
+    }
+
+    return deleted;
+  });
 }

@@ -4172,11 +4172,24 @@ button {
 .admin-user-row__improvement {
   flex: 0 0 auto;
   padding: 3px 7px;
+  border: 0;
   border-radius: 999px;
   background: #fff4db;
   color: #9a5b08;
   font-size: 12px;
   font-weight: 800;
+}
+
+.admin-improvements__filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  background: #f7f8fa;
 }
 
 .admin-section-heading {
@@ -4409,9 +4422,9 @@ button {
 
 .admin-user-row {
   display: flex;
+  flex-direction: column;
   width: 100%;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
   gap: 12px;
   padding: 12px;
   border: 1px solid #e4e8f0;
@@ -4420,22 +4433,36 @@ button {
   text-align: left;
 }
 
+.admin-user-row__select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.admin-user-row__select:hover {
+  background: transparent;
+}
+
 .admin-user-row:hover,
 .admin-user-row--active {
   background: #f5f7fb;
   border-color: #b8c1d1;
 }
 
-.admin-user-row__main,
-.admin-user-row__side {
+.admin-user-row__main {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.admin-user-row__main span,
-.admin-user-row__side {
+.admin-user-row__main span {
   color: #667085;
   font-size: 13px;
 }
@@ -4464,9 +4491,33 @@ button {
   font-weight: 800;
 }
 
-.admin-user-row__side {
-  flex: 0 0 auto;
-  align-items: flex-end;
+.admin-user-row__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  color: #344054;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-user-row__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-user-row__webvisor {
+  color: #344054;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.admin-user-row__webvisor--disabled {
+  color: #98a2b3;
+  cursor: default;
+  text-decoration: none;
 }
 
 .admin-user-row__saved {
@@ -4525,7 +4576,7 @@ button {
 
 .admin-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -4558,6 +4609,37 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.admin-analytics-details {
+  display: grid;
+  gap: 7px;
+  margin: 5px 0;
+}
+
+.admin-analytics-details > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.admin-analytics-details dt {
+  color: #667085;
+  font-size: 13px;
+}
+
+.admin-analytics-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #111827;
+  font-size: 13px;
+}
+
+.admin-button--disabled {
+  color: #98a2b3;
+  cursor: default;
+  pointer-events: none;
 }
 
 .admin-copy-button {
@@ -4954,8 +5036,7 @@ button {
     padding: 16px;
   }
 
-  .admin-topbar,
-  .admin-user-row {
+  .admin-topbar {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -4964,8 +5045,14 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .admin-user-row__side {
+  .admin-improvements__filter {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-analytics-details > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 }
 
