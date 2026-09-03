@@ -19,9 +19,12 @@ import { LEGAL_AGREEMENT_VERSION } from "../constants/legalAgreement";
 
 const AUTH_PENDING_STORAGE_KEY = "word2you_auth_pending";
 
-function rememberPendingAuth(providerId) {
+function rememberPendingAuth(providerId, source = "") {
   try {
-    window.sessionStorage.setItem(AUTH_PENDING_STORAGE_KEY, providerId || "unknown");
+    window.sessionStorage.setItem(AUTH_PENDING_STORAGE_KEY, JSON.stringify({
+      provider: providerId || "unknown",
+      ...(source ? { source } : {})
+    }));
   } catch {
     // Authentication must continue even when session storage is unavailable.
   }
@@ -33,14 +36,24 @@ function trackCompletedAuth(user) {
   }
 
   try {
-    const providerId = window.sessionStorage.getItem(AUTH_PENDING_STORAGE_KEY);
+    const storedValue = window.sessionStorage.getItem(AUTH_PENDING_STORAGE_KEY);
 
-    if (!providerId) {
+    if (!storedValue) {
       return;
     }
 
+    let authContext;
+    try {
+      authContext = JSON.parse(storedValue);
+    } catch {
+      authContext = { provider: storedValue };
+    }
+
     window.sessionStorage.removeItem(AUTH_PENDING_STORAGE_KEY);
-    trackGoal("account_authenticated", { provider: providerId });
+    trackGoal("account_authenticated", {
+      provider: authContext.provider || "unknown",
+      ...(authContext.source ? { source: authContext.source } : {})
+    });
   } catch {
     // A storage restriction should not affect the authenticated session.
   }
@@ -110,9 +123,9 @@ export function useAuth() {
   }, [user?.id]);
 
   const defaultProvider = authProviders[0];
-  const loginWithProvider = (providerId) => {
+  const loginWithProvider = (providerId, { source = "" } = {}) => {
     trackGoal("auth_start", { provider: providerId });
-    rememberPendingAuth(providerId);
+    rememberPendingAuth(providerId, source);
 
     if (providerId === "email") {
       setEmailAuthOpen(true);

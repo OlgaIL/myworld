@@ -252,8 +252,8 @@ export function createAccessRequest({ message }) {
     });
 }
 
-export function createYookassaPayment({ packageTitle }) {
-  return axios.post(`${API_URL}/api/payments/yookassa`, { packageTitle }).then((res) => res.data);
+export function createYookassaPayment({ packageId, packageTitle }) {
+  return axios.post(`${API_URL}/api/payments/yookassa`, { packageId, packageTitle }).then((res) => res.data);
 }
 
 export function getAccessRequests() {

@@ -3,6 +3,7 @@ import { CLIENT_URL } from "../config/env.js";
 import { getConfiguredAuthProviders, isAuthProviderConfigured } from "../auth/providers.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import { countPhotosByUser } from "../repositories/photosRepository.js";
+import { hasSuccessfulPackagePayment } from "../repositories/paymentsRepository.js";
 import {
   mapUserForSession,
   saveUserAcquisitionContext,
@@ -270,6 +271,7 @@ router.get("/api/me", async (req, res) => {
   const recordsUsed = Number(req.user.recordsProcessedTotal || 0);
   const recordAccess = getUserProductAccess(req.user, recordsUsed);
   const pipeline = getProcessingPipelineForUser(req.user);
+  const startPackageUsed = await hasSuccessfulPackagePayment(req.user.id, "start");
 
   return res.send({
     ...req.user,
@@ -280,6 +282,7 @@ router.get("/api/me", async (req, res) => {
     processingQuota: processingAccess.processingQuota,
     processingUsed: processingAccess.processingUsed,
     processingRemaining: processingAccess.processingRemaining,
+    startPackageUsed,
     ...recordAccess
   });
 });

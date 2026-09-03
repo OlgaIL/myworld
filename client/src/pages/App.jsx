@@ -23,6 +23,7 @@ import { trackGoal } from "../services/analytics";
 import { getPhotoUrl } from "../services/api";
 
 const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
+const PENDING_GUEST_RESULT_KEY = "word2you_pending_guest_result";
 
 function rememberPendingImprovementDocument(documentId) {
   try {
@@ -43,6 +44,30 @@ function getPendingImprovementDocument() {
 function clearPendingImprovementDocument() {
   try {
     window.sessionStorage.removeItem(PENDING_IMPROVEMENT_DOCUMENT_KEY);
+  } catch {
+    // Nothing else is required when storage is unavailable.
+  }
+}
+
+function rememberPendingGuestResult(documentId) {
+  try {
+    window.sessionStorage.setItem(PENDING_GUEST_RESULT_KEY, documentId);
+  } catch {
+    // Authentication must continue when session storage is unavailable.
+  }
+}
+
+function getPendingGuestResult() {
+  try {
+    return window.sessionStorage.getItem(PENDING_GUEST_RESULT_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function clearPendingGuestResult() {
+  try {
+    window.sessionStorage.removeItem(PENDING_GUEST_RESULT_KEY);
   } catch {
     // Nothing else is required when storage is unavailable.
   }
@@ -72,7 +97,7 @@ function App() {
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
   const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
-  const recordLimit = Number(user?.recordLimit || 100);
+  const recordLimit = Number(user?.recordLimit || 0);
   const recordsUsed = Number(user?.recordsUsed ?? 0);
   const recordUploadAllowed = user?.recordUploadAllowed !== false;
   const {
@@ -170,13 +195,19 @@ function App() {
       if (options.improvementDocumentId) {
         rememberPendingImprovementDocument(options.improvementDocumentId);
       }
-      loginWithProvider(providerId);
+      loginWithProvider(providerId, {
+        source: options.placement === "document_before_text" ? "guest_result" : ""
+      });
     });
   }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
 
   const requestGuestDocumentLogin = useCallback((providerId) => {
+    const guestResultId = activeGuestDocument?.filename || activeGuestDocument?.id || "";
+    if (guestResultId) {
+      rememberPendingGuestResult(guestResultId);
+    }
     requestProviderLogin(providerId, { placement: "document_before_text" });
-  }, [requestProviderLogin]);
+  }, [activeGuestDocument, requestProviderLogin]);
 
   useEffect(() => {
     if (!user) {
@@ -196,6 +227,27 @@ function App() {
 
     if (photos.some((photo) => photo.name === pendingDocumentId)) {
       navigate(`/documents/${encodeURIComponent(pendingDocumentId)}`);
+    }
+  }, [documentName, navigate, photos, user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const pendingGuestResult = getPendingGuestResult();
+    if (!pendingGuestResult) {
+      return;
+    }
+
+    if (documentName === pendingGuestResult) {
+      clearPendingGuestResult();
+      return;
+    }
+
+    if (photos.some((photo) => photo.name === pendingGuestResult)) {
+      clearPendingGuestResult();
+      navigate(`/documents/${encodeURIComponent(pendingGuestResult)}`);
     }
   }, [documentName, navigate, photos, user]);
 
@@ -348,6 +400,7 @@ function App() {
               uploadMessage={uploadMessage}
               uploading={uploading}
               recordUploadAllowed={recordUploadAllowed}
+              reloadUser={reloadUser}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               browseMode={browseMode}

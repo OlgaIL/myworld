@@ -99,7 +99,7 @@ function GuestHome({
           />
         )}
         {uploadAllowed && (
-          <p className="guest-hero__signup-bonus">После регистрации — ещё 30 обработок бесплатно</p>
+          <p className="guest-hero__signup-bonus">После регистрации — ещё 10 обработок бесплатно</p>
         )}
         {uploadAllowed && <LegalConsentText />}
 

@@ -1,4 +1,8 @@
 export function getAvailableProcessingCount(user, recordsUsed = 0, recordLimit = 0) {
+  if (user?.totalRemaining !== undefined && user?.totalRemaining !== null) {
+    return Math.max(Number(user.totalRemaining || 0), 0);
+  }
+
   if (Number(user?.packageQuota || 0) > 0) {
     return Math.max(Number(user?.recordsRemaining || 0) + Number(user?.packageRemaining || 0), 0);
   }

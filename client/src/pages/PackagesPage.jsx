@@ -2,37 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import PageFooter from "../components/PageFooter";
 import { useAuthContext } from "../contexts/AuthContext";
+import { getVisiblePaymentPackages } from "../config/paymentPackages";
 import { createAccessRequest, createYookassaPayment } from "../services/api";
 import { trackGoal, trackGoalOnce } from "../services/analytics";
-
-const packages = [
-  {
-    title: "Мини",
-    value: "50 обработок",
-    price: "290 ₽",
-    note: "5.8 ₽ за обработку",
-    text: "Для небольшого архива: записи, чеки, фото документов и тексты на потом.",
-    action: "Оплатить"
-  },
-  {
-    title: "Стандарт",
-    value: "150 обработок",
-    price: "590 ₽",
-    note: "3.9 ₽ за обработку",
-    text: "Хороший вариант, если нужно разобрать конспекты, заметки и накопившиеся фото текстов.",
-    action: "Оплатить",
-    featured: true,
-    badge: "Хороший выбор"
-  },
-  {
-    title: "Макси",
-    value: "500 обработок",
-    price: "1 490 ₽",
-    note: "2.9 ₽ за обработку",
-    text: "Для больших архивов, учебных материалов и регулярной работы с записями.",
-    action: "Оплатить"
-  }
-];
+import { getSafePaymentErrorCode } from "../utils/paymentError";
 
 const benefits = [
   {
@@ -53,6 +26,7 @@ function PackagesPage() {
   const navigate = useNavigate();
   const { user, authLoading, reloadUser } = useAuthContext();
   const [requestStatus, setRequestStatus] = useState({});
+  const packages = getVisiblePaymentPackages(user);
 
   useEffect(() => {
     trackGoalOnce("packages_view", user?.id || "guest", {
@@ -63,17 +37,19 @@ function PackagesPage() {
   async function requestPackage(item) {
     try {
       trackGoal("package_select", {
+        package_id: item.id,
         package_name: item.title,
         package_value: item.value,
-        package_price: item.price
+        package_price: item.priceValue
       });
       setRequestStatus((current) => ({ ...current, [item.title]: "sending" }));
-      const payment = await createYookassaPayment({ packageTitle: item.title });
+      const payment = await createYookassaPayment({ packageId: item.id, packageTitle: item.title });
 
       if (payment?.credited) {
         trackGoalOnce("payment_success", payment.paymentId || `${user?.id}:${item.title}`, {
           package_name: item.title,
-          package_price: item.price
+          package_id: item.id,
+          package_price: item.priceValue
         });
         await reloadUser();
         navigate("/account");
@@ -83,7 +59,8 @@ function PackagesPage() {
       if (payment?.confirmationUrl) {
         trackGoal("payment_redirect", {
           package_name: item.title,
-          package_price: item.price
+          package_id: item.id,
+          package_price: item.priceValue
         });
         window.location.href = payment.confirmationUrl;
         return;
@@ -92,6 +69,17 @@ function PackagesPage() {
       throw new Error("PAYMENT_CONFIRMATION_URL_MISSING");
     } catch (error) {
       console.error("Package payment failed:", error.response?.data || error.message);
+      trackGoal("payment_error", {
+        package_id: item.id,
+        trigger: "packages_page",
+        error_code: getSafePaymentErrorCode(error)
+      });
+
+      if (error.response?.status === 409 && error.response?.data?.error === "START_PACKAGE_ALREADY_USED") {
+        await reloadUser();
+        setRequestStatus((current) => ({ ...current, [item.title]: "already-used" }));
+        return;
+      }
 
       if (error.response?.status === 503 && error.response?.data?.error === "YOOKASSA_DISABLED") {
         try {
@@ -100,7 +88,7 @@ function PackagesPage() {
           });
           trackGoal("package_request", {
             package_name: item.title,
-            package_price: item.price
+            package_price: item.priceValue
           });
           setRequestStatus((current) => ({ ...current, [item.title]: "sent" }));
           navigate(`/account?requestedPackage=${encodeURIComponent(item.title)}`);

@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { USER_RECORD_LIMIT } from "../config/env.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import { listProcessingCreditEventsForUser } from "../repositories/paymentsRepository.js";
 
@@ -27,6 +26,7 @@ function mapCreditEvent(event, paidUsedRemaining, fallbackCreatedAt = null) {
     type: event.source || "package",
     title: `${getSourceLabel(event.source)} ${amount}`,
     packageTitle: event.package_title || "",
+    packageId: event.package_id || "",
     amount,
     used,
     remaining: Math.max(amount - used, 0),
@@ -42,7 +42,7 @@ router.get("/api/processing-history", requireAuthenticatedUser, async (req, res)
     const recordsProcessedTotal = Number(req.user.recordsProcessedTotal || 0);
     const processingQuota = Number(req.user.processingQuota || 0);
     const processingUsed = Number(req.user.processingUsed || 0);
-    const freeAmount = USER_RECORD_LIMIT;
+    const freeAmount = Number(req.user.freeProcessingLimit || 0);
     const freeUsed = Math.min(recordsProcessedTotal, freeAmount);
     const creditEvents = await listProcessingCreditEventsForUser(req.user.id);
     const creditedAmount = creditEvents.reduce((sum, event) => sum + Number(event.amount || 0), 0);

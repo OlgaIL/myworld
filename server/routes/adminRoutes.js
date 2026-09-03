@@ -20,7 +20,6 @@ import {
   PROCESSING_PAID_MODE,
   PROCESSING_STANDARD_AI_PROVIDER,
   PROCESSING_STANDARD_OCR_PROVIDER,
-  USER_RECORD_LIMIT,
   YOOKASSA_ENABLED,
   YANDEX_AI_ENABLED,
   YANDEX_GPT_MODEL_URI,
@@ -32,6 +31,7 @@ import {
   YANDEX_OCR_MODEL,
   isAuthProviderEnabled
 } from "../config/env.js";
+import { DEFAULT_FREE_PROCESSING_LIMIT } from "../config/processingLimits.js";
 import {
   GOOGLE_APPLICATION_CREDENTIALS,
   GOOGLE_CLIENT_ID,
@@ -136,7 +136,7 @@ function mapAdminUser(user, { metrikaVisits = null } = {}) {
     documentsCreatedTotal: Number(user.documents_created_total || 0),
     documentsDeletedTotal: Number(user.documents_deleted_total || 0),
     documentsHistoryComplete: Boolean(user.documents_history_complete),
-    recordLimit: USER_RECORD_LIMIT,
+    recordLimit: Number(user.free_processing_limit || 0),
     processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,
     acquisitionContext: user.acquisition_context || null,
@@ -309,7 +309,7 @@ function getAdminSettings() {
     },
     limits: {
       guestDocumentLimit: GUEST_DOCUMENT_LIMIT,
-      userRecordLimit: USER_RECORD_LIMIT,
+        userRecordLimit: DEFAULT_FREE_PROCESSING_LIMIT,
       guestDocumentTtlHours: GUEST_DOCUMENT_TTL_HOURS,
       uploadFileLimitMb: 10
     },

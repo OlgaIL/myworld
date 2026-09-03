@@ -1,0 +1,1 @@
+export const DEFAULT_FREE_PROCESSING_LIMIT = 10;

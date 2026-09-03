@@ -1,7 +1,7 @@
-import AccessLimitMessage from "./AccessLimitMessage";
 import CabinetArchiveNavigation from "./CabinetArchiveNavigation";
 import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
+import ProcessingPackageOffer from "./ProcessingPackageOffer";
 
 function PlusIcon() {
   return (
@@ -22,6 +22,7 @@ function CabinetHome({
   uploadMessage,
   uploading,
   recordUploadAllowed,
+  reloadUser,
   searchQuery,
   setSearchQuery,
   browseMode,
@@ -67,18 +68,20 @@ function CabinetHome({
     <>
       {photosCount > 0 && (
         <section className="upload-panel upload-panel--cabinet">
-          <button
-            className="guest-upload-button"
-            type="button"
-            onClick={onRequestUpload}
-            disabled={uploading || !recordUploadAllowed}
-          >
-            Загрузить запись
-          </button>
+          {recordUploadAllowed && (
+            <button
+              className="guest-upload-button"
+              type="button"
+              onClick={onRequestUpload}
+              disabled={uploading}
+            >
+              Загрузить запись
+            </button>
+          )}
           <p className="guest-hero__counter upload-panel__counter">
             Документов в архиве: {recordsUsed}
           </p>
-          {!uploading && <AccessLimitMessage user={user} />}
+          {!uploading && <ProcessingPackageOffer user={user} reloadUser={reloadUser} />}
         </section>
       )}
 
@@ -153,16 +156,22 @@ function CabinetHome({
         </div>
       ) : (
         <>
-          <CabinetEmptyState
-            uploading={uploading}
-            uploadAllowed={recordUploadAllowed}
-            onUpload={onRequestUpload}
-          />
+          {recordUploadAllowed ? (
+            <CabinetEmptyState
+              uploading={uploading}
+              uploadAllowed
+              onUpload={onRequestUpload}
+            />
+          ) : (
+            <ProcessingPackageOffer user={user} reloadUser={reloadUser} />
+          )}
           <div className="cabinet-empty-state__meta">
             <p className="guest-hero__counter upload-panel__counter">
               Документов в архиве: {recordsUsed}
             </p>
-            {!uploading && <AccessLimitMessage user={user} />}
+            {!uploading && recordUploadAllowed && (
+              <ProcessingPackageOffer user={user} reloadUser={reloadUser} />
+            )}
           </div>
         </>
       )}
@@ -177,7 +186,7 @@ function CabinetHome({
         disabled={uploading || !recordUploadAllowed}
       />
 
-      {photosCount >= 5 && (
+      {photosCount >= 5 && recordUploadAllowed && (
         <button
           className="fab-upload"
           type="button"

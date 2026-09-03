@@ -5,10 +5,10 @@ import {
   OPENAI_ENABLED,
   PROCESSING_ALLOWLIST_EMAILS,
   PROCESSING_ENABLED,
-  USER_RECORD_LIMIT,
   YANDEX_AI_ENABLED,
   YANDEX_OCR_ENABLED
 } from "../config/env.js";
+import { DEFAULT_FREE_PROCESSING_LIMIT } from "../config/processingLimits.js";
 import { formatAiNotesForDisplay } from "./aiNotes.js";
 
 export function mapPhotoInfo(photo) {
@@ -53,25 +53,32 @@ export function getUserProcessingAccess(user) {
   };
 }
 
-export function getUserRecordAccess(recordsUsed) {
-  const limit = USER_RECORD_LIMIT;
+export function getUserRecordAccess(user, recordsUsed) {
+  const limit = Math.max(Number(
+    user?.freeProcessingLimit ?? user?.free_processing_limit ?? DEFAULT_FREE_PROCESSING_LIMIT
+  ), 0);
   const used = Number(recordsUsed || 0);
-  const remaining = Math.max(limit - used, 0);
+  const freeUsed = Math.min(Math.max(used, 0), limit);
+  const remaining = Math.max(limit - freeUsed, 0);
 
   return {
     recordLimit: limit,
     recordsUsed: used,
     recordsRemaining: remaining,
+    freeLimit: limit,
+    freeUsed,
+    freeRemaining: remaining,
     recordUploadAllowed: remaining > 0
   };
 }
 
 export function getUserProductAccess(user, recordsUsed) {
-  const freeAccess = getUserRecordAccess(recordsUsed);
+  const freeAccess = getUserRecordAccess(user, recordsUsed);
   const unlimitedAccess = Boolean(user?.processingEnabled ?? user?.processing_enabled);
   const packageQuota = Number(user?.processingQuota ?? user?.processing_quota ?? 0);
   const packageUsed = Number(user?.processingUsed ?? user?.processing_used ?? 0);
   const packageRemaining = Math.max(packageQuota - packageUsed, 0);
+  const totalRemaining = freeAccess.freeRemaining + packageRemaining;
   const accessExpiresAt = user?.accessExpiresAt ?? user?.access_expires_at ?? null;
   const expiresAtTime = accessExpiresAt ? new Date(accessExpiresAt).getTime() : 0;
   const extendedAccessActive = Boolean(expiresAtTime && expiresAtTime > Date.now());
@@ -82,6 +89,10 @@ export function getUserProductAccess(user, recordsUsed) {
     packageQuota,
     packageUsed,
     packageRemaining,
+    paidLimit: packageQuota,
+    paidUsed: packageUsed,
+    paidRemaining: packageRemaining,
+    totalRemaining,
     packageAccessActive: packageRemaining > 0,
     recordUploadAllowed,
     unlimitedAccess,

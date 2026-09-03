@@ -157,7 +157,7 @@ function AdminSettingsPanel({ settings }) {
               <strong>{settings.limits?.guestDocumentLimit} обработок</strong>
             </div>
             <div className="admin-settings__row">
-              <span>Бесплатный пакет</span>
+              <span>Новый аккаунт</span>
               <strong>{settings.limits?.userRecordLimit} обработок</strong>
             </div>
             <div className="admin-settings__row">

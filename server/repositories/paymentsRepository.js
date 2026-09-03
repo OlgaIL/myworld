@@ -3,6 +3,7 @@ import { query, withTransaction } from "../db/index.js";
 export async function createPayment({
   userId,
   idempotenceKey,
+  packageId,
   packageTitle,
   packageAmount,
   amountValue,
@@ -13,18 +14,68 @@ export async function createPayment({
       insert into payments (
         user_id,
         idempotence_key,
+        package_id,
         package_title,
         package_amount,
         amount_value,
         currency
       )
-      values ($1, $2, $3, $4, $5, $6)
+      values ($1, $2, $3, $4, $5, $6, $7)
       returning *
     `,
-    [userId, idempotenceKey, packageTitle, packageAmount, amountValue, currency]
+    [userId, idempotenceKey, packageId, packageTitle, packageAmount, amountValue, currency]
   );
 
   return result.rows[0];
+}
+
+export async function findActivePaymentByPackage(userId, packageId) {
+  const result = await query(
+    `
+      select *
+      from payments
+      where user_id = $1
+        and package_id = $2
+        and status in ('pending', 'waiting_for_capture', 'succeeded')
+      order by created_at desc
+      limit 1
+    `,
+    [userId, packageId]
+  );
+
+  return result.rows[0] || null;
+}
+
+export async function hasSuccessfulPackagePayment(userId, packageId) {
+  const result = await query(
+    `
+      select exists(
+        select 1
+        from payments
+        where user_id = $1 and package_id = $2 and status = 'succeeded'
+      ) as used
+    `,
+    [userId, packageId]
+  );
+
+  return Boolean(result.rows[0]?.used);
+}
+
+export async function markPaymentFailedById(id, rawPayload = null) {
+  const result = await query(
+    `
+      update payments
+      set
+        status = 'failed',
+        raw_payload = coalesce($2, raw_payload),
+        updated_at = now()
+      where id = $1 and status = 'pending'
+      returning *
+    `,
+    [id, rawPayload]
+  );
+
+  return result.rows[0] || null;
 }
 
 export async function updatePaymentProviderData(id, {
@@ -194,9 +245,10 @@ export async function grantManualProcessingCredit({
 
 export async function listProcessingCreditEventsForAdmin() {
   const result = await query(`
-    select
-      processing_credit_events.*,
-      users.email,
+      select
+        processing_credit_events.*,
+        payments.package_id,
+        users.email,
       users.display_name,
       payments.provider_payment_id,
       payments.amount_value,
@@ -217,6 +269,7 @@ export async function listProcessingCreditEventsForUser(userId) {
     `
       select
         processing_credit_events.*,
+        payments.package_id,
         payments.amount_value,
         payments.currency,
         payments.status as payment_status

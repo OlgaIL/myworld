@@ -7,8 +7,10 @@ const __dirname = path.dirname(__filename);
 
 export const serverRootDir = path.resolve(__dirname, "..");
 export const clientDistDir = path.resolve(serverRootDir, "../client/dist");
-export const uploadsDir = path.join(serverRootDir, "uploads");
+const configuredUploadsDir = path.join(serverRootDir, "uploads");
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(configuredUploadsDir)) {
+  fs.mkdirSync(configuredUploadsDir, { recursive: true });
 }
+
+export const uploadsDir = fs.realpathSync(configuredUploadsDir);

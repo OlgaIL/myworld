@@ -34,7 +34,9 @@ function getAccessTitle(user) {
 }
 
 function getTotalRemaining(user) {
-  return Number(user?.recordsRemaining || 0) + Number(user?.packageRemaining || 0);
+  return Number(user?.totalRemaining ?? (
+    Number(user?.recordsRemaining || 0) + Number(user?.packageRemaining || 0)
+  ));
 }
 
 function getAccessStatus(user) {

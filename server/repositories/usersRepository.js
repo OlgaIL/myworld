@@ -1,5 +1,4 @@
 import { query, withTransaction } from "../db/index.js";
-import { USER_RECORD_LIMIT } from "../config/env.js";
 
 export async function upsertGoogleUser({ googleId, email, displayName, avatarUrl }) {
   const result = await query(
@@ -232,6 +231,7 @@ export async function listUsersForAdmin() {
         users.processing_enabled,
         users.processing_quota,
         users.processing_used,
+        users.free_processing_limit,
         users.records_processed_total,
         users.last_processing_at,
         users.first_device_type,
@@ -276,6 +276,7 @@ export async function findUserForAdmin(userId) {
         users.processing_enabled,
         users.processing_quota,
         users.processing_used,
+        users.free_processing_limit,
         users.records_processed_total,
         users.last_processing_at,
         users.first_device_type,
@@ -389,7 +390,7 @@ export async function incrementUserRecordsProcessedTotalWithClient(client, userI
           when
             processing_enabled = false
             and (access_expires_at is null or access_expires_at <= now())
-            and records_processed_total >= $2
+            and records_processed_total >= free_processing_limit
             and processing_used < processing_quota
           then processing_used + 1
           else processing_used
@@ -398,7 +399,7 @@ export async function incrementUserRecordsProcessedTotalWithClient(client, userI
       where id = $1
       returning *
     `,
-    [userId, USER_RECORD_LIMIT]
+    [userId]
   );
 
   return result.rows[0] || null;
@@ -445,6 +446,7 @@ export function mapUserForSession(user) {
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
+    freeProcessingLimit: Number(user.free_processing_limit || 0),
     recordsProcessedTotal: Number(user.records_processed_total || 0),
     processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,
