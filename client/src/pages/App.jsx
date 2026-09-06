@@ -20,7 +20,7 @@ import { useImprovementRequests } from "../hooks/useImprovementRequests";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
 import { trackGoal } from "../services/analytics";
-import { getPhotoUrl } from "../services/api";
+import { getPhotoUrl, processPhoto } from "../services/api";
 
 const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
 const PENDING_GUEST_RESULT_KEY = "word2you_pending_guest_result";
@@ -84,7 +84,7 @@ function App() {
     closeLegalAgreement,
     legalAgreementAccepting
   } = useLegalAgreement({ user, reloadUser });
-  const { guestDocuments, guestAccess, guestLoading, addGuestDocument } = useGuestDocument(!user);
+  const { guestDocuments, guestAccess, guestLoading, addGuestDocument, retryGuestDocument } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user), {
     onPhotosChanged: reloadUser
   });
@@ -92,6 +92,8 @@ function App() {
   const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const [improvementModalMode, setImprovementModalMode] = useState(null);
   const [guestImprovementDocumentId, setGuestImprovementDocumentId] = useState("");
+  const [retryingDocument, setRetryingDocument] = useState(false);
+  const [retryProcessingError, setRetryProcessingError] = useState("");
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
@@ -303,6 +305,35 @@ function App() {
     }
   }
 
+  async function handleGuestProcessingRetry() {
+    if (!activeGuestDocument?.id || retryingDocument) return;
+    setRetryingDocument(true);
+    setRetryProcessingError("");
+    try {
+      const state = await retryGuestDocument(activeGuestDocument.id);
+      const documents = Array.isArray(state?.documents) ? state.documents : [];
+      setActiveGuestDocument(documents.find((item) => item.id === activeGuestDocument.id) || state?.document || null);
+    } catch (error) {
+      setRetryProcessingError(error.message || "Не удалось повторить обработку. Попробуйте позже.");
+    } finally {
+      setRetryingDocument(false);
+    }
+  }
+
+  async function handleCabinetProcessingRetry() {
+    if (!activeDocumentPhoto?.name || retryingDocument) return;
+    setRetryingDocument(true);
+    setRetryProcessingError("");
+    try {
+      await processPhoto(activeDocumentPhoto.name);
+      await Promise.all([reloadPhotos(), reloadUser()]);
+    } catch (error) {
+      setRetryProcessingError(error.message || "Не удалось повторить обработку. Попробуйте позже.");
+    } finally {
+      setRetryingDocument(false);
+    }
+  }
+
   function renderGuestState() {
     if (activeGuestDocument) {
       return (
@@ -317,6 +348,9 @@ function App() {
           onProviderLogin={requestGuestDocumentLogin}
           improvementRequest={activeGuestDocument.improvementRequest || null}
           onRequestImprovement={() => openGuestImprovementRequest(activeGuestDocument)}
+          onRetryProcessing={handleGuestProcessingRetry}
+          retryProcessing={retryingDocument}
+          retryProcessingError={retryProcessingError}
         />
       );
     }
@@ -387,6 +421,9 @@ function App() {
               improvementRequestLoading={improvementRequestLoading}
               improvementRequestError={improvementRequestError}
               onRequestImprovement={() => setImprovementModalMode("request")}
+              onRetryProcessing={handleCabinetProcessingRetry}
+              retryProcessing={retryingDocument}
+              retryProcessingError={retryProcessingError}
               isAuthenticated
             />
           ) : (

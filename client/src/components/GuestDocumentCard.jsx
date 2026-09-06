@@ -33,7 +33,7 @@ function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocume
   const createdAtLabel = formatCreatedAt(document.createdAt);
   const readableText = document.cleanText || document.text || "";
   const hasReadableText = Boolean(readableText.trim());
-  const canOpenDocument = (document.status === "processed" || document.status === "claimed") && hasReadableText;
+  const canOpenDocument = ["processed", "recognized", "claimed"].includes(document.status) && hasReadableText;
   const canUploadAnother = document.status === "no_text" || document.status === "error";
   const hasTags = Array.isArray(document.tags) && document.tags.length > 0;
 
@@ -68,7 +68,7 @@ function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocume
 
       <div className="gallery__body">
         <div className="gallery__content">
-          {(document.status === "processed" || document.status === "claimed") && (
+          {["processed", "recognized", "claimed"].includes(document.status) && (
             <>
               <h4>{document.title || "Запись"}</h4>
 

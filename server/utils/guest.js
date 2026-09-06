@@ -46,6 +46,9 @@ export function mapGuestDocumentInfo(document) {
     tags: Array.isArray(document.tags) ? document.tags : [],
     textQuality: document.text_quality || "",
     notes: formatAiNotesForDisplay(document.ai_notes),
+    formattedContent: document.formatted_content && Array.isArray(document.formatted_content.blocks)
+      ? document.formatted_content
+      : null,
     hasTable: Boolean(document.has_table),
     hasFormulas: Boolean(document.has_formulas),
     hasRecognitionErrors: Boolean(document.has_recognition_errors),

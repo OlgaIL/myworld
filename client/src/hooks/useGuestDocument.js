@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getGuestDocument, uploadGuestPhoto } from "../services/api";
+import { getGuestDocument, retryGuestDocumentProcessing, uploadGuestPhoto } from "../services/api";
 
 const DEFAULT_GUEST_ACCESS = {
   documentLimit: 5,
@@ -51,6 +51,15 @@ export function useGuestDocument(enabled = true) {
     return guestState;
   }
 
+  async function retryGuestDocument(id) {
+    const guestState = await retryGuestDocumentProcessing(id);
+    const documents = Array.isArray(guestState?.documents) ? guestState.documents : [];
+    setGuestDocuments(documents);
+    setGuestDocument(guestState?.document || documents[0] || null);
+    setGuestAccess(guestState?.access || DEFAULT_GUEST_ACCESS);
+    return guestState;
+  }
+
   useEffect(() => {
     loadGuestDocument();
   }, [enabled]);
@@ -61,6 +70,7 @@ export function useGuestDocument(enabled = true) {
     guestAccess,
     guestLoading: loading,
     addGuestDocument,
+    retryGuestDocument,
     reloadGuestDocument: loadGuestDocument
   };
 }

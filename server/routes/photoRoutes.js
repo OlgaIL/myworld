@@ -23,6 +23,7 @@ import {
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
+import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
 
 const router = Router();
 
@@ -266,6 +267,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
   }
 
   try {
+    const retryStoredEnrichment = canRetryStoredEnrichment(photo);
     await updatePhotoStatus(photo.id, "processing", null);
     const imagePath = photo.storage_path;
 
@@ -360,36 +362,44 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       });
     }
 
-    timer.log("ocr_started", {
-      pipeline: pipeline.pipeline,
-      provider: pipeline.ocrProvider,
-      languageCodes: pipeline.ocrLanguageCodes,
-      model: pipeline.ocrModel || null
-    });
+    let text = photo.ocr_text || "";
 
-    const rawOcrResult = await recognizeWithPipeline(imagePath, pipeline);
-
-    timer.log("ocr_finished", {
-      pipeline: pipeline.pipeline,
-      provider: pipeline.ocrProvider
-    });
-
-    const ocrResult = normalizeOcrResult(rawOcrResult);
-
-    if (ocrResult.error) {
-      console.error("OCR ERROR:", ocrResult.error);
-      await updatePhotoStatus(photo.id, "error", ocrResult.error);
-      timer.log("response_ocr_error", {
-        error: ocrResult.error
+    if (retryStoredEnrichment) {
+      timer.log("ocr_reused", {
+        textLength: text.trim().length
+      });
+    } else {
+      timer.log("ocr_started", {
+        pipeline: pipeline.pipeline,
+        provider: pipeline.ocrProvider,
+        languageCodes: pipeline.ocrLanguageCodes,
+        model: pipeline.ocrModel || null
       });
 
-      return res.json({
-        status: "error",
-        error: ocrResult.error
+      const rawOcrResult = await recognizeWithPipeline(imagePath, pipeline);
+
+      timer.log("ocr_finished", {
+        pipeline: pipeline.pipeline,
+        provider: pipeline.ocrProvider
       });
+
+      const ocrResult = normalizeOcrResult(rawOcrResult);
+
+      if (ocrResult.error) {
+        console.error("OCR ERROR:", ocrResult.error);
+        await updatePhotoStatus(photo.id, "error", ocrResult.error);
+        timer.log("response_ocr_error", {
+          error: ocrResult.error
+        });
+
+        return res.json({
+          status: "error",
+          error: ocrResult.error
+        });
+      }
+
+      text = ocrResult.text || "";
     }
-
-    const text = ocrResult.text || "";
 
     if (text.trim().length < 10) {
       await updatePhotoProcessingResult(photo.id, {
@@ -421,20 +431,23 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
 
     if (aiResult.error) {
       console.error("AI ERROR:", aiResult.error);
-      await updatePhotoProcessingResult(photo.id, {
-        status: "error",
-        ocrText: text,
-        errorMessage: aiResult.error,
-        processedAt: new Date()
-      });
+      const recognizedPhoto = await updatePhotoProcessingResult(
+        photo.id,
+        buildRecognizedResult(text, aiResult.error)
+      );
 
       timer.log("response_ai_error", {
-        error: aiResult.error
+        error: aiResult.error,
+        errorCode: aiResult.errorCode || null,
+        retryable: Boolean(aiResult.retryable),
+        attempts: aiResult.attempts || 1
       });
 
       return res.json({
-        status: "error",
-        error: aiResult.error
+        status: recognizedPhoto.status,
+        cleanText: recognizedPhoto.clean_text || text,
+        notes: recognizedPhoto.ai_notes || "",
+        retryable: true
       });
     }
 

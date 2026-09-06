@@ -20,6 +20,13 @@ export const GUEST_DOCUMENT_STATUS_META = {
     ctaLabel: "Войти и сохранить",
     ctaHint: "Текст найден. Войдите, чтобы увидеть текст целиком и сохранить запись."
   },
+  recognized: {
+    label: "Текст распознан",
+    badgeClassName: "gallery__status-badge--warning",
+    emptyText: "Текст распознан.",
+    ctaLabel: "Войти и сохранить",
+    ctaHint: "Войдите, чтобы сохранить запись и повторить обработку."
+  },
   no_text: {
     label: "Текст не найден",
     badgeClassName: "gallery__status-badge--warning",
@@ -59,6 +66,10 @@ export const PHOTO_STATUS_META = {
   processed: {
     label: "✓ Текст загружен",
     badgeClassName: "gallery__status-badge--processed"
+  },
+  recognized: {
+    label: "Текст распознан",
+    badgeClassName: "gallery__status-badge--warning"
   },
   no_text: {
     label: "Текст не найден",

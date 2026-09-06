@@ -30,6 +30,7 @@ import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuard
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingServiceGuardError } from "../utils/photos.js";
+import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
 
 const router = Router();
 
@@ -156,23 +157,7 @@ async function enrichGuestDocumentWithAi({ text, timer }) {
       error: serviceGuardError
     });
 
-    return {
-      title: "Запись",
-      summary: "",
-      category: "",
-      section: "",
-      topic: "",
-      tags: [],
-      cleanText: text,
-      formattedContent: {
-        blocks: [{ type: "paragraph", text }]
-      },
-      hasTable: false,
-      hasFormulas: false,
-      hasRecognitionErrors: true,
-      textQuality: "low_confidence",
-      notes: "Текст распознан, но краткое описание временно недоступно."
-    };
+    return { error: serviceGuardError, errorCode: "AI_SERVICE_UNAVAILABLE", retryable: true };
   }
 
   timer.log("ai_started", {
@@ -193,17 +178,7 @@ async function enrichGuestDocumentWithAi({ text, timer }) {
       error: aiResult.error
     });
 
-    return {
-      title: "Запись",
-      summary: "",
-      category: "",
-      section: "",
-      topic: "",
-      tags: [],
-      cleanText: text,
-      textQuality: "low_confidence",
-      notes: "Текст распознан, но краткое описание временно недоступно."
-    };
+    return aiResult;
   }
 
   return aiResult;
@@ -312,6 +287,75 @@ router.get("/api/guest/documents/:id/file", async (req, res) => {
   } catch (error) {
     console.error("Guest document file error:", error);
     return res.status(500).json({ error: "GUEST_DOCUMENT_FILE_FAILED" });
+  }
+});
+
+router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
+  const timer = createRequestTimer("guest-retry", { documentId: req.params.id });
+
+  try {
+    const cookies = parseCookies(req.headers.cookie);
+    const guestSession = await findGuestSessionByToken(cookies[GUEST_SESSION_COOKIE_NAME]);
+    const guestDocument = await findGuestDocumentById(req.params.id);
+
+    if (!guestSession || !guestDocument
+      || guestDocument.guest_session_id !== guestSession.id
+      || isGuestDocumentExpired(guestDocument)) {
+      return res.status(404).json({ error: "Guest document not found" });
+    }
+
+    if (!canRetryStoredEnrichment(guestDocument)) {
+      return res.status(409).json({ error: "GUEST_DOCUMENT_NOT_RETRYABLE" });
+    }
+
+    if (getGuestUploadGuardError(guestSession)) {
+      return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
+    }
+
+    await updateGuestDocumentStatus(guestDocument.id, "processing", null);
+    const text = guestDocument.ocr_text || "";
+    const aiResult = await enrichGuestDocumentWithAi({ text, timer });
+
+    if (aiResult.error) {
+      await updateGuestDocumentProcessingResult(
+        guestDocument.id,
+        buildRecognizedResult(text, aiResult.error)
+      );
+      return res.json(await buildGuestStateForSession(guestSession));
+    }
+
+    const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
+    if (!consumedSession) {
+      await updateGuestDocumentProcessingResult(guestDocument.id, buildRecognizedResult(text, "GUEST_LIMIT_REACHED"));
+      return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
+    }
+
+    await updateGuestDocumentProcessingResult(guestDocument.id, {
+      status: "processed",
+      ocrText: text,
+      aiProvider: getProcessingPipelineForUser(null, { audience: "guest" }).aiProvider,
+      title: aiResult.title,
+      summary: aiResult.summary,
+      category: aiResult.category,
+      section: aiResult.section,
+      topic: aiResult.topic,
+      tags: aiResult.tags,
+      cleanText: aiResult.cleanText,
+      formattedContent: aiResult.formattedContent,
+      hasTable: aiResult.hasTable,
+      hasFormulas: aiResult.hasFormulas,
+      hasRecognitionErrors: aiResult.hasRecognitionErrors,
+      textQuality: aiResult.textQuality,
+      aiNotes: aiResult.notes,
+      errorMessage: null,
+      processedAt: new Date()
+    });
+
+    return res.json(await buildGuestStateForSession(consumedSession));
+  } catch (error) {
+    timer.log("response_failed", { error: error.message });
+    console.error("Guest retry error:", error);
+    return res.status(500).json({ error: "GUEST_RETRY_FAILED" });
   }
 });
 
@@ -593,28 +637,36 @@ router.post("/api/guest/upload", (req, res) => {
         return res.status(200).json(await buildGuestStateForSession(guestSession));
       }
 
+      const aiResult = await enrichGuestDocumentWithAi({
+        text,
+        timer
+      });
+
+      if (aiResult.error) {
+        await updateGuestDocumentProcessingResult(
+          guestDocument.id,
+          buildRecognizedResult(text, aiResult.error)
+        );
+        timer.log("response_recognized", {
+          error: aiResult.error,
+          errorCode: aiResult.errorCode || null,
+          retryable: Boolean(aiResult.retryable),
+          attempts: aiResult.attempts || 1
+        });
+        return res.status(200).json(await buildGuestStateForSession(guestSession));
+      }
+
       const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
 
       if (!consumedSession) {
-        const filePath = path.join(uploadsDir, req.file.filename);
-
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-
-        await updateGuestDocumentStatus(guestDocument.id, "error", "GUEST_LIMIT_REACHED");
-        timer.log("limit_rejected_after_ocr");
+        await updateGuestDocumentProcessingResult(guestDocument.id, buildRecognizedResult(text, "GUEST_LIMIT_REACHED"));
+        timer.log("limit_rejected_after_ai");
         return res.status(409).json({ error: "GUEST_LIMIT_REACHED" });
       }
 
       timer.log("guest_slot_consumed", {
         documentsUsed: consumedSession.documents_used,
         documentLimit: GUEST_DOCUMENT_LIMIT
-      });
-
-      const aiResult = await enrichGuestDocumentWithAi({
-        text,
-        timer
       });
 
       const updatedDocument = await updateGuestDocumentProcessingResult(guestDocument.id, {

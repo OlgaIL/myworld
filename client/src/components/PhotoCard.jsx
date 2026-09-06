@@ -172,6 +172,13 @@ function PhotoCard({
             </>
           )}
 
+          {!isPendingUpload && info?.status === "recognized" && (
+            <>
+              <h4>{info.title || "Запись"}</h4>
+              <p>{info.notes || "Описание и оформление временно недоступны. Попробуйте повторить обработку."}</p>
+            </>
+          )}
+
           {!isPendingUpload && info?.status === "no_text" && (
             <>
               <p>

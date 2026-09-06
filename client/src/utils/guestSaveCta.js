@@ -5,7 +5,7 @@ export function canShowGuestDocumentSaveCta({
   providers,
   onProviderLogin
 }) {
-  const isReadyDocument = documentStatus === "processed" || documentStatus === "claimed";
+  const isReadyDocument = ["processed", "recognized", "claimed"].includes(documentStatus);
 
   return !isAuthenticated
     && isReadyDocument

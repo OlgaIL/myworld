@@ -46,7 +46,27 @@ export async function processImage(imagePath, options) {
   return processOpenAIImage(imagePath, options);
 }
 
-async function processYandex(text, { apiKey, folderId, modelUri }) {
+const YANDEX_RETRYABLE_ERROR_CODES = new Set([
+  "ECONNABORTED",
+  "ECONNRESET",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ETIMEDOUT",
+  "ERR_NETWORK"
+]);
+
+export function isRetryableYandexError(error) {
+  const status = Number(error?.response?.status || 0);
+  return status === 429
+    || status >= 500
+    || (!error?.response && YANDEX_RETRYABLE_ERROR_CODES.has(String(error?.code || "")));
+}
+
+function wait(delayMs) {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function processYandex(text, { apiKey, folderId, modelUri, httpClient = axios, retryDelay = wait }) {
   if (!apiKey) {
     return errorResult("YANDEX_API_KEY is not set");
   }
@@ -58,14 +78,17 @@ async function processYandex(text, { apiKey, folderId, modelUri }) {
   const prompt = buildYandexUserPrompt(text);
   const resolvedModelUri = modelUri || `gpt://${folderId}/yandexgpt/latest`;
 
-  try {
-    const response = await axios.post(
+  const maxAttempts = 2;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await httpClient.post(
       "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
       {
         modelUri: resolvedModelUri,
         completionOptions: {
           stream: false,
-          temperature: 0.3,
+          temperature: 0.2,
           maxTokens: 2000
         },
         messages: [
@@ -88,20 +111,33 @@ async function processYandex(text, { apiKey, folderId, modelUri }) {
       }
     );
 
-    const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
-    return parseAIResponse(rawText);
-  } catch (error) {
-    if (error.response) {
-      console.error("YANDEX GPT API ERROR:", {
-        status: error.response.status,
-        data: JSON.stringify(error.response.data, null, 2)
+      const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
+      return parseAIResponse(rawText);
+    } catch (error) {
+      const retryable = isRetryableYandexError(error);
+      console.error("YANDEX GPT REQUEST ERROR:", {
+        attempt,
+        maxAttempts,
+        retryable,
+        status: Number(error?.response?.status || 0) || null,
+        code: String(error?.code || "") || null,
+        message: String(error?.message || "Yandex GPT request failed").slice(0, 200)
       });
-    } else {
-      console.error("YANDEX GPT NETWORK ERROR:", error.message);
-    }
 
-    return errorResult("Yandex GPT failed");
+      if (retryable && attempt < maxAttempts) {
+        await retryDelay(500);
+        continue;
+      }
+
+      return errorResult("Yandex GPT failed", {
+        errorCode: "YANDEX_AI_UNAVAILABLE",
+        retryable,
+        attempts: attempt
+      });
+    }
   }
+
+  return errorResult("Yandex GPT failed");
 }
 
 async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
@@ -352,7 +388,7 @@ export function parseAIResponse(raw) {
   }
 }
 
-function errorResult(message) {
+function errorResult(message, details = {}) {
   return {
     title: "",
     summary: "",
@@ -368,6 +404,7 @@ function errorResult(message) {
     hasRecognitionErrors: false,
     textQuality: "",
     notes: "",
-    error: message
+    error: message,
+    ...details
   };
 }

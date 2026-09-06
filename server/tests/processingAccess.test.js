@@ -84,12 +84,17 @@ test("creating or unsuccessfully updating a document does not consume processing
   });
 
   await updatePhotoProcessingResult(photo.id, {
-    status: "error",
-    errorMessage: "test error",
+    status: "recognized",
+    ocrText: "Распознанный текст сохраняется без списания обработки",
+    cleanText: "Распознанный текст сохраняется без списания обработки",
+    errorMessage: "Yandex GPT failed",
     processedAt: new Date()
   });
 
   const afterUser = (await query("select * from users where id = $1", [userIds[0]])).rows[0];
+  const savedPhoto = (await query("select * from photos where id = $1", [photo.id])).rows[0];
   assert.equal(afterUser.records_processed_total, beforeUser.records_processed_total);
   assert.equal(afterUser.processing_used, beforeUser.processing_used);
+  assert.equal(savedPhoto.status, "recognized");
+  assert.match(savedPhoto.clean_text, /Распознанный текст/);
 });

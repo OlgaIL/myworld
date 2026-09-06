@@ -30,6 +30,7 @@ export function useGuestDocumentPageData(document) {
         cleanText: document.cleanText || "",
         textQuality: document.textQuality || "",
         notes: document.notes || "",
+        formattedContent: document.formattedContent || null,
         hasTable: Boolean(document.hasTable),
         hasFormulas: Boolean(document.hasFormulas),
         hasRecognitionErrors: Boolean(document.hasRecognitionErrors),

@@ -65,7 +65,7 @@ export async function claimGuestDocumentForUser(req) {
     }
 
     const initialStatus =
-      guestDocument.status === "error" || guestDocument.status === "no_text"
+      ["error", "no_text", "recognized"].includes(guestDocument.status)
         ? guestDocument.status
         : "processed";
 

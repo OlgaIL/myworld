@@ -55,6 +55,19 @@ export function getGuestDocument() {
   return axios.get(`${API_URL}/api/guest/document`).then((res) => res.data);
 }
 
+export function retryGuestDocumentProcessing(id) {
+  return axios
+    .post(`${API_URL}/api/guest/documents/${encodeURIComponent(id)}/retry-processing`)
+    .then((res) => res.data)
+    .catch((error) => {
+      if (error.response?.status === 409 && error.response.data?.error === "GUEST_LIMIT_REACHED") {
+        throw new Error("Доступные обработки закончились.");
+      }
+
+      throw new Error("Не удалось повторить обработку. Попробуйте позже.");
+    });
+}
+
 export function uploadGuestPhoto(file, options = {}) {
   const { onProgress, replaceDocumentId, uploadAttemptId = "", onDiagnostic } = options;
   const formData = new FormData();

@@ -12,6 +12,7 @@ const validState = {
 
 test("shows the save CTA only for a processed guest document with text", () => {
   assert.equal(canShowGuestDocumentSaveCta(validState), true);
+  assert.equal(canShowGuestDocumentSaveCta({ ...validState, documentStatus: "recognized" }), true);
   assert.equal(canShowGuestDocumentSaveCta({ ...validState, documentStatus: "claimed" }), true);
 });
 

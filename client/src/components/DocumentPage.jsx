@@ -129,6 +129,9 @@ function DocumentPage({
   improvementRequestLoading = false,
   improvementRequestError = "",
   onRequestImprovement,
+  onRetryProcessing,
+  retryProcessing = false,
+  retryProcessingError = "",
   isAuthenticated = false
 }) {
   const [textTabSelection, setTextTabSelection] = useState({ documentId: null, tab: "text" });
@@ -154,11 +157,13 @@ function DocumentPage({
   const improvedText = improvementRequest?.status === "improved"
     ? improvementRequest.improvedText || processedText
     : "";
+  const enrichmentPending = info?.status === "recognized"
+    || (info?.status === "error" && ocrText.trim() && info?.error === "Yandex GPT failed");
   const storedFormattedContent = Array.isArray(info?.formattedContent?.blocks)
     && info.formattedContent.blocks.length > 0
     ? info.formattedContent
     : null;
-  const formattedContent = isAuthenticated
+  const formattedContent = isAuthenticated && !enrichmentPending
     ? improvedText.trim()
       ? buildManualFormattedContent(improvedText)
       : storedFormattedContent || buildFallbackFormattedContent(originalText)
@@ -245,15 +250,6 @@ function DocumentPage({
 
           {info?.notes && <p className="gallery__ai-note">{info.notes}</p>}
 
-          {showGuestSaveCta && (
-            <GuestDocumentSaveCta
-              documentId={info?.id || photo.name}
-              documentStatus={info?.status}
-              providers={authProviders}
-              onProviderLogin={onProviderLogin}
-            />
-          )}
-
           <section className="document-page__text">
             {textVariants.length > 1 && (
               <div className="document-page__text-tabs" role="tablist" aria-label="Варианты текста">
@@ -284,6 +280,10 @@ function DocumentPage({
                       onClick={() => onCopy("text-formatted", formattedText)}
                     />
                   </div>
+                ) : enrichmentPending && isAuthenticated ? (
+                  <div className="document-page__format-login">
+                    <p>Описание и оформление временно недоступны. Попробуйте повторить обработку.</p>
+                  </div>
                 ) : (
                   <div className="document-page__format-login">
                     <p>Оформленный вариант доступен после входа.</p>
@@ -311,6 +311,20 @@ function DocumentPage({
             )}
           </section>
 
+          {enrichmentPending && onRetryProcessing && (
+            <section className="document-improvement document-processing-retry" aria-label="Повторная обработка">
+              {retryProcessingError && <p className="document-improvement__error">{retryProcessingError}</p>}
+              <button
+                className="document-improvement__button"
+                type="button"
+                onClick={onRetryProcessing}
+                disabled={retryProcessing}
+              >
+                {retryProcessing ? "Повторяем обработку..." : "Повторить обработку"}
+              </button>
+            </section>
+          )}
+
           {showImprovementSection && (
             <section className="document-improvement" aria-label="Улучшение распознавания">
               {improvementRequestLoading && (
@@ -334,6 +348,15 @@ function DocumentPage({
                 </button>
               )}
             </section>
+          )}
+
+          {showGuestSaveCta && (
+            <GuestDocumentSaveCta
+              documentId={info?.id || photo.name}
+              documentStatus={info?.status}
+              providers={authProviders}
+              onProviderLogin={onProviderLogin}
+            />
           )}
 
         </section>
