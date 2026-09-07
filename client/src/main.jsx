@@ -9,6 +9,7 @@ import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 import ConsentPage from "./pages/ConsentPage";
 import PackagesPage from "./pages/PackagesPage";
+import HandwritingToTextLanding from "./pages/HandwritingToTextLanding";
 import PhotoToTextLanding from "./pages/PhotoToTextLanding";
 import PrivacyPage from "./pages/PrivacyPage";
 import RequisitesPage from "./pages/RequisitesPage";
@@ -32,6 +33,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           }
         />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/handwriting-to-text" element={<HandwritingToTextLanding />} />
         <Route path="/photo-to-text" element={<PhotoToTextLanding />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route

@@ -41,6 +41,7 @@ function PhotoToTextLanding() {
         <nav className="landing-nav" aria-label="Навигация">
           <a href="#how">Как работает</a>
           <a href="#cases">Для чего</a>
+          <Link to="/handwriting-to-text">Рукописный текст</Link>
           <Link className="landing-nav__button" to="/">Попробовать</Link>
         </nav>
       </header>

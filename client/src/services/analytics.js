@@ -16,7 +16,7 @@ function readStoredJson(key) {
   }
 }
 
-export function captureAcquisitionContext() {
+export function captureAcquisitionContext(defaultIntent = "") {
   const searchParams = new URLSearchParams(window.location.search);
   const context = {};
 
@@ -27,11 +27,17 @@ export function captureAcquisitionContext() {
     }
   });
 
+  const intent = searchParams.get("intent")?.trim() || defaultIntent.trim();
+  if (intent) {
+    context.intent = intent.slice(0, 500);
+  }
+
   if (Object.keys(context).length === 0) {
     return getAcquisitionContext();
   }
 
   const capturedContext = {
+    ...getAcquisitionContext(),
     ...context,
     landing_path: `${window.location.pathname}${window.location.search}`.slice(0, 1500),
     captured_at: new Date().toISOString()
