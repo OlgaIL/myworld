@@ -144,6 +144,7 @@ function App() {
     ? photos.find((photo) => photo.name === documentName)
     : null;
   const activeDocumentInfo = activeDocumentPhoto || null;
+  const activeCorrectionDocumentId = user ? documentName : activeGuestDocument?.id;
   const {
     requestsByDocumentId: improvementRequestsByDocumentId,
     upsertRequest: upsertImprovementRequest
@@ -157,6 +158,11 @@ function App() {
   } = useImprovementRequest(documentName, Boolean(user && documentName), {
     onRequestChanged: upsertImprovementRequest
   });
+
+  useEffect(() => {
+    setCorrectionError("");
+    setUpdatingCorrectionId("");
+  }, [activeCorrectionDocumentId]);
   const {
     searchQuery,
     setSearchQuery,

@@ -56,3 +56,45 @@ test("reverts and reapplies several corrections from canonical content", () => {
 
   assert.equal(effective.cleanText, "Евгения и Dupen ropy");
 });
+
+test("rejects a correction when the replacement location is ambiguous", () => {
+  const formattedContent = {
+    blocks: [{ type: "paragraph", text: "the cat and the dog" }]
+  };
+
+  const corrections = normalizeTextCorrections([
+    { original: "teh", replacement: "the" }
+  ], formattedContent, "the cat and teh dog");
+
+  assert.deepEqual(corrections, []);
+});
+
+test("accepts a replacement that occurs exactly once across all blocks", () => {
+  const formattedContent = {
+    blocks: [
+      { type: "paragraph", text: "Первый абзац" },
+      { type: "list", items: ["Евгения", "Второй пункт"] }
+    ]
+  };
+
+  const corrections = normalizeTextCorrections([
+    { original: "e", replacement: "Евгения" }
+  ], formattedContent, "e")
+    .map(({ original, replacement, blockIndex, itemIndex, start, applied }) => ({
+      original,
+      replacement,
+      blockIndex,
+      itemIndex,
+      start,
+      applied
+    }));
+
+  assert.deepEqual(corrections, [{
+    original: "e",
+    replacement: "Евгения",
+    blockIndex: 1,
+    itemIndex: 0,
+    start: 0,
+    applied: true
+  }]);
+});

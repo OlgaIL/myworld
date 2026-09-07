@@ -37,6 +37,24 @@ function rangesOverlap(leftStart, leftEnd, rightStart, rightEnd) {
   return leftStart < rightEnd && rightStart < leftEnd;
 }
 
+function findReplacementLocations(targets, replacement) {
+  return targets.flatMap((target) => {
+    const locations = [];
+    let start = target.text.indexOf(replacement);
+
+    while (start !== -1) {
+      locations.push({
+        ...target,
+        start,
+        end: start + replacement.length
+      });
+      start = target.text.indexOf(replacement, start + 1);
+    }
+
+    return locations;
+  });
+}
+
 export function normalizeTextCorrections(value, formattedContent, sourceText = "") {
   if (!Array.isArray(value)) {
     return [];
@@ -62,35 +80,27 @@ export function normalizeTextCorrections(value, formattedContent, sourceText = "
       continue;
     }
 
-    let location = null;
+    const locations = findReplacementLocations(targets, replacement);
 
-    for (const target of targets) {
-      const key = targetKey(target);
-      const ranges = usedRanges.get(key) || [];
-      let start = target.text.indexOf(replacement);
-
-      while (start !== -1) {
-        const end = start + replacement.length;
-        const overlaps = ranges.some((range) => rangesOverlap(start, end, range.start, range.end));
-
-        if (!overlaps) {
-          location = { ...target, start, end };
-          ranges.push({ start, end });
-          usedRanges.set(key, ranges);
-          break;
-        }
-
-        start = target.text.indexOf(replacement, start + 1);
-      }
-
-      if (location) {
-        break;
-      }
-    }
-
-    if (!location) {
+    // Without source coordinates, repeated replacement text cannot be mapped
+    // reliably. Hiding that correction is safer than reverting the wrong word.
+    if (locations.length !== 1) {
       continue;
     }
+
+    const location = locations[0];
+    const key = targetKey(location);
+    const ranges = usedRanges.get(key) || [];
+    const overlaps = ranges.some((range) => (
+      rangesOverlap(location.start, location.end, range.start, range.end)
+    ));
+
+    if (overlaps) {
+      continue;
+    }
+
+    ranges.push({ start: location.start, end: location.end });
+    usedRanges.set(key, ranges);
 
     corrections.push({
       id: `correction-${corrections.length + 1}`,

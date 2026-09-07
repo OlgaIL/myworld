@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getGuestDocument,
   retryGuestDocumentProcessing,
@@ -19,7 +19,7 @@ export function useGuestDocument(enabled = true) {
   const [guestAccess, setGuestAccess] = useState(DEFAULT_GUEST_ACCESS);
   const [loading, setLoading] = useState(enabled);
 
-  async function loadGuestDocument() {
+  const loadGuestDocument = useCallback(async () => {
     if (!enabled) {
       setGuestDocument(null);
       setGuestDocuments([]);
@@ -45,7 +45,7 @@ export function useGuestDocument(enabled = true) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [enabled]);
 
   async function addGuestDocument(file, options = {}) {
     const guestState = await uploadGuestPhoto(file, options);
@@ -76,7 +76,7 @@ export function useGuestDocument(enabled = true) {
 
   useEffect(() => {
     loadGuestDocument();
-  }, [enabled]);
+  }, [loadGuestDocument]);
 
   return {
     guestDocument,

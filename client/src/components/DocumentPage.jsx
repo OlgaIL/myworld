@@ -90,31 +90,75 @@ function buildFallbackFormattedContent(text) {
   return blocks.length > 0 ? { blocks } : null;
 }
 
-function FormattedContent({ content }) {
+function renderHighlightedText(value, highlight) {
+  const text = String(value || "");
+  const phrase = String(highlight || "");
+  const searchableText = text.toLocaleLowerCase("ru-RU");
+  const searchablePhrase = phrase.toLocaleLowerCase("ru-RU");
+
+  if (!phrase || !searchableText.includes(searchablePhrase)) {
+    return text;
+  }
+
+  const parts = [];
+  let cursor = 0;
+  let matchIndex = searchableText.indexOf(searchablePhrase);
+
+  while (matchIndex !== -1) {
+    if (matchIndex > cursor) {
+      parts.push(text.slice(cursor, matchIndex));
+    }
+    parts.push(
+      <mark className="document-page__correction-highlight" key={`${matchIndex}-${parts.length}`}>
+        {text.slice(matchIndex, matchIndex + phrase.length)}
+      </mark>
+    );
+    cursor = matchIndex + phrase.length;
+    matchIndex = searchableText.indexOf(searchablePhrase, cursor);
+  }
+
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
+
+  return parts;
+}
+
+function FormattedContent({ content, highlightedText }) {
   return (
     <div className="document-page__formatted-content">
       {content.blocks.map((block, index) => {
         if (block.type === "heading") {
-          return <h3 key={`${block.type}-${index}`}>{formatFormattedLine(block.text)}</h3>;
+          return (
+            <h3 key={`${block.type}-${index}`}>
+              {renderHighlightedText(formatFormattedLine(block.text), highlightedText)}
+            </h3>
+          );
         }
 
         if (block.type === "list") {
           return (
             <ul key={`${block.type}-${index}`}>
               {block.items.map((item, itemIndex) => (
-                <li key={`${item}-${itemIndex}`}>{formatFormattedLine(item)}</li>
+                <li key={`${item}-${itemIndex}`}>
+                  {renderHighlightedText(formatFormattedLine(item), highlightedText)}
+                </li>
               ))}
             </ul>
           );
         }
 
-        return <p key={`${block.type}-${index}`}>{formatFormattedLine(block.text)}</p>;
+        return (
+          <p key={`${block.type}-${index}`}>
+            {renderHighlightedText(formatFormattedLine(block.text), highlightedText)}
+          </p>
+        );
       })}
     </div>
   );
 }
 
-function TextCorrections({ corrections, onToggle, updatingId, error }) {
+function TextCorrections({ corrections, onToggle, onHighlight, updatingId, error }) {
   return (
     <div className="document-page__corrections">
       <p className="document-page__corrections-title">Сделаны замены:</p>
@@ -130,18 +174,32 @@ function TextCorrections({ corrections, onToggle, updatingId, error }) {
               className={`document-page__correction ${correction.applied ? "" : "document-page__correction--inactive"}`}
               role="listitem"
               key={correction.id}
+              onMouseEnter={() => onHighlight?.(correction)}
+              onMouseLeave={() => onHighlight?.(null)}
             >
-              <span>{correction.original} → {correction.replacement}</span>
-              <button
-                className="document-page__correction-toggle"
-                type="button"
-                onClick={() => onToggle?.(correction)}
-                disabled={!onToggle || Boolean(updatingId)}
-                title={actionLabel}
-                aria-label={actionLabel}
-              >
-                {updating ? "…" : correction.applied ? "×" : "↺"}
-              </button>
+              <span className="document-page__correction-control">
+                <button
+                  className="document-page__correction-change"
+                  type="button"
+                  onClick={() => onToggle?.(correction)}
+                  disabled={!onToggle || Boolean(updatingId)}
+                  title={actionLabel}
+                >
+                  <span className="document-page__correction-original">{correction.original}</span>
+                  <span className="document-page__correction-arrow" aria-hidden="true">→</span>
+                  <span className="document-page__correction-replacement">{correction.replacement}</span>
+                </button>
+                <button
+                  className="document-page__correction-toggle"
+                  type="button"
+                  onClick={() => onToggle?.(correction)}
+                  disabled={!onToggle || Boolean(updatingId)}
+                  title={actionLabel}
+                  aria-label={actionLabel}
+                >
+                  <span aria-hidden="true">{updating ? "…" : correction.applied ? "↶" : "↷"}</span>
+                </button>
+              </span>
             </span>
           );
         })}
@@ -175,6 +233,7 @@ function DocumentPage({
   isAuthenticated = false
 }) {
   const [textTabSelection, setTextTabSelection] = useState({ documentId: null, tab: "text" });
+  const [correctionHighlight, setCorrectionHighlight] = useState({ documentId: null, correctionId: "" });
 
   if (!photo || !info) {
     return (
@@ -243,9 +302,21 @@ function DocumentPage({
     && improvementAvailable
     && (!improvementRequest || improvementRequest.status === "cancelled");
   const corrections = Array.isArray(info?.corrections) ? info.corrections : [];
+  const highlightedCorrection = correctionHighlight.documentId === photo.name
+    ? corrections.find((correction) => correction.id === correctionHighlight.correctionId)
+    : null;
+  const highlightedCorrectionText = highlightedCorrection
+    ? (highlightedCorrection.applied ? highlightedCorrection.replacement : highlightedCorrection.original)
+    : "";
   const showCorrections = info?.hasRecognitionErrors === true
     && corrections.length > 0
     && !["source", "improved"].includes(activeTextVariant.id);
+  const handleCorrectionHighlight = (correction) => {
+    setCorrectionHighlight({
+      documentId: photo.name,
+      correctionId: correction?.id || ""
+    });
+  };
 
   return (
     <main className="document-page">
@@ -317,7 +388,10 @@ function DocumentPage({
               <div className="document-page__formatted">
                 {formattedContent ? (
                   <div className="document-page__text-body">
-                    <FormattedContent content={formattedContent} />
+                    <FormattedContent
+                      content={formattedContent}
+                      highlightedText={highlightedCorrectionText}
+                    />
                     <CopyButton
                       label="Скопировать оформленный текст"
                       copied={Boolean(copiedMap?.["text-formatted"])}
@@ -337,7 +411,11 @@ function DocumentPage({
               </div>
             ) : (
               <div className="document-page__text-body">
-                <p>{readableText || "Текст пока не загружен."}</p>
+                <p>
+                  {readableText
+                    ? renderHighlightedText(readableText, highlightedCorrectionText)
+                    : "Текст пока не загружен."}
+                </p>
                 {readableText && (
                   <CopyButton
                     label="Скопировать текст"
@@ -353,16 +431,17 @@ function DocumentPage({
                 Пометка: {textQualityMeta.label.toLowerCase()}
               </p>
             )}
-          </section>
 
-          {showCorrections && (
-            <TextCorrections
-              corrections={corrections}
-              onToggle={onToggleCorrection}
-              updatingId={updatingCorrectionId}
-              error={correctionError}
-            />
-          )}
+            {showCorrections && (
+              <TextCorrections
+                corrections={corrections}
+                onToggle={onToggleCorrection}
+                onHighlight={handleCorrectionHighlight}
+                updatingId={updatingCorrectionId}
+                error={correctionError}
+              />
+            )}
+          </section>
 
           {enrichmentPending && onRetryProcessing && (
             <section className="document-improvement document-processing-retry" aria-label="Повторная обработка">

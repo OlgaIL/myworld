@@ -3382,6 +3382,9 @@ button {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 6px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid #dfe4ec;
   color: #667085;
   font-size: 13px;
 }
@@ -3399,7 +3402,6 @@ button {
 .document-page__correction {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
 }
 
 .document-page__correction:not(:last-child)::after {
@@ -3407,15 +3409,76 @@ button {
   content: ",";
 }
 
-.document-page__correction--inactive > span {
+.document-page__correction-control {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: 0 0 0 1px transparent;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.document-page__correction-change {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.document-page__correction-original,
+.document-page__correction-replacement {
+  overflow-wrap: anywhere;
+  transition: color 160ms ease;
+}
+
+.document-page__correction-original {
   color: #98a2b3;
   text-decoration: line-through;
 }
 
+.document-page__correction-arrow {
+  color: #98a2b3;
+  text-align: center;
+}
+
+.document-page__correction-replacement {
+  color: #1f2937;
+}
+
+.document-page__correction--inactive .document-page__correction-original {
+  color: #1f2937;
+  text-decoration: none;
+}
+
+.document-page__correction--inactive .document-page__correction-replacement {
+  color: #98a2b3;
+  text-decoration: line-through;
+}
+
+.document-page__correction:hover .document-page__correction-control,
+.document-page__correction:focus-within .document-page__correction-control {
+  background: #fff;
+  box-shadow: 0 0 0 1px #cbd3df;
+}
+
+.document-page__correction:hover .document-page__correction-change:not(:disabled),
+.document-page__correction-change:focus-visible {
+  color: #111827;
+}
+
 .document-page__correction-toggle {
   display: inline-flex;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   align-items: center;
   justify-content: center;
   padding: 0;
@@ -3426,10 +3489,11 @@ button {
   font: inherit;
   font-size: 17px;
   line-height: 1;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 .document-page__correction-toggle:hover:not(:disabled) {
-  background: #e5e9f0;
+  background: transparent;
   color: #111827;
 }
 
@@ -3442,6 +3506,14 @@ button {
   flex-basis: 100%;
   margin: 0;
   color: #b42318;
+}
+
+.document-page__correction-highlight {
+  border-radius: 2px;
+  background: #fff2a8;
+  color: inherit;
+  box-shadow: 0 0 0 2px #fff2a8;
+  transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .document-improvement {
