@@ -206,6 +206,7 @@ export async function completeImprovementRequestForAdmin({ id, status, improvedT
               jsonb_build_array(jsonb_build_object('type', 'paragraph', 'text', $2::text))
             ),
             formatted_at = now(),
+            corrections = '[]'::jsonb,
             text_quality = 'full_text',
             updated_at = now()
           where id = $1

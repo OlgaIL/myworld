@@ -3377,6 +3377,73 @@ button {
   font-size: 12px;
 }
 
+.document-page__corrections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.document-page__corrections-title {
+  margin: 0;
+  color: #475467;
+  font-weight: 600;
+}
+
+.document-page__corrections-list {
+  display: inline;
+}
+
+.document-page__correction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.document-page__correction:not(:last-child)::after {
+  margin-right: 4px;
+  content: ",";
+}
+
+.document-page__correction--inactive > span {
+  color: #98a2b3;
+  text-decoration: line-through;
+}
+
+.document-page__correction-toggle {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #667085;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.document-page__correction-toggle:hover:not(:disabled) {
+  background: #e5e9f0;
+  color: #111827;
+}
+
+.document-page__correction-toggle:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.document-page__corrections-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: #b42318;
+}
+
 .document-improvement {
   display: flex;
   flex-direction: column;

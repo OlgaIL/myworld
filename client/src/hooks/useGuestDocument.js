@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { getGuestDocument, retryGuestDocumentProcessing, uploadGuestPhoto } from "../services/api";
+import {
+  getGuestDocument,
+  retryGuestDocumentProcessing,
+  setGuestDocumentCorrectionApplied,
+  uploadGuestPhoto
+} from "../services/api";
 
 const DEFAULT_GUEST_ACCESS = {
   documentLimit: 5,
@@ -60,6 +65,15 @@ export function useGuestDocument(enabled = true) {
     return guestState;
   }
 
+  async function setGuestCorrectionApplied(documentId, correctionId, applied) {
+    const guestState = await setGuestDocumentCorrectionApplied(documentId, correctionId, applied);
+    const documents = Array.isArray(guestState?.documents) ? guestState.documents : [];
+    setGuestDocuments(documents);
+    setGuestDocument(guestState?.document || documents[0] || null);
+    setGuestAccess(guestState?.access || DEFAULT_GUEST_ACCESS);
+    return guestState;
+  }
+
   useEffect(() => {
     loadGuestDocument();
   }, [enabled]);
@@ -71,6 +85,7 @@ export function useGuestDocument(enabled = true) {
     guestLoading: loading,
     addGuestDocument,
     retryGuestDocument,
+    setGuestCorrectionApplied,
     reloadGuestDocument: loadGuestDocument
   };
 }

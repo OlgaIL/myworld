@@ -34,6 +34,7 @@ export function useGuestDocumentPageData(document) {
         hasTable: Boolean(document.hasTable),
         hasFormulas: Boolean(document.hasFormulas),
         hasRecognitionErrors: Boolean(document.hasRecognitionErrors),
+        corrections: Array.isArray(document.corrections) ? document.corrections : [],
         error: document.error || null,
         createdAt: document.createdAt || null
       }

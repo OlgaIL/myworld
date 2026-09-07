@@ -20,7 +20,7 @@ import { useImprovementRequests } from "../hooks/useImprovementRequests";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
 import { trackGoal } from "../services/analytics";
-import { getPhotoUrl, processPhoto } from "../services/api";
+import { getPhotoUrl, processPhoto, setPhotoCorrectionApplied } from "../services/api";
 
 const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
 const PENDING_GUEST_RESULT_KEY = "word2you_pending_guest_result";
@@ -84,7 +84,14 @@ function App() {
     closeLegalAgreement,
     legalAgreementAccepting
   } = useLegalAgreement({ user, reloadUser });
-  const { guestDocuments, guestAccess, guestLoading, addGuestDocument, retryGuestDocument } = useGuestDocument(!user);
+  const {
+    guestDocuments,
+    guestAccess,
+    guestLoading,
+    addGuestDocument,
+    retryGuestDocument,
+    setGuestCorrectionApplied
+  } = useGuestDocument(!user);
   const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user), {
     onPhotosChanged: reloadUser
   });
@@ -94,6 +101,8 @@ function App() {
   const [guestImprovementDocumentId, setGuestImprovementDocumentId] = useState("");
   const [retryingDocument, setRetryingDocument] = useState(false);
   const [retryProcessingError, setRetryProcessingError] = useState("");
+  const [updatingCorrectionId, setUpdatingCorrectionId] = useState("");
+  const [correctionError, setCorrectionError] = useState("");
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
@@ -334,6 +343,47 @@ function App() {
     }
   }
 
+  async function handleGuestCorrectionToggle(correction) {
+    if (!activeGuestDocument?.id || updatingCorrectionId) return;
+    setUpdatingCorrectionId(correction.id);
+    setCorrectionError("");
+
+    try {
+      const state = await setGuestCorrectionApplied(
+        activeGuestDocument.id,
+        correction.id,
+        !correction.applied
+      );
+      const documents = Array.isArray(state?.documents) ? state.documents : [];
+      setActiveGuestDocument(
+        documents.find((item) => item.id === activeGuestDocument.id) || state?.document || null
+      );
+    } catch (error) {
+      setCorrectionError(error.message || "Не удалось изменить замену. Попробуйте позже.");
+    } finally {
+      setUpdatingCorrectionId("");
+    }
+  }
+
+  async function handleCabinetCorrectionToggle(correction) {
+    if (!activeDocumentPhoto?.name || updatingCorrectionId) return;
+    setUpdatingCorrectionId(correction.id);
+    setCorrectionError("");
+
+    try {
+      await setPhotoCorrectionApplied(
+        activeDocumentPhoto.name,
+        correction.id,
+        !correction.applied
+      );
+      await reloadPhotos();
+    } catch (error) {
+      setCorrectionError(error.message || "Не удалось изменить замену. Попробуйте позже.");
+    } finally {
+      setUpdatingCorrectionId("");
+    }
+  }
+
   function renderGuestState() {
     if (activeGuestDocument) {
       return (
@@ -351,6 +401,9 @@ function App() {
           onRetryProcessing={handleGuestProcessingRetry}
           retryProcessing={retryingDocument}
           retryProcessingError={retryProcessingError}
+          onToggleCorrection={handleGuestCorrectionToggle}
+          updatingCorrectionId={updatingCorrectionId}
+          correctionError={correctionError}
         />
       );
     }
@@ -424,6 +477,9 @@ function App() {
               onRetryProcessing={handleCabinetProcessingRetry}
               retryProcessing={retryingDocument}
               retryProcessingError={retryProcessingError}
+              onToggleCorrection={handleCabinetCorrectionToggle}
+              updatingCorrectionId={updatingCorrectionId}
+              correctionError={correctionError}
               isAuthenticated
             />
           ) : (

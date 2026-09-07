@@ -1,4 +1,5 @@
-import { query } from "../db/index.js";
+import { query, withTransaction } from "../db/index.js";
+import { getEffectiveTextContent, getStoredTextCorrections } from "../utils/textCorrections.js";
 
 export async function createGuestDocument({
   guestSessionId,
@@ -168,6 +169,7 @@ export async function replaceGuestDocumentUpload(id, {
         has_table = false,
         has_formulas = false,
         has_recognition_errors = false,
+        corrections = '[]'::jsonb,
         text_quality = '',
         ai_notes = '',
         processed_at = null,
@@ -202,7 +204,8 @@ export async function updateGuestDocumentProcessingResult(id, updates) {
     textQuality,
     aiNotes,
     errorMessage,
-    processedAt = null
+    processedAt = null,
+    corrections
   } = updates;
 
   const result = await query(
@@ -228,6 +231,7 @@ export async function updateGuestDocumentProcessingResult(id, updates) {
         ai_notes = coalesce($18, ai_notes),
         error_message = $19,
         processed_at = $20,
+        corrections = coalesce($21, corrections),
         updated_at = now()
       where id = $1
       returning *
@@ -252,11 +256,56 @@ export async function updateGuestDocumentProcessingResult(id, updates) {
       textQuality,
       aiNotes,
       errorMessage,
-      processedAt
+      processedAt,
+      Array.isArray(corrections) ? JSON.stringify(corrections) : null
     ]
   );
 
   return result.rows[0] || null;
+}
+
+export async function updateGuestDocumentCorrectionState(id, correctionId, applied) {
+  return withTransaction(async (client) => {
+    const currentResult = await client.query(
+      "select * from guest_documents where id = $1 for update",
+      [id]
+    );
+    const document = currentResult.rows[0] || null;
+
+    if (!document) {
+      return null;
+    }
+
+    const corrections = getStoredTextCorrections(document.corrections);
+    const correction = corrections.find((item) => item.id === correctionId);
+
+    if (!correction) {
+      return null;
+    }
+
+    const nextCorrections = corrections.map((item) => (
+      item.id === correctionId ? { ...item, applied } : item
+    ));
+    const effective = getEffectiveTextContent(document.formatted_content, nextCorrections);
+    const result = await client.query(
+      `
+        update guest_documents
+        set
+          corrections = $2,
+          clean_text = $3,
+          updated_at = now()
+        where id = $1
+        returning *
+      `,
+      [
+        id,
+        JSON.stringify(nextCorrections),
+        effective.cleanText || document.clean_text || ""
+      ]
+    );
+
+    return result.rows[0] || null;
+  });
 }
 
 export async function markGuestDocumentClaimed(id, claimedPhotoId = null) {

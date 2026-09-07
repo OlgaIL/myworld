@@ -22,6 +22,7 @@ function getPhotosSnapshot(photos) {
       hasTable: photo.hasTable,
       hasFormulas: photo.hasFormulas,
       hasRecognitionErrors: photo.hasRecognitionErrors,
+      corrections: photo.corrections,
       error: photo.error,
       createdAt: photo.createdAt
     }))

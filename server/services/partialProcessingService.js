@@ -16,6 +16,7 @@ export function buildRecognizedResult(text, error = "Yandex GPT failed") {
     hasTable: false,
     hasFormulas: false,
     hasRecognitionErrors: false,
+    corrections: [],
     textQuality: "",
     aiNotes: AI_UNAVAILABLE_MESSAGE,
     errorMessage: error,

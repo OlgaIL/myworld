@@ -1,5 +1,6 @@
 import { query, withTransaction } from "../db/index.js";
 import { incrementUserRecordsProcessedTotalWithClient } from "./usersRepository.js";
+import { getEffectiveTextContent, getStoredTextCorrections } from "../utils/textCorrections.js";
 
 export async function createPhoto({
   userId,
@@ -26,7 +27,8 @@ export async function createPhoto({
   textQuality = "",
   aiNotes = "",
   errorMessage = null,
-  processedAt = null
+  processedAt = null,
+  corrections = []
 }) {
   return withTransaction(async (client) => {
     const result = await client.query(
@@ -56,9 +58,10 @@ export async function createPhoto({
         text_quality,
         ai_notes,
         error_message,
-        processed_at
+        processed_at,
+        corrections
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
       returning *
       `,
       [
@@ -86,7 +89,8 @@ export async function createPhoto({
         textQuality,
         aiNotes,
         errorMessage,
-        processedAt
+        processedAt,
+        JSON.stringify(Array.isArray(corrections) ? corrections : [])
       ]
     );
 
@@ -177,7 +181,8 @@ async function updatePhotoProcessingResultWithExecutor(execute, id, updates) {
     textQuality,
     aiNotes,
     errorMessage,
-    processedAt = null
+    processedAt = null,
+    corrections
   } = updates;
 
   const result = await execute(
@@ -202,6 +207,7 @@ async function updatePhotoProcessingResultWithExecutor(execute, id, updates) {
         ai_notes = coalesce($17, ai_notes),
         error_message = $18,
         processed_at = $19,
+        corrections = coalesce($20, corrections),
         updated_at = now()
       where id = $1
       returning *
@@ -225,7 +231,8 @@ async function updatePhotoProcessingResultWithExecutor(execute, id, updates) {
       textQuality,
       aiNotes,
       errorMessage,
-      processedAt
+      processedAt,
+      Array.isArray(corrections) ? JSON.stringify(corrections) : null
     ]
   );
 
@@ -250,6 +257,50 @@ export async function updatePhotoProcessingResultAndRecordSuccess({ id, userId, 
 
     await incrementUserRecordsProcessedTotalWithClient(client, userId);
     return photo;
+  });
+}
+
+export async function updatePhotoCorrectionState(id, correctionId, applied) {
+  return withTransaction(async (client) => {
+    const currentResult = await client.query(
+      "select * from photos where id = $1 for update",
+      [id]
+    );
+    const photo = currentResult.rows[0] || null;
+
+    if (!photo) {
+      return null;
+    }
+
+    const corrections = getStoredTextCorrections(photo.corrections);
+    const correction = corrections.find((item) => item.id === correctionId);
+
+    if (!correction) {
+      return null;
+    }
+
+    const nextCorrections = corrections.map((item) => (
+      item.id === correctionId ? { ...item, applied } : item
+    ));
+    const effective = getEffectiveTextContent(photo.formatted_content, nextCorrections);
+    const result = await client.query(
+      `
+        update photos
+        set
+          corrections = $2,
+          clean_text = $3,
+          updated_at = now()
+        where id = $1
+        returning *
+      `,
+      [
+        id,
+        JSON.stringify(nextCorrections),
+        effective.cleanText || photo.clean_text || ""
+      ]
+    );
+
+    return result.rows[0] || null;
   });
 }
 

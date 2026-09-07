@@ -10,6 +10,7 @@ import {
   findGuestDocumentById,
   listGuestDocumentsBySessionId,
   replaceGuestDocumentUpload,
+  updateGuestDocumentCorrectionState,
   updateGuestDocumentProcessingResult,
   updateGuestDocumentStatus
 } from "../repositories/guestDocumentsRepository.js";
@@ -290,6 +291,39 @@ router.get("/api/guest/documents/:id/file", async (req, res) => {
   }
 });
 
+router.patch("/api/guest/documents/:id/corrections/:correctionId", async (req, res) => {
+  try {
+    if (typeof req.body?.applied !== "boolean") {
+      return res.status(400).json({ error: "INVALID_CORRECTION_STATE" });
+    }
+
+    const cookies = parseCookies(req.headers.cookie);
+    const guestSession = await findGuestSessionByToken(cookies[GUEST_SESSION_COOKIE_NAME]);
+    const document = await findGuestDocumentById(req.params.id);
+
+    if (!guestSession || !document
+      || document.guest_session_id !== guestSession.id
+      || isGuestDocumentExpired(document)) {
+      return res.status(404).json({ error: "Guest document not found" });
+    }
+
+    const updatedDocument = await updateGuestDocumentCorrectionState(
+      document.id,
+      req.params.correctionId,
+      req.body.applied
+    );
+
+    if (!updatedDocument) {
+      return res.status(404).json({ error: "Correction not found" });
+    }
+
+    return res.json(await buildGuestStateForSession(guestSession));
+  } catch (error) {
+    console.error("Guest document correction update error:", error);
+    return res.status(500).json({ error: "GUEST_DOCUMENT_CORRECTION_UPDATE_FAILED" });
+  }
+});
+
 router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
   const timer = createRequestTimer("guest-retry", { documentId: req.params.id });
 
@@ -345,6 +379,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
       hasTable: aiResult.hasTable,
       hasFormulas: aiResult.hasFormulas,
       hasRecognitionErrors: aiResult.hasRecognitionErrors,
+      corrections: aiResult.corrections,
       textQuality: aiResult.textQuality,
       aiNotes: aiResult.notes,
       errorMessage: null,
@@ -575,6 +610,7 @@ router.post("/api/guest/upload", (req, res) => {
           hasTable: aiResult.hasTable,
           hasFormulas: aiResult.hasFormulas,
           hasRecognitionErrors: aiResult.hasRecognitionErrors,
+          corrections: aiResult.corrections,
           textQuality: aiResult.textQuality,
           aiNotes: aiResult.notes,
           errorMessage: null,
@@ -684,6 +720,7 @@ router.post("/api/guest/upload", (req, res) => {
         hasTable: aiResult.hasTable,
         hasFormulas: aiResult.hasFormulas,
         hasRecognitionErrors: aiResult.hasRecognitionErrors,
+        corrections: aiResult.corrections,
         textQuality: aiResult.textQuality,
         aiNotes: aiResult.notes,
         errorMessage: null,

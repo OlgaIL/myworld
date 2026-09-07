@@ -14,6 +14,10 @@ import {
   buildOpenAITextSystemPrompt
 } from "./prompts/openaiPrompt.js";
 import { buildYandexSystemPrompt, buildYandexUserPrompt } from "./prompts/yandexPrompt.js";
+import {
+  GENERIC_RECOGNITION_NOTE,
+  normalizeTextCorrections
+} from "../utils/textCorrections.js";
 
 const IMAGE_MIME_TYPES = {
   ".jpg": "image/jpeg",
@@ -112,7 +116,7 @@ async function processYandex(text, { apiKey, folderId, modelUri, httpClient = ax
     );
 
       const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
-      return parseAIResponse(rawText);
+      return parseAIResponse(rawText, { sourceText: text });
     } catch (error) {
       const retryable = isRetryableYandexError(error);
       console.error("YANDEX GPT REQUEST ERROR:", {
@@ -169,7 +173,7 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
     });
 
     const rawText = response.choices?.[0]?.message?.content || "";
-    return parseAIResponse(rawText);
+    return parseAIResponse(rawText, { sourceText: text });
   } catch (error) {
     if (error.status) {
       console.error("OPENAI API ERROR:", {
@@ -349,7 +353,7 @@ function normalizeTextQuality(value) {
   return ALLOWED_TEXT_QUALITY.has(textQuality) ? textQuality : "low_confidence";
 }
 
-export function parseAIResponse(raw) {
+export function parseAIResponse(raw, { sourceText = "" } = {}) {
   try {
     const jsonStart = raw.indexOf("{");
     const jsonEnd = raw.lastIndexOf("}");
@@ -363,6 +367,11 @@ export function parseAIResponse(raw) {
     const formattedContent = normalizeFormattedContent(parsed.formattedContent, parsed.cleanText);
     const cleanText = formattedContentToText(formattedContent);
     const textQuality = normalizeTextQuality(parsed.textQuality);
+    const corrections = normalizeTextCorrections(
+      parsed.corrections,
+      formattedContent,
+      sourceText || parsed.ocrText || ""
+    );
 
     return {
       title: typeof parsed.title === "string" ? parsed.title : "",
@@ -377,10 +386,14 @@ export function parseAIResponse(raw) {
       hasTable: parsed.hasTable === true,
       hasFormulas: parsed.hasFormulas === true,
       hasRecognitionErrors: parsed.hasRecognitionErrors === true
+        || corrections.length > 0
         || textQuality === "low_confidence"
         || textQuality === "no_meaningful_text",
       textQuality,
-      notes: typeof parsed.notes === "string" ? parsed.notes : ""
+      corrections,
+      notes: corrections.length > 0
+        ? GENERIC_RECOGNITION_NOTE
+        : typeof parsed.notes === "string" ? parsed.notes : ""
     };
   } catch (error) {
     console.error("AI PARSE ERROR:", error.message);
@@ -403,6 +416,7 @@ function errorResult(message, details = {}) {
     hasFormulas: false,
     hasRecognitionErrors: false,
     textQuality: "",
+    corrections: [],
     notes: "",
     error: message,
     ...details

@@ -87,3 +87,30 @@ test("separates paragraph blocks and joins wrapped list item lines", () => {
     ]
   });
 });
+
+test("stores verified replacements separately and keeps recognition note generic", () => {
+  const result = parseAIResponse(JSON.stringify({
+    formattedContent: {
+      blocks: [{ type: "paragraph", text: "ЗФ и Евгения" }]
+    },
+    corrections: [
+      { original: "Dupen ropy", replacement: "ЗФ" },
+      { original: "e", replacement: "Евгения" },
+      { original: "не найдено", replacement: "такого текста нет" }
+    ],
+    hasRecognitionErrors: false,
+    textQuality: "full_text",
+    notes: "Исправлены конкретные фрагменты."
+  }), { sourceText: "Dupen ropy и e" });
+
+  assert.equal(result.hasRecognitionErrors, true);
+  assert.equal(result.notes, "В исходном тексте присутствуют ошибки распознавания и опечатки.");
+  assert.deepEqual(result.corrections.map(({ original, replacement, applied }) => ({
+    original,
+    replacement,
+    applied
+  })), [
+    { original: "Dupen ropy", replacement: "ЗФ", applied: true },
+    { original: "e", replacement: "Евгения", applied: true }
+  ]);
+});

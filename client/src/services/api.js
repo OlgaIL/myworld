@@ -68,6 +68,18 @@ export function retryGuestDocumentProcessing(id) {
     });
 }
 
+export function setGuestDocumentCorrectionApplied(documentId, correctionId, applied) {
+  return axios
+    .patch(
+      `${API_URL}/api/guest/documents/${encodeURIComponent(documentId)}/corrections/${encodeURIComponent(correctionId)}`,
+      { applied }
+    )
+    .then((res) => res.data)
+    .catch(() => {
+      throw new Error("Не удалось изменить замену. Попробуйте позже.");
+    });
+}
+
 export function uploadGuestPhoto(file, options = {}) {
   const { onProgress, replaceDocumentId, uploadAttemptId = "", onDiagnostic } = options;
   const formData = new FormData();
@@ -236,6 +248,18 @@ export function processPhoto(id) {
       }
 
       throw new Error("Сервер недоступен");
+    });
+}
+
+export function setPhotoCorrectionApplied(documentId, correctionId, applied) {
+  return axios
+    .patch(
+      `${API_URL}/api/photos/${encodeURIComponent(documentId)}/corrections/${encodeURIComponent(correctionId)}`,
+      { applied }
+    )
+    .then((res) => res.data)
+    .catch(() => {
+      throw new Error("Не удалось изменить замену. Попробуйте позже.");
     });
 }
 

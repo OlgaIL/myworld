@@ -3,7 +3,11 @@ import crypto from "node:crypto";
 import { after, before, test } from "node:test";
 import { closeDatabaseConnection, query } from "../db/index.js";
 import { createGuestDocument, updateGuestDocumentProcessingResult } from "../repositories/guestDocumentsRepository.js";
-import { createPhoto, updatePhotoProcessingResult } from "../repositories/photosRepository.js";
+import {
+  createPhoto,
+  updatePhotoCorrectionState,
+  updatePhotoProcessingResult
+} from "../repositories/photosRepository.js";
 
 const testId = crypto.randomUUID();
 let userId;
@@ -15,9 +19,9 @@ before(async () => {
     select column_name
     from information_schema.columns
     where table_name = 'photos'
-      and column_name in ('formatted_content', 'formatted_at', 'has_table', 'has_formulas', 'has_recognition_errors')
+      and column_name in ('formatted_content', 'formatted_at', 'has_table', 'has_formulas', 'has_recognition_errors', 'corrections')
   `);
-  assert.equal(columns.rows.length, 5, "Run db:migrate before document content tests");
+  assert.equal(columns.rows.length, 6, "Run db:migrate before document content tests");
 
   const user = await query(
     "insert into users (email, display_name) values ($1, $2) returning id",
@@ -95,6 +99,16 @@ test("stores formatted content and content feature flags with the processing res
     hasTable: true,
     hasFormulas: false,
     hasRecognitionErrors: true,
+    corrections: [{
+      id: "correction-1",
+      original: "Первыи",
+      replacement: "Первый",
+      blockIndex: 1,
+      itemIndex: 0,
+      start: 0,
+      end: 6,
+      applied: true
+    }],
     processedAt: new Date()
   });
 
@@ -108,4 +122,13 @@ test("stores formatted content and content feature flags with the processing res
   assert.equal(updated.has_table, true);
   assert.equal(updated.has_formulas, false);
   assert.equal(updated.has_recognition_errors, true);
+
+  const reverted = await updatePhotoCorrectionState(photoId, "correction-1", false);
+  assert.equal(reverted.clean_text, "Заголовок\n\n- Первыи пункт");
+  assert.equal(reverted.corrections[0].applied, false);
+  assert.deepEqual(reverted.formatted_content, updated.formatted_content);
+
+  const reapplied = await updatePhotoCorrectionState(photoId, "correction-1", true);
+  assert.equal(reapplied.clean_text, "Заголовок\n\n- Первый пункт");
+  assert.equal(reapplied.corrections[0].applied, true);
 });

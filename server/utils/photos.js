@@ -10,14 +10,25 @@ import {
 } from "../config/env.js";
 import { DEFAULT_FREE_PROCESSING_LIMIT } from "../config/processingLimits.js";
 import { formatAiNotesForDisplay } from "./aiNotes.js";
+import {
+  getEffectiveTextContent,
+  getStoredTextCorrections,
+  toPublicTextCorrections
+} from "./textCorrections.js";
 
 export function mapPhotoInfo(photo) {
+  const storedContent = photo.formatted_content && Array.isArray(photo.formatted_content.blocks)
+    ? photo.formatted_content
+    : null;
+  const corrections = getStoredTextCorrections(photo.corrections);
+  const effective = getEffectiveTextContent(storedContent, corrections);
+
   return {
     id: photo.filename,
     filename: photo.filename,
     status: photo.status,
     text: photo.ocr_text || "",
-    cleanText: photo.clean_text || "",
+    cleanText: effective.cleanText || photo.clean_text || "",
     title: photo.title || "",
     summary: photo.summary || "",
     category: photo.category || "",
@@ -26,13 +37,12 @@ export function mapPhotoInfo(photo) {
     tags: Array.isArray(photo.tags) ? photo.tags : [],
     textQuality: photo.text_quality || "",
     notes: formatAiNotesForDisplay(photo.ai_notes),
-    formattedContent: photo.formatted_content && Array.isArray(photo.formatted_content.blocks)
-      ? photo.formatted_content
-      : null,
+    formattedContent: effective.formattedContent,
     formattedAt: photo.formatted_at || null,
     hasTable: Boolean(photo.has_table),
     hasFormulas: Boolean(photo.has_formulas),
     hasRecognitionErrors: Boolean(photo.has_recognition_errors),
+    corrections: toPublicTextCorrections(corrections),
     error: photo.error_message || null,
     createdAt: photo.created_at
   };

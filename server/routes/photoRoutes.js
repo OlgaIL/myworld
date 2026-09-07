@@ -9,6 +9,7 @@ import {
   deletePhoto,
   findPhotoByFilenameAndUser,
   listPhotosByUser,
+  updatePhotoCorrectionState,
   updatePhotoProcessingResult,
   updatePhotoProcessingResultAndRecordSuccess,
   updatePhotoStatus
@@ -216,6 +217,35 @@ router.get("/api/photos/:id/info", requireAuthenticatedUser, async (req, res) =>
   }
 });
 
+router.patch("/api/photos/:id/corrections/:correctionId", requireAuthenticatedUser, async (req, res) => {
+  try {
+    if (typeof req.body?.applied !== "boolean") {
+      return res.status(400).json({ error: "INVALID_CORRECTION_STATE" });
+    }
+
+    const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
+
+    if (!photo) {
+      return res.status(404).json({ error: "Photo not found" });
+    }
+
+    const updatedPhoto = await updatePhotoCorrectionState(
+      photo.id,
+      req.params.correctionId,
+      req.body.applied
+    );
+
+    if (!updatedPhoto) {
+      return res.status(404).json({ error: "Correction not found" });
+    }
+
+    return res.json(mapPhotoInfo(updatedPhoto));
+  } catch (error) {
+    console.error("Photo correction update error:", error);
+    return res.status(500).json({ error: "PHOTO_CORRECTION_UPDATE_FAILED" });
+  }
+});
+
 router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res) => {
   const timer = createRequestTimer("photo-process");
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
@@ -337,6 +367,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
           hasTable: aiResult.hasTable,
           hasFormulas: aiResult.hasFormulas,
           hasRecognitionErrors: aiResult.hasRecognitionErrors,
+          corrections: aiResult.corrections,
           textQuality: aiResult.textQuality,
           aiNotes: aiResult.notes,
           errorMessage: null,
@@ -468,6 +499,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
         hasTable: aiResult.hasTable,
         hasFormulas: aiResult.hasFormulas,
         hasRecognitionErrors: aiResult.hasRecognitionErrors,
+        corrections: aiResult.corrections,
         textQuality: aiResult.textQuality,
         aiNotes: aiResult.notes,
         errorMessage: null,

@@ -1,5 +1,10 @@
 import { GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS } from "../config/env.js";
 import { formatAiNotesForDisplay } from "./aiNotes.js";
+import {
+  getEffectiveTextContent,
+  getStoredTextCorrections,
+  toPublicTextCorrections
+} from "./textCorrections.js";
 
 export const GUEST_SESSION_COOKIE_NAME = "guest_session_token";
 
@@ -31,13 +36,18 @@ export function mapGuestDocumentInfo(document) {
         updatedAt: document.improvement_request_updated_at
       }
     : null;
+  const storedContent = document.formatted_content && Array.isArray(document.formatted_content.blocks)
+    ? document.formatted_content
+    : null;
+  const corrections = getStoredTextCorrections(document.corrections);
+  const effective = getEffectiveTextContent(storedContent, corrections);
 
   return {
     id: String(document.id),
     filename: document.filename,
     status: document.status,
     text: document.ocr_text || "",
-    cleanText: document.clean_text || "",
+    cleanText: effective.cleanText || document.clean_text || "",
     title: document.title || "",
     summary: document.summary || "",
     category: document.category || "",
@@ -46,12 +56,11 @@ export function mapGuestDocumentInfo(document) {
     tags: Array.isArray(document.tags) ? document.tags : [],
     textQuality: document.text_quality || "",
     notes: formatAiNotesForDisplay(document.ai_notes),
-    formattedContent: document.formatted_content && Array.isArray(document.formatted_content.blocks)
-      ? document.formatted_content
-      : null,
+    formattedContent: effective.formattedContent,
     hasTable: Boolean(document.has_table),
     hasFormulas: Boolean(document.has_formulas),
     hasRecognitionErrors: Boolean(document.has_recognition_errors),
+    corrections: toPublicTextCorrections(corrections),
     error: document.error_message || null,
     createdAt: document.created_at,
     updatedAt: document.updated_at,

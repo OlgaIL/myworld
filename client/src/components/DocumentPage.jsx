@@ -114,6 +114,43 @@ function FormattedContent({ content }) {
   );
 }
 
+function TextCorrections({ corrections, onToggle, updatingId, error }) {
+  return (
+    <div className="document-page__corrections">
+      <p className="document-page__corrections-title">Сделаны замены:</p>
+      <div className="document-page__corrections-list" role="list">
+        {corrections.map((correction) => {
+          const updating = updatingId === correction.id;
+          const actionLabel = correction.applied
+            ? `Отменить замену «${correction.original}» на «${correction.replacement}»`
+            : `Вернуть замену «${correction.original}» на «${correction.replacement}»`;
+
+          return (
+            <span
+              className={`document-page__correction ${correction.applied ? "" : "document-page__correction--inactive"}`}
+              role="listitem"
+              key={correction.id}
+            >
+              <span>{correction.original} → {correction.replacement}</span>
+              <button
+                className="document-page__correction-toggle"
+                type="button"
+                onClick={() => onToggle?.(correction)}
+                disabled={!onToggle || Boolean(updatingId)}
+                title={actionLabel}
+                aria-label={actionLabel}
+              >
+                {updating ? "…" : correction.applied ? "×" : "↺"}
+              </button>
+            </span>
+          );
+        })}
+      </div>
+      {error && <p className="document-page__corrections-error">{error}</p>}
+    </div>
+  );
+}
+
 function DocumentPage({
   photo,
   info,
@@ -132,6 +169,9 @@ function DocumentPage({
   onRetryProcessing,
   retryProcessing = false,
   retryProcessingError = "",
+  onToggleCorrection,
+  updatingCorrectionId = "",
+  correctionError = "",
   isAuthenticated = false
 }) {
   const [textTabSelection, setTextTabSelection] = useState({ documentId: null, tab: "text" });
@@ -202,6 +242,10 @@ function DocumentPage({
   const canRequestImprovement = Boolean(onRequestImprovement)
     && improvementAvailable
     && (!improvementRequest || improvementRequest.status === "cancelled");
+  const corrections = Array.isArray(info?.corrections) ? info.corrections : [];
+  const showCorrections = info?.hasRecognitionErrors === true
+    && corrections.length > 0
+    && !["source", "improved"].includes(activeTextVariant.id);
 
   return (
     <main className="document-page">
@@ -310,6 +354,15 @@ function DocumentPage({
               </p>
             )}
           </section>
+
+          {showCorrections && (
+            <TextCorrections
+              corrections={corrections}
+              onToggle={onToggleCorrection}
+              updatingId={updatingCorrectionId}
+              error={correctionError}
+            />
+          )}
 
           {enrichmentPending && onRetryProcessing && (
             <section className="document-improvement document-processing-retry" aria-label="Повторная обработка">
