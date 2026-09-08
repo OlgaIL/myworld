@@ -13,7 +13,11 @@ import {
   buildOpenAITextPrompt,
   buildOpenAITextSystemPrompt
 } from "./prompts/openaiPrompt.js";
-import { buildYandexSystemPrompt, buildYandexUserPrompt } from "./prompts/yandexPrompt.js";
+import {
+  buildYandexSystemPrompt,
+  buildYandexUserPrompt,
+  YANDEX_CORRECTION_HINTS
+} from "./prompts/yandexPrompt.js";
 import {
   GENERIC_RECOGNITION_NOTE,
   normalizeTextCorrections
@@ -116,7 +120,10 @@ async function processYandex(text, { apiKey, folderId, modelUri, httpClient = ax
     );
 
       const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
-      return parseAIResponse(rawText, { sourceText: text });
+      return parseAIResponse(rawText, {
+        sourceText: text,
+        correctionHints: YANDEX_CORRECTION_HINTS
+      });
     } catch (error) {
       const retryable = isRetryableYandexError(error);
       console.error("YANDEX GPT REQUEST ERROR:", {
@@ -353,7 +360,7 @@ function normalizeTextQuality(value) {
   return ALLOWED_TEXT_QUALITY.has(textQuality) ? textQuality : "low_confidence";
 }
 
-export function parseAIResponse(raw, { sourceText = "" } = {}) {
+export function parseAIResponse(raw, { sourceText = "", correctionHints = [] } = {}) {
   try {
     const jsonStart = raw.indexOf("{");
     const jsonEnd = raw.lastIndexOf("}");
@@ -364,13 +371,17 @@ export function parseAIResponse(raw, { sourceText = "" } = {}) {
 
     const jsonString = raw.slice(jsonStart, jsonEnd + 1);
     const parsed = JSON.parse(jsonString);
+    const resolvedSourceText = sourceText || parsed.ocrText || "";
     const formattedContent = normalizeFormattedContent(parsed.formattedContent, parsed.cleanText);
     const cleanText = formattedContentToText(formattedContent);
     const textQuality = normalizeTextQuality(parsed.textQuality);
     const corrections = normalizeTextCorrections(
-      parsed.corrections,
+      [
+        ...(Array.isArray(parsed.corrections) ? parsed.corrections : []),
+        ...(Array.isArray(correctionHints) ? correctionHints : [])
+      ],
       formattedContent,
-      sourceText || parsed.ocrText || ""
+      resolvedSourceText
     );
 
     return {

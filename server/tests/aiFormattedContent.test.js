@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formattedContentToText, normalizeFormattedContent, parseAIResponse } from "../services/aiService.js";
+import {
+  formattedContentToText,
+  normalizeFormattedContent,
+  parseAIResponse
+} from "../services/aiService.js";
+import { YANDEX_CORRECTION_HINTS } from "../services/prompts/yandexPrompt.js";
 
 test("normalizes supported formatted blocks and derives readable text", () => {
   const content = normalizeFormattedContent({
@@ -113,4 +118,24 @@ test("stores verified replacements separately and keeps recognition note generic
     { original: "Dupen ropy", replacement: "ЗФ", applied: true },
     { original: "e", replacement: "Евгения", applied: true }
   ]);
+});
+
+test("adds a verified Yandex correction hint when the model omits it", () => {
+  const result = parseAIResponse(JSON.stringify({
+    formattedContent: {
+      blocks: [{ type: "paragraph", text: "Ильина Евгения" }]
+    },
+    corrections: [],
+    hasRecognitionErrors: true,
+    textQuality: "full_text",
+    notes: ""
+  }), {
+    sourceText: "Ильина Евишня",
+    correctionHints: YANDEX_CORRECTION_HINTS
+  });
+
+  assert.deepEqual(result.corrections.map(({ original, replacement }) => ({
+    original,
+    replacement
+  })), [{ original: "Евишня", replacement: "Евгения" }]);
 });

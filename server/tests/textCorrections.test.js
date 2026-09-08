@@ -98,3 +98,15 @@ test("accepts a replacement that occurs exactly once across all blocks", () => {
     applied: true
   }]);
 });
+
+test("accepts the explicit name correction used by the Yandex prompt", () => {
+  const corrections = normalizeTextCorrections(
+    [{ original: "Евишня", replacement: "Евгения" }],
+    { blocks: [{ type: "paragraph", text: "Ильина Евгения" }] },
+    "Ильина Евишня"
+  );
+
+  assert.equal(corrections.length, 1);
+  assert.equal(corrections[0].original, "Евишня");
+  assert.equal(corrections[0].replacement, "Евгения");
+});
