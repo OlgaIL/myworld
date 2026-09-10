@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
-import { buildManualFormattedContent, formatFormattedLine } from "../utils/formattedText";
+import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
 import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import AuthProviderButtons from "./AuthProviderButtons";
 import GuestDocumentSaveCta from "./GuestDocumentSaveCta";
@@ -73,7 +73,10 @@ function LockIcon() {
 function getFormattedText(content) {
   return (content?.blocks || []).map((block) => {
     if (block.type === "list") {
-      return block.items.map((item) => `- ${formatFormattedLine(item)}`).join("\n");
+      const list = getFormattedList(block);
+      return list.items.map((item, index) => (
+        list.ordered ? `${list.start + index}. ${formatFormattedLine(item)}` : `- ${formatFormattedLine(item)}`
+      )).join("\n");
     }
 
     return formatFormattedLine(block.text);
@@ -137,14 +140,19 @@ function FormattedContent({ content, highlightedText }) {
         }
 
         if (block.type === "list") {
+          const list = getFormattedList(block);
+          const ListTag = list.ordered ? "ol" : "ul";
           return (
-            <ul key={`${block.type}-${index}`}>
-              {block.items.map((item, itemIndex) => (
+            <ListTag
+              key={`${block.type}-${index}`}
+              {...(list.ordered && list.start !== 1 ? { start: list.start } : {})}
+            >
+              {list.items.map((item, itemIndex) => (
                 <li key={`${item}-${itemIndex}`}>
                   {renderHighlightedText(formatFormattedLine(item), highlightedText)}
                 </li>
               ))}
-            </ul>
+            </ListTag>
           );
         }
 

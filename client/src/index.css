@@ -3352,7 +3352,8 @@ button {
   margin: 0 0 12px;
 }
 
-.document-page__formatted-content ul {
+.document-page__formatted-content ul,
+.document-page__formatted-content ol {
   margin: 0 0 14px;
   padding-left: 22px;
   color: #364152;

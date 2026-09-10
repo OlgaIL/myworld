@@ -277,6 +277,39 @@ function normalizeFormattedBlockText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeListBlock(block) {
+  const items = Array.isArray(block.items)
+    ? block.items
+      .filter((item) => typeof item === "string" && item.trim())
+      .map(normalizeFormattedBlockText)
+      .filter(Boolean)
+      .slice(0, 100)
+    : [];
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  const numberedItems = items.map((item) => item.match(/^(\d{1,3})[.)]\s+(.+)$/u));
+  const hasSequentialMarkers = numberedItems.every(Boolean)
+    && numberedItems.every((match, index) => (
+      index === 0 || Number(match[1]) === Number(numberedItems[index - 1][1]) + 1
+    ));
+  const ordered = block.ordered === true || hasSequentialMarkers;
+  const inferredStart = hasSequentialMarkers ? Number(numberedItems[0][1]) : 1;
+  const explicitStart = Number.isInteger(block.start) && block.start > 0 ? block.start : 1;
+  const start = block.ordered === true ? explicitStart : inferredStart;
+
+  return {
+    type: "list",
+    items: ordered
+      ? items.map((item, index) => numberedItems[index]?.[2] || item)
+      : items,
+    ...(ordered ? { ordered: true } : {}),
+    ...(ordered && start !== 1 ? { start } : {})
+  };
+}
+
 export function normalizeFormattedContent(value, fallbackText = "") {
   const blocks = Array.isArray(value?.blocks)
     ? value.blocks.flatMap((block) => {
@@ -285,14 +318,8 @@ export function normalizeFormattedContent(value, fallbackText = "") {
       }
 
       if (block.type === "list") {
-        const items = Array.isArray(block.items)
-          ? block.items
-            .filter((item) => typeof item === "string" && item.trim())
-            .map(normalizeFormattedBlockText)
-            .filter(Boolean)
-            .slice(0, 100)
-          : [];
-        return items.length > 0 ? [{ type: "list", items }] : [];
+        const list = normalizeListBlock(block);
+        return list ? [list] : [];
       }
 
       if (typeof block.text !== "string") {
@@ -318,7 +345,9 @@ export function normalizeFormattedContent(value, fallbackText = "") {
 export function formattedContentToText(content) {
   return (content?.blocks || []).map((block) => {
     if (block.type === "list") {
-      return block.items.map((item) => `- ${item}`).join("\n");
+      return block.items.map((item, index) => (
+        block.ordered ? `${Number(block.start || 1) + index}. ${item}` : `- ${item}`
+      )).join("\n");
     }
 
     return block.text || "";

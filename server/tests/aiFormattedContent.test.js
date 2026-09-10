@@ -93,6 +93,28 @@ test("separates paragraph blocks and joins wrapped list item lines", () => {
   });
 });
 
+test("converts sequential list markers into an ordered list", () => {
+  const content = normalizeFormattedContent({
+    blocks: [{ type: "list", items: ["1) Первый шаг", "2) Второй шаг", "3) Третий шаг"] }]
+  });
+
+  assert.deepEqual(content, {
+    blocks: [{ type: "list", ordered: true, items: ["Первый шаг", "Второй шаг", "Третий шаг"] }]
+  });
+  assert.equal(formattedContentToText(content), "1. Первый шаг\n2. Второй шаг\n3. Третий шаг");
+});
+
+test("preserves the starting number of an ordered list", () => {
+  const content = normalizeFormattedContent({
+    blocks: [{ type: "list", items: ["5) Пятый шаг", "6) Шестой шаг"] }]
+  });
+
+  assert.deepEqual(content, {
+    blocks: [{ type: "list", ordered: true, start: 5, items: ["Пятый шаг", "Шестой шаг"] }]
+  });
+  assert.equal(formattedContentToText(content), "5. Пятый шаг\n6. Шестой шаг");
+});
+
 test("stores verified replacements separately and keeps recognition note generic", () => {
   const result = parseAIResponse(JSON.stringify({
     formattedContent: {

@@ -7,10 +7,11 @@ import {
   normalizeFormattedTypography
 } from "../src/utils/formattedText.js";
 
-test("capitalizes the first letter after leading punctuation or numbers", () => {
+test("capitalizes a leading letter but not a measurement unit after a number", () => {
   assert.equal(capitalizeFormattedLine("новый абзац"), "Новый абзац");
   assert.equal(capitalizeFormattedLine("  «новый абзац»"), "  «Новый абзац»");
-  assert.equal(capitalizeFormattedLine("1. новый пункт"), "1. Новый пункт");
+  assert.equal(capitalizeFormattedLine("700 г"), "700 г");
+  assert.equal(capitalizeFormattedLine("1. новый пункт"), "1. новый пункт");
 });
 
 test("keeps already capitalized text and text without letters unchanged", () => {
@@ -71,6 +72,19 @@ test("keeps short form fields as paragraphs instead of headings", () => {
         { type: "heading", text: "Заявление" },
         { type: "paragraph", text: "Основной текст" }
       ]
+    }
+  );
+});
+
+test("builds an ordered list without duplicated numeric markers", () => {
+  assert.deepEqual(
+    buildManualFormattedContent("1) Первый шаг\n2) Второй шаг\n3) Третий шаг"),
+    {
+      blocks: [{
+        type: "list",
+        items: ["Первый шаг", "Второй шаг", "Третий шаг"],
+        ordered: true
+      }]
     }
   );
 });

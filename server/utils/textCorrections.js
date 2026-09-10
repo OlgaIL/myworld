@@ -212,7 +212,9 @@ export function applyTextCorrections(formattedContent, value) {
 export function formattedContentToText(content) {
   return (content?.blocks || []).map((block) => {
     if (block.type === "list" && Array.isArray(block.items)) {
-      return block.items.map((item) => `- ${item}`).join("\n");
+      return block.items.map((item, index) => (
+        block.ordered ? `${Number(block.start || 1) + index}. ${item}` : `- ${item}`
+      )).join("\n");
     }
 
     return block.text || "";
