@@ -261,7 +261,7 @@ function HandwritingToTextLanding() {
         </Link>
         <nav className="landing-nav" aria-label="Навигация">
           <a href="#how">Как работает</a>
-          <a href="#cases">Для чего</a>
+          <a href="#cases">Для каких задач</a>
           <Link to="/photo-to-text">Фото в текст</Link>
         </nav>
       </header>
@@ -303,7 +303,7 @@ function HandwritingToTextLanding() {
           <div className="handwriting-process-card__flow" aria-hidden="true">
             <span />
             <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M5 12h13M14 7l5 5-5 5" />
+              <path d="M12 5v13M7 14l5 5 5-5" />
             </svg>
           </div>
           <article className="handwriting-process-card__result">
@@ -315,7 +315,7 @@ function HandwritingToTextLanding() {
             </ul>
           </article>
           <p className="handwriting-process-card__note">
-            Результат можно проверить, улучшить и скопировать к себе в документ.
+            Результат можно проверить, улучшить и скопировать <span className="handwriting-nowrap">к себе в документ</span>.
           </p>
         </aside>
       </section>
@@ -339,10 +339,7 @@ function HandwritingToTextLanding() {
           key={activeExample.title}
         >
           <div className="handwriting-showcase__heading">
-            <div>
-              <span>Реальный пример</span>
-              <h3>{activeExample.title}</h3>
-            </div>
+            <span className="handwriting-showcase__eyebrow">Реальный пример</span>
             <div className="handwriting-carousel-controls" aria-label="Листать примеры">
               <button type="button" onClick={showPreviousExample} aria-label="Предыдущий пример">
                 <CarouselArrow direction="previous" />
@@ -355,6 +352,7 @@ function HandwritingToTextLanding() {
               </button>
             </div>
           </div>
+          <h3 className="handwriting-showcase__title">{activeExample.title}</h3>
 
           <p className="handwriting-showcase__hint">Нажмите на изображение, чтобы увеличить</p>
 

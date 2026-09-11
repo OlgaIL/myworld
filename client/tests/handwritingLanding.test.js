@@ -165,3 +165,13 @@ test("shows a readable carousel with equal media canvases, tags and a light scan
   assert.match(styles, /\.handwriting-showcase__comparison\s*\{[\s\S]*grid-template-columns: 1fr;/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
+
+test("keeps landing headings full-width and aligns responsive example controls and arrows", () => {
+  assert.match(landingSource, /href="#cases">Для каких задач<\/a>/);
+  assert.doesNotMatch(landingSource, /href="#cases">Для чего<\/a>/);
+  assert.match(landingSource, /M12 5v13M7 14l5 5 5-5/);
+  assert.match(landingSource, /handwriting-nowrap">к себе в документ<\/span>/);
+  assert.match(landingSource, /handwriting-showcase__eyebrow">Реальный пример<\/span>[\s\S]*handwriting-carousel-controls/);
+  assert.match(styles, /\.handwriting-landing \.landing-section__heading\s*\{[\s\S]*width: 100%;[\s\S]*max-width: none;/);
+  assert.match(styles, /\.handwriting-showcase__connector\s*\{[\s\S]*display: flex;[\s\S]*height: 64px;/);
+});

@@ -402,6 +402,11 @@ body {
   line-height: 0.99;
 }
 
+.handwriting-landing .landing-section__heading {
+  width: 100%;
+  max-width: none;
+}
+
 .handwriting-process-card {
   justify-self: center;
   display: grid;
@@ -482,21 +487,23 @@ body {
 }
 
 .handwriting-process-card__flow {
-  display: grid;
-  grid-template-columns: 1fr 28px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 50%;
-  margin: 12px auto;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  margin: 10px auto;
   color: #394f91;
 }
 
 .handwriting-process-card__flow span {
-  height: 1px;
+  width: 1px;
+  height: 18px;
   background: #cfd6e5;
-  transform: scaleX(0);
-  transform-origin: left;
-  animation: handwriting-line-grow 0.55s 1.25s ease-out forwards;
+  transform: scaleY(0);
+  transform-origin: top;
+  animation: handwriting-line-grow-down 0.55s 1.25s ease-out forwards;
 }
 
 .handwriting-process-card__flow svg {
@@ -559,6 +566,10 @@ body {
   line-height: 1.4;
 }
 
+.handwriting-nowrap {
+  white-space: nowrap;
+}
+
 .handwriting-example-section__intro,
 .handwriting-example-section__note {
   max-width: 760px;
@@ -595,13 +606,13 @@ body {
 
 .handwriting-showcase__heading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
-.handwriting-showcase__heading > div > span {
+.handwriting-showcase__eyebrow {
   color: #667085;
   font-size: 12px;
   font-weight: 700;
@@ -609,8 +620,8 @@ body {
   text-transform: uppercase;
 }
 
-.handwriting-showcase__heading h3 {
-  margin: 6px 0 0;
+.handwriting-showcase__title {
+  margin: 0 0 20px;
   color: #101828;
   font-size: clamp(22px, 2.4vw, 30px);
   line-height: 1.15;
@@ -999,6 +1010,12 @@ body {
 @keyframes handwriting-line-grow {
   to {
     transform: scaleX(1);
+  }
+}
+
+@keyframes handwriting-line-grow-down {
+  to {
+    transform: scaleY(1);
   }
 }
 
@@ -5796,7 +5813,11 @@ button {
   .handwriting-showcase__heading {
     align-items: flex-start;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+  }
+
+  .handwriting-showcase__title {
+    margin-bottom: 18px;
   }
 
   .handwriting-showcase__hint {
@@ -5814,18 +5835,22 @@ button {
   }
 
   .handwriting-showcase__connector {
-    gap: 0;
-    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 64px;
     padding-top: 0;
   }
 
   .handwriting-showcase__connector svg {
+    width: 52px;
+    height: 24px;
     transform: rotate(90deg);
   }
 
   .handwriting-showcase__connector span {
-    position: relative;
-    top: -5px;
+    position: static;
   }
 
   .handwriting-showcase__stage--result {
