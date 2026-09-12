@@ -1,5 +1,7 @@
 const LANDING = "handwriting_to_text";
 const DEFAULT_INTENT = "handwriting";
+const CROSS_DEVICE_LANDING = "handwriting-to-text";
+const CROSS_DEVICE_PLACEMENT = "cross_device_block";
 
 export function getHandwritingLandingIntent(search = "") {
   const intent = new URLSearchParams(search).get("intent")?.trim();
@@ -33,16 +35,17 @@ export function trackHandwritingLandingCta({ search = "", placement, track }) {
 
 export function getCrossDeviceBlockViewParams(deviceType = "desktop") {
   return {
-    landing: LANDING,
+    landing: CROSS_DEVICE_LANDING,
+    placement: CROSS_DEVICE_PLACEMENT,
     device_type: deviceType
   };
 }
 
-export function getCrossDeviceCtaParams({ deviceType = "desktop", placement }) {
+export function getCrossDeviceCtaParams({ deviceType = "desktop" } = {}) {
   return {
-    landing: LANDING,
+    landing: CROSS_DEVICE_LANDING,
+    placement: CROSS_DEVICE_PLACEMENT,
     device_type: deviceType,
-    placement,
     destination: "/"
   };
 }
@@ -51,8 +54,8 @@ export function trackCrossDeviceBlockView({ deviceType, track }) {
   return track("cross_device_block_view", getCrossDeviceBlockViewParams(deviceType));
 }
 
-export function trackCrossDeviceCtaClick({ deviceType, placement, track }) {
-  return track("cross_device_cta_click", getCrossDeviceCtaParams({ deviceType, placement }));
+export function trackCrossDeviceCtaClick({ deviceType, track }) {
+  return track("cross_device_cta_click", getCrossDeviceCtaParams({ deviceType }));
 }
 
 export { DEFAULT_INTENT };

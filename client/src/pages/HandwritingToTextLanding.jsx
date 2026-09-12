@@ -248,7 +248,6 @@ function HandwritingToTextLanding() {
     handleCtaClick("cross_device");
     trackCrossDeviceCtaClick({
       deviceType: getAnalyticsDeviceContext().deviceType,
-      placement: "cross_device_block",
       track: trackGoal
     });
   };
@@ -318,6 +317,35 @@ function HandwritingToTextLanding() {
             Результат можно проверить, улучшить и скопировать <span className="handwriting-nowrap">к себе в документ</span>.
           </p>
         </aside>
+      </section>
+
+      <section className="handwriting-cross-device" ref={crossDeviceSectionRef}>
+        <div className="handwriting-cross-device__copy">
+          <p className="landing-eyebrow">Работайте с текстом там, где удобно</p>
+          <h2>Сфотографируйте на телефоне — продолжите на компьютере</h2>
+          <p>
+            Снимите конспект или заметку на телефоне, сохраните результат в аккаунте и
+            откройте готовый текст на компьютере. Исходное фото, распознанный текст и
+            улучшенная версия останутся в одном архиве. И наоборот — начать можно на
+            компьютере, а вернуться к записи с телефона.
+          </p>
+          <Link
+            className="landing-button handwriting-upload-cta"
+            to="/"
+            aria-label="Загрузить фото и сохранить результат в аккаунте"
+            onClick={handleCrossDeviceCtaClick}
+          >
+            <UploadIcon />
+            Загрузить фото
+          </Link>
+        </div>
+        <div className="handwriting-cross-device__flow" aria-label="С телефона в личный архив и на компьютер">
+          <span>Телефон</span>
+          <i aria-hidden="true">→</i>
+          <span>Один аккаунт</span>
+          <i aria-hidden="true">→</i>
+          <span>Компьютер</span>
+        </div>
       </section>
 
       <section className="landing-section handwriting-example-section" aria-labelledby="result-example-title">
@@ -444,30 +472,6 @@ function HandwritingToTextLanding() {
               <h3>{step}</h3>
             </article>
           ))}
-        </div>
-      </section>
-
-      <section className="handwriting-cross-device" ref={crossDeviceSectionRef}>
-        <div className="handwriting-cross-device__copy">
-          <p className="landing-eyebrow">Один архив на разных устройствах</p>
-          <h2>Сфотографируйте на телефоне — откройте готовый текст на компьютере.</h2>
-          <p>Документы доступны на любом устройстве после входа в тот же аккаунт.</p>
-          <Link
-            className="landing-button handwriting-upload-cta"
-            to="/"
-            aria-label="Загрузить фото и сохранить результат в аккаунте"
-            onClick={handleCrossDeviceCtaClick}
-          >
-            <UploadIcon />
-            Загрузить фото
-          </Link>
-        </div>
-        <div className="handwriting-cross-device__flow" aria-label="С телефона в личный архив и на компьютер">
-          <span>Телефон</span>
-          <i aria-hidden="true">→</i>
-          <span>Один аккаунт</span>
-          <i aria-hidden="true">→</i>
-          <span>Компьютер</span>
         </div>
       </section>
 

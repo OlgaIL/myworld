@@ -20,6 +20,7 @@ const landingSource = readFileSync(new URL("../src/pages/HandwritingToTextLandin
 const mainSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const photoLandingSource = readFileSync(new URL("../src/pages/PhotoToTextLanding.jsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/index.css", import.meta.url), "utf8");
+const compactLandingSource = landingSource.replace(/\s+/g, " ");
 
 function createStorage() {
   const values = new Map();
@@ -128,29 +129,65 @@ test("tracks the verified cross-device block and CTA with device context", () =>
   const track = (goal, params) => calls.push({ goal, params });
 
   trackCrossDeviceBlockView({ deviceType: "mobile", track });
-  trackCrossDeviceCtaClick({ deviceType: "desktop", placement: "cross_device_block", track });
+  trackCrossDeviceCtaClick({ deviceType: "desktop", track });
 
   assert.deepEqual(calls, [
     {
       goal: "cross_device_block_view",
       params: {
-        landing: "handwriting_to_text",
+        landing: "handwriting-to-text",
+        placement: "cross_device_block",
         device_type: "mobile"
       }
     },
     {
       goal: "cross_device_cta_click",
       params: {
-        landing: "handwriting_to_text",
-        device_type: "desktop",
+        landing: "handwriting-to-text",
         placement: "cross_device_block",
+        device_type: "desktop",
         destination: "/"
       }
     }
   ]);
   assert.equal(getCrossDeviceBlockViewParams("tablet").device_type, "tablet");
-  assert.equal(getCrossDeviceCtaParams({ placement: "cross_device_block" }).destination, "/");
-  assert.match(landingSource, /Документы доступны на любом устройстве после входа в тот же аккаунт/);
+  assert.deepEqual(getCrossDeviceBlockViewParams("tablet"), {
+    landing: "handwriting-to-text",
+    placement: "cross_device_block",
+    device_type: "tablet"
+  });
+  assert.deepEqual(getCrossDeviceCtaParams(), {
+    landing: "handwriting-to-text",
+    placement: "cross_device_block",
+    device_type: "desktop",
+    destination: "/"
+  });
+  assert.match(landingSource, /if \(crossDeviceViewTracked\.current\)/);
+  assert.match(landingSource, /crossDeviceViewTracked\.current = true/);
+  assert.match(landingSource, /observer\.disconnect\(\)/);
+});
+
+test("places the cross-device benefit directly after the hero with the approved meaning", () => {
+  const heroPosition = landingSource.indexOf('<section className="landing-hero">');
+  const crossDevicePosition = landingSource.indexOf('<section className="handwriting-cross-device"');
+  const examplesPosition = landingSource.indexOf('<section className="landing-section handwriting-example-section"');
+
+  assert.equal(heroPosition >= 0, true);
+  assert.equal(crossDevicePosition > heroPosition, true);
+  assert.equal(crossDevicePosition < examplesPosition, true);
+  assert.match(compactLandingSource, /Работайте с текстом там, где удобно/);
+  assert.match(compactLandingSource, /Сфотографируйте на телефоне — продолжите на компьютере/);
+  assert.match(compactLandingSource, /Снимите конспект или заметку на телефоне, сохраните результат в аккаунте и откройте готовый текст на компьютере\./);
+  assert.match(compactLandingSource, /Исходное фото, распознанный текст и улучшенная версия останутся в одном архиве\./);
+  assert.match(compactLandingSource, /И наоборот — начать можно на компьютере, а вернуться к записи с телефона\./);
+  assert.match(compactLandingSource, /Телефон[\s\S]*Один аккаунт[\s\S]*Компьютер/);
+});
+
+test("keeps the cross-device section within the mobile viewport", () => {
+  assert.match(styles, /\.landing-page\s*\{[\s\S]*overflow-x: hidden;/);
+  assert.match(styles, /\.handwriting-cross-device\s*\{[\s\S]*width: min\(1120px, calc\(100% - 48px\)\);[\s\S]*min-width: 0;/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*\.handwriting-cross-device,[\s\S]*width: calc\(100% - 32px\);/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*\.handwriting-cross-device__flow\s*\{[\s\S]*grid-template-columns: 1fr;/);
 });
 
 test("shows a readable carousel with equal media canvases, tags and a light scanner", () => {
