@@ -16,13 +16,13 @@ export function saveAnalyticsIdentity(identity) {
   return axios.post(`${API_URL}/api/analytics/identity`, identity).then((res) => res.data);
 }
 
-export async function loginWithProvider(providerId, acquisitionContext = {}) {
+export async function loginWithProvider(providerId, acquisitionContext = {}, analyticsIdentity = {}) {
   if (!/^[a-z][a-z0-9_-]*$/.test(String(providerId || ""))) {
     return;
   }
 
   try {
-    await axios.post(`${API_URL}/api/acquisition`, { context: acquisitionContext });
+    await axios.post(`${API_URL}/api/acquisition`, { context: acquisitionContext, analyticsIdentity });
   } catch (error) {
     console.warn("Acquisition context was not saved before authentication:", error.message);
   }
@@ -30,8 +30,12 @@ export async function loginWithProvider(providerId, acquisitionContext = {}) {
   window.location.href = `${API_URL}/auth/${encodeURIComponent(providerId)}`;
 }
 
-export function requestEmailLoginCode(email, acquisitionContext = {}) {
-  return axios.post(`${API_URL}/api/auth/email/request`, { email, acquisitionContext }).then((res) => res.data);
+export function requestEmailLoginCode(email, acquisitionContext = {}, analyticsIdentity = {}) {
+  return axios.post(`${API_URL}/api/auth/email/request`, {
+    email,
+    acquisitionContext,
+    analyticsIdentity
+  }).then((res) => res.data);
 }
 
 export function verifyEmailLoginCode({ email, code, legalVersion }) {

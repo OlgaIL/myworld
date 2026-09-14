@@ -70,7 +70,7 @@ function AppHeader({
           <Link className="topbar__link" to="/about">
             О проекте
           </Link>
-          <AuthMenu providers={authProviders} onProviderLogin={onProviderLogin} />
+          <AuthMenu providers={authProviders} onProviderLogin={onProviderLogin} source="header_login" />
         </div>
       ) : (
         <div className="profile">

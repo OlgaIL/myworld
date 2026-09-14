@@ -1,6 +1,6 @@
 import { getAuthProviderMeta } from "../config/authProviders";
 
-function AuthProviderButtons({ providers = [], onProviderLogin, className = "", compact = false }) {
+function AuthProviderButtons({ providers = [], onProviderLogin, className = "", compact = false, source = "auth_provider_buttons" }) {
   const classes = ["auth-provider-buttons", className, compact && "auth-provider-buttons--compact"].filter(Boolean).join(" ");
   const visibleProviders = Array.isArray(providers) ? providers : [];
 
@@ -22,7 +22,7 @@ function AuthProviderButtons({ providers = [], onProviderLogin, className = "", 
             className="auth-provider-buttons__option"
             type="button"
             key={provider.id}
-            onClick={() => onProviderLogin?.(provider.id)}
+            onClick={() => onProviderLogin?.(provider.id, { source, placement: source })}
             title={meta.title}
           >
             <span className={`auth-menu__icon ${meta.iconClassName}`.trim()} aria-hidden="true">

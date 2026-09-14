@@ -23,12 +23,12 @@ import { getProcessingGuardError, getUserProcessingAccess, getUserProductAccess 
 
 const router = Router();
 const LEGAL_AGREEMENT_VERSION = "2026-07-15";
-const ACQUISITION_KEYS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid", "landing_path", "captured_at"]);
+const ACQUISITION_KEYS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid", "intent", "landing_path", "captured_at"]);
 const DEVICE_TYPES = new Set(["mobile", "desktop", "tablet", "unknown"]);
 const DEVICE_OS_VALUES = new Set(["android", "ios", "windows", "macos", "linux", "other"]);
 const DEVICE_BROWSER_VALUES = new Set(["yandex", "chrome", "safari", "firefox", "edge", "other"]);
 
-function sanitizeAcquisitionContext(value) {
+export function sanitizeAcquisitionContext(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
@@ -103,6 +103,16 @@ async function completeLogin(req) {
   } catch (error) {
     console.error("Acquisition context after login failed:", error.message);
   }
+
+  try {
+    const analyticsIdentity = sanitizeAnalyticsIdentity(req.session?.analyticsIdentity);
+    if (analyticsIdentity.metrikaClientId) {
+      await saveUserAnalyticsIdentity(req.user?.id, analyticsIdentity);
+    }
+    delete req.session.analyticsIdentity;
+  } catch (error) {
+    console.error("Analytics identity after login failed:", error.message);
+  }
 }
 
 async function finishLogin(req, res) {
@@ -142,6 +152,7 @@ router.get("/api/auth-providers", (req, res) => {
 
 router.post("/api/acquisition", (req, res) => {
   req.session.acquisitionContext = sanitizeAcquisitionContext(req.body?.context);
+  req.session.analyticsIdentity = sanitizeAnalyticsIdentity(req.body?.analyticsIdentity);
   return res.status(204).send();
 });
 
@@ -173,6 +184,7 @@ router.post("/api/auth/email/request", async (req, res) => {
 
   try {
     req.session.acquisitionContext = sanitizeAcquisitionContext(req.body?.acquisitionContext);
+    req.session.analyticsIdentity = sanitizeAnalyticsIdentity(req.body?.analyticsIdentity);
     const result = await requestEmailLoginCode({
       email,
       ipHash: hashRequestIp(getRequestIp(req))

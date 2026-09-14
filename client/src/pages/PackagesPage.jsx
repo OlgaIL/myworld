@@ -42,6 +42,12 @@ function PackagesPage() {
         package_value: item.value,
         package_price: item.priceValue
       });
+      trackGoal("payment_start", {
+        package_id: item.id,
+        package_name: item.title,
+        package_price: item.priceValue,
+        source: "packages_page"
+      });
       setRequestStatus((current) => ({ ...current, [item.title]: "sending" }));
       const payment = await createYookassaPayment({ packageId: item.id, packageTitle: item.title });
 

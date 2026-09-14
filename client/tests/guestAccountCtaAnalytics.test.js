@@ -29,7 +29,9 @@ test("keeps the old and new guest CTA view events with stable deduplication keys
     "guest_account_cta_view"
   ]);
   assert.equal(delivered[1].params.free_limit, 10);
-  assert.equal(delivered[1].params.placement, "document_before_text");
+  assert.equal(delivered[1].params.placement, "document_after_result");
+  assert.equal(delivered[1].params.route, "guest_document");
+  assert.equal("provider" in delivered[1].params, false);
 });
 
 test("tracks the new guest CTA click without personal data", () => {
@@ -43,7 +45,8 @@ test("tracks the new guest CTA click without personal data", () => {
   assert.deepEqual(calls, [{
     goal: "guest_account_cta_click",
     params: {
-      placement: "document_before_text",
+      placement: "document_after_result",
+      route: "guest_document",
       provider: "yandex",
       free_limit: 10
     }

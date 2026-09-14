@@ -24,12 +24,28 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
   return (
     <section className="guest-document-save-cta" aria-label="Продолжить обработку фотографий">
       <div className="guest-document-save-cta__copy">
-        <h2>Нужно обработать ещё фотографии?</h2>
-        <p>Войдите и получите ещё 10 бесплатных обработок. Готовый текст сохранится в личном кабинете.</p>
+        <h2>Сохраните текст — откройте его на любом устройстве</h2>
+        <p>Исходное фото, распознанный текст и улучшенная версия останутся в личном архиве. Запись можно открыть с телефона или компьютера после входа в тот же аккаунт</p>
       </div>
 
-      <div className="guest-document-save-cta__actions" aria-label="Способы сохранения">
-        {providers.map((provider) => {
+      {providers[0] && (
+        <button
+          className="guest-document-save-cta__primary"
+          type="button"
+          onClick={() => {
+            trackGuestAccountCtaClick({ provider: providers[0].id, track: trackGoal });
+            onProviderLogin(providers[0].id, { placement: "document_after_result", source: "guest_result_cta" });
+          }}
+        >
+          Сохранить бесплатно
+        </button>
+      )}
+
+      <p className="guest-document-save-cta__footnote">Ещё 10 обработок после входа · карта не нужна</p>
+
+      {providers.length > 1 && (
+        <div className="guest-document-save-cta__actions" aria-label="Другие способы входа">
+          {providers.slice(1).map((provider) => {
           const meta = getAuthProviderMeta(provider);
           const label = PROVIDER_LABELS[provider.id] || `Сохранить через ${provider.label || provider.id}`;
 
@@ -43,7 +59,7 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
                   provider: provider.id,
                   track: trackGoal
                 });
-                onProviderLogin(provider.id);
+                onProviderLogin(provider.id, { placement: "document_after_result", source: "guest_result_cta" });
               }}
               title={meta.title}
             >
@@ -53,10 +69,9 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
               <span>{label}</span>
             </button>
           );
-        })}
-      </div>
-
-      <p className="guest-document-save-cta__footnote">Бесплатно · карта не нужна</p>
+          })}
+        </div>
+      )}
     </section>
   );
 }

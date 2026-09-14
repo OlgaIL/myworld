@@ -12,7 +12,7 @@ export function getProcessingPackageOffer(user) {
   const paidRemaining = Math.max(Number(user.paidRemaining ?? user.packageRemaining ?? 0), 0);
   const totalRemaining = Math.max(Number(user.totalRemaining ?? freeRemaining + paidRemaining), 0);
 
-  if (totalRemaining > 3) {
+  if (totalRemaining !== 0) {
     return null;
   }
 

@@ -3427,6 +3427,24 @@ button {
   gap: 8px;
 }
 
+.guest-document-save-cta__primary,
+.post-auth-next-step button {
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.guest-document-save-cta__primary:hover,
+.post-auth-next-step button:hover {
+  background: #1d4ed8;
+}
+
 .guest-document-save-cta__button {
   display: inline-flex;
   align-items: center;
@@ -3454,6 +3472,21 @@ button {
   flex: 0 0 24px;
   width: 24px;
   height: 24px;
+}
+
+.post-auth-next-step {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+
+.post-auth-next-step h2,
+.post-auth-next-step p {
+  margin: 0;
 }
 
 .auth-provider-buttons--compact .auth-provider-buttons__option {

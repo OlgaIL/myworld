@@ -3,25 +3,23 @@ import test from "node:test";
 import { getVisiblePaymentPackages } from "../src/config/paymentPackages.js";
 import { getPackageOfferCopy, getProcessingPackageOffer } from "../src/utils/packageOffer.js";
 
-test("offers start at 3, 2, 1 and 0 remaining", () => {
-  for (const remaining of [3, 2, 1, 0]) {
-    const offer = getProcessingPackageOffer({
-      id: 1,
-      freeRemaining: remaining,
-      paidRemaining: 0,
-      totalRemaining: remaining,
-      startPackageUsed: false
-    });
+test("offers start only at a real zero balance", () => {
+  const offer = getProcessingPackageOffer({
+    id: 1,
+    freeRemaining: 0,
+    paidRemaining: 0,
+    totalRemaining: 0,
+    startPackageUsed: false
+  });
 
-    assert.equal(offer.id, "start");
-    assert.equal(offer.price, 99);
-    assert.equal(offer.remaining, remaining);
-    assert.equal(offer.trigger, remaining === 0 ? "limit_reached" : "remaining_low");
-    assert.ok(getPackageOfferCopy(offer).title);
-  }
+  assert.equal(offer.id, "start");
+  assert.equal(offer.price, 99);
+  assert.equal(offer.remaining, 0);
+  assert.equal(offer.trigger, "limit_reached");
+  assert.ok(getPackageOfferCopy(offer).title);
 });
 
-test("offers mini after start has been used", () => {
+test("does not offer a package while a paid balance remains", () => {
   const offer = getProcessingPackageOffer({
     id: 1,
     freeRemaining: 0,
@@ -30,9 +28,7 @@ test("offers mini after start has been used", () => {
     startPackageUsed: true
   });
 
-  assert.equal(offer.id, "mini");
-  assert.equal(offer.amount, 50);
-  assert.equal(offer.price, 290);
+  assert.equal(offer, null);
   assert.deepEqual(getVisiblePaymentPackages({ startPackageUsed: true }).map((item) => item.id), [
     "mini",
     "standard",
@@ -40,6 +36,22 @@ test("offers mini after start has been used", () => {
   ]);
 });
 
-test("does not show a package offer while more than three treatments remain", () => {
-  assert.equal(getProcessingPackageOffer({ totalRemaining: 4 }), null);
+test("does not show a package offer at any non-zero balance", () => {
+  for (const remaining of [1, 2, 3, 4, 10]) {
+    assert.equal(getProcessingPackageOffer({ totalRemaining: remaining }), null);
+  }
+});
+
+test("always returns an offer when all processing access is exhausted", () => {
+  const offer = getProcessingPackageOffer({
+    id: 1,
+    freeRemaining: 0,
+    paidRemaining: 0,
+    totalRemaining: 0,
+    startPackageUsed: false
+  });
+
+  assert.equal(offer.trigger, "limit_reached");
+  assert.equal(offer.id, "start");
+  assert.match(getPackageOfferCopy(offer).text, /20 обработок за 99 ₽/);
 });

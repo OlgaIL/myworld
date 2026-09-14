@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getAuthProviderMeta } from "../config/authProviders";
 import "./AuthProviders.css";
 
-function AuthMenu({ providers = [], onProviderLogin, className = "" }) {
+function AuthMenu({ providers = [], onProviderLogin, className = "", source = "header_login" }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const visibleProviders = Array.isArray(providers) ? providers : [];
@@ -58,7 +58,7 @@ function AuthMenu({ providers = [], onProviderLogin, className = "" }) {
                 className="auth-menu__option"
                 type="button"
                 key={provider.id}
-                onClick={() => handleLogin(() => onProviderLogin?.(provider.id))}
+                onClick={() => handleLogin(() => onProviderLogin?.(provider.id, { source, placement: "header" }))}
                 title={meta.title}
               >
                 <span className={`auth-menu__icon ${meta.iconClassName}`.trim()} aria-hidden="true">

@@ -11,6 +11,7 @@ import {
 import {
   getAcquisitionContext,
   getAnalyticsDeviceContext,
+  getStoredMetrikaClientId,
   requestMetrikaClientIdWhenReady,
   setAuthenticatedMetrikaUser,
   trackGoal
@@ -123,8 +124,8 @@ export function useAuth() {
   }, [user?.id]);
 
   const defaultProvider = authProviders[0];
-  const loginWithProvider = (providerId, { source = "" } = {}) => {
-    trackGoal("auth_start", { provider: providerId });
+  const loginWithProvider = (providerId, { source = "", placement = "" } = {}) => {
+    trackGoal("auth_start", { provider: providerId, ...(source ? { source } : {}), ...(placement ? { placement } : {}) });
     rememberPendingAuth(providerId, source);
 
     if (providerId === "email") {
@@ -132,10 +133,14 @@ export function useAuth() {
       return;
     }
 
-    return redirectToProvider(providerId, getAcquisitionContext());
+    return redirectToProvider(providerId, getAcquisitionContext(), {
+      metrikaClientId: getStoredMetrikaClientId()
+    });
   };
   const requestEmailLoginCode = async (email, { resend = false } = {}) => {
-    const result = await requestEmailLoginCodeApi(email, getAcquisitionContext());
+    const result = await requestEmailLoginCodeApi(email, getAcquisitionContext(), {
+      metrikaClientId: getStoredMetrikaClientId()
+    });
     trackGoal(resend ? "auth_email_resend" : "auth_email_requested", { provider: "email" });
     return result;
   };

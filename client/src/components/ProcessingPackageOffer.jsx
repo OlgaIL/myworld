@@ -33,6 +33,15 @@ function ProcessingPackageOffer({ user, reloadUser }) {
     );
   }, [offerId, offerPrice, offerRemaining, offerTrigger, user?.id]);
 
+  useEffect(() => {
+    if (offerRemaining === 0 && user?.id) {
+      trackGoalOnce("free_limit_reached", user.id, {
+        records_processed: Number(user.recordsProcessedTotal || user.recordsUsed || 0),
+        remaining: 0
+      });
+    }
+  }, [offerRemaining, user]);
+
   if (!offer || !copy) {
     return null;
   }
@@ -49,6 +58,8 @@ function ProcessingPackageOffer({ user, reloadUser }) {
       setSubmitting(true);
       setErrorMessage("");
       trackGoal("package_offer_click", analyticsParams);
+      trackGoal("package_select", { ...analyticsParams, source: "processing_package_offer" });
+      trackGoal("payment_start", { ...analyticsParams, source: "processing_package_offer" });
       const payment = await createYookassaPayment({ packageId: offer.id });
 
       if (payment?.credited) {

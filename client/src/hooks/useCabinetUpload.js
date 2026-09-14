@@ -100,6 +100,20 @@ export function useCabinetUpload({
             const processingResult = await processPhoto(uploadedPhotoName);
             if (processingResult?.status === "processed") {
               trackGoal("account_upload_success", { source: "cabinet_upload" });
+              try {
+                const postAuthProcessingOrdinal = Number(
+                  window.sessionStorage.getItem("word2you_post_auth_follow_up") || 0
+                );
+                if (postAuthProcessingOrdinal > 0) {
+                  window.sessionStorage.removeItem("word2you_post_auth_follow_up");
+                  trackGoal("post_auth_follow_up_processing_success", {
+                    source: "post_auth_next_step",
+                    processing_ordinal: postAuthProcessingOrdinal
+                  });
+                }
+              } catch {
+                // Storage availability must not affect processing.
+              }
             }
             window.clearTimeout(preparingTimer);
             preparingTimer = null;

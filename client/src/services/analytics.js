@@ -2,6 +2,7 @@ const analyticsEnv = import.meta.env || {};
 const YANDEX_METRIKA_ID = analyticsEnv.VITE_YANDEX_METRIKA_ID || "109386353";
 const shouldUseYandexMetrika = analyticsEnv.PROD && YANDEX_METRIKA_ID;
 const ACQUISITION_STORAGE_KEY = "word2you_acquisition_context";
+const METRIKA_CLIENT_ID_STORAGE_KEY = "word2you_metrika_client_id";
 const GOAL_STORAGE_PREFIX = "word2you_goal_once:";
 const ACQUISITION_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 const ACQUISITION_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid"];
@@ -61,6 +62,29 @@ export function getAcquisitionContext() {
   }
 
   return context;
+}
+
+export function rememberMetrikaClientId(clientId, storage = window.localStorage) {
+  const normalizedClientId = String(clientId || "").trim();
+  if (!/^\d{1,64}$/.test(normalizedClientId)) {
+    return false;
+  }
+
+  try {
+    storage.setItem(METRIKA_CLIENT_ID_STORAGE_KEY, normalizedClientId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getStoredMetrikaClientId(storage = window.localStorage) {
+  try {
+    const clientId = String(storage.getItem(METRIKA_CLIENT_ID_STORAGE_KEY) || "").trim();
+    return /^\d{1,64}$/.test(clientId) ? clientId : "";
+  } catch {
+    return "";
+  }
 }
 
 export function initYandexMetrika() {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
@@ -6,6 +6,39 @@ import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import AuthProviderButtons from "./AuthProviderButtons";
 import GuestDocumentSaveCta from "./GuestDocumentSaveCta";
 import HourglassIcon from "./HourglassIcon";
+import { trackGoal, trackGoalOnce } from "../services/analytics";
+
+function PostAuthNextStep({ userId, processingOrdinal, onProcessAnother }) {
+  useEffect(() => {
+    if (userId) {
+      trackGoalOnce("post_auth_process_another_view", `${userId}:${processingOrdinal}`, {
+        route: "document",
+        processing_ordinal: processingOrdinal
+      });
+    }
+  }, [processingOrdinal, userId]);
+
+  return (
+    <section className="post-auth-next-step" aria-label="Следующий шаг">
+      <h2>Готово — текст сохранён в вашем архиве</h2>
+      <p>Теперь можно добавить следующую фотографию.</p>
+      <button type="button" onClick={() => {
+        try {
+          window.sessionStorage.setItem("word2you_post_auth_follow_up", String(processingOrdinal));
+        } catch {
+          // Measurement must not block the next upload.
+        }
+        trackGoal("post_auth_process_another_click", {
+          route: "document",
+          processing_ordinal: processingOrdinal
+        });
+        onProcessAnother?.();
+      }}>
+        Обработать ещё фото
+      </button>
+    </section>
+  );
+}
 
 function formatCreatedAt(value) {
   if (!value) {
@@ -238,7 +271,11 @@ function DocumentPage({
   onToggleCorrection,
   updatingCorrectionId = "",
   correctionError = "",
-  isAuthenticated = false
+  isAuthenticated = false,
+  showPostAuthNextStep = false,
+  postAuthUserId = "",
+  postAuthProcessingOrdinal = 0,
+  onProcessAnother
 }) {
   const [textTabSelection, setTextTabSelection] = useState({ documentId: null, tab: "text" });
   const [correctionHighlight, setCorrectionHighlight] = useState({ documentId: null, correctionId: "" });
@@ -496,6 +533,14 @@ function DocumentPage({
               documentStatus={info?.status}
               providers={authProviders}
               onProviderLogin={onProviderLogin}
+            />
+          )}
+
+          {isAuthenticated && showPostAuthNextStep && (
+            <PostAuthNextStep
+              userId={postAuthUserId}
+              processingOrdinal={postAuthProcessingOrdinal}
+              onProcessAnother={onProcessAnother}
             />
           )}
 

@@ -103,6 +103,7 @@ function App() {
   const [retryProcessingError, setRetryProcessingError] = useState("");
   const [updatingCorrectionId, setUpdatingCorrectionId] = useState("");
   const [correctionError, setCorrectionError] = useState("");
+  const [showPostAuthNextStep, setShowPostAuthNextStep] = useState(false);
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
   const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
@@ -213,7 +214,8 @@ function App() {
         rememberPendingImprovementDocument(options.improvementDocumentId);
       }
       loginWithProvider(providerId, {
-        source: options.placement === "document_before_text" ? "guest_result" : ""
+        source: options.source || (options.placement ? "guest_result" : "app_login"),
+        placement: options.placement || "app"
       });
     });
   }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
@@ -223,7 +225,7 @@ function App() {
     if (guestResultId) {
       rememberPendingGuestResult(guestResultId);
     }
-    requestProviderLogin(providerId, { placement: "document_before_text" });
+    requestProviderLogin(providerId, { placement: "document_after_result", source: "guest_result_cta" });
   }, [activeGuestDocument, requestProviderLogin]);
 
   useEffect(() => {
@@ -258,11 +260,13 @@ function App() {
     }
 
     if (documentName === pendingGuestResult) {
+      setShowPostAuthNextStep(true);
       clearPendingGuestResult();
       return;
     }
 
     if (photos.some((photo) => photo.name === pendingGuestResult)) {
+      setShowPostAuthNextStep(true);
       clearPendingGuestResult();
       navigate(`/documents/${encodeURIComponent(pendingGuestResult)}`);
     }
@@ -281,6 +285,11 @@ function App() {
     resetCopied();
     navigate("/");
   }, [navigate, resetCopied]);
+
+  const handlePostAuthProcessAnother = useCallback(() => {
+    setShowPostAuthNextStep(false);
+    closeDocument();
+  }, [closeDocument]);
 
   const selectCategory = useCallback(function selectCategory(category) {
     applyCategoryFilter(category);
@@ -302,9 +311,11 @@ function App() {
     setImprovementModalMode("auth");
   }
 
-  function loginForImprovement(providerId) {
+  function loginForImprovement(providerId, options = {}) {
     setImprovementModalMode(null);
     requestProviderLogin(providerId, {
+      ...options,
+      source: "guest_improvement",
       improvementDocumentId: guestImprovementDocumentId
     });
   }
@@ -410,6 +421,8 @@ function App() {
           onToggleCorrection={handleGuestCorrectionToggle}
           updatingCorrectionId={updatingCorrectionId}
           correctionError={correctionError}
+          showPostAuthNextStep={showPostAuthNextStep}
+          onProcessAnother={handlePostAuthProcessAnother}
         />
       );
     }
@@ -487,6 +500,10 @@ function App() {
               updatingCorrectionId={updatingCorrectionId}
               correctionError={correctionError}
               isAuthenticated
+              showPostAuthNextStep={showPostAuthNextStep}
+              postAuthUserId={user.id}
+              postAuthProcessingOrdinal={Number(user.recordsProcessedTotal || user.recordsUsed || 0) + 1}
+              onProcessAnother={handlePostAuthProcessAnother}
             />
           ) : (
             <CabinetHome

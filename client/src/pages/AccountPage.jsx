@@ -205,8 +205,11 @@ function AccountPage() {
     }
   }
 
-  function requestProviderLogin(providerId) {
-    requestLegalAgreement(() => loginWithProvider(providerId));
+  function requestProviderLogin(providerId, options = {}) {
+    requestLegalAgreement(() => loginWithProvider(providerId, {
+      source: options.source || "account_login",
+      placement: options.placement || "account"
+    }));
   }
 
   if (authLoading) {

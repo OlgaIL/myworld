@@ -2,10 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   getAnalyticsDeviceContext,
+  getStoredMetrikaClientId,
+  rememberMetrikaClientId,
   requestMetrikaClientId,
   requestMetrikaClientIdWhenReady,
   setAuthenticatedMetrikaUser
 } from "../src/services/analytics.js";
+
+test("stores only a validated Metrika ClientID for the login handoff", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, value)
+  };
+
+  assert.equal(rememberMetrikaClientId("123456789", storage), true);
+  assert.equal(getStoredMetrikaClientId(storage), "123456789");
+  assert.equal(rememberMetrikaClientId("unsafe-id", storage), false);
+  assert.equal(getStoredMetrikaClientId(storage), "123456789");
+});
 
 test("sets only the internal user id and never throws when Metrika fails", () => {
   const calls = [];

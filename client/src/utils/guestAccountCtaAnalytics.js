@@ -1,22 +1,27 @@
 export function trackGuestAccountCtaView({
   documentId,
   documentStatus,
+  placement = "document_after_result",
+  route = "guest_document",
   trackOnce
 }) {
   trackOnce("guest_save_cta_view", documentId, {
-    placement: "document_before_text",
+    placement,
+    route,
     document_status: documentStatus
   });
   trackOnce("guest_account_cta_view", documentId, {
-    placement: "document_before_text",
+    placement,
+    route,
     free_limit: 10,
     document_status: documentStatus
   });
 }
 
-export function trackGuestAccountCtaClick({ provider, track }) {
+export function trackGuestAccountCtaClick({ provider, placement = "document_after_result", route = "guest_document", track }) {
   track("guest_account_cta_click", {
-    placement: "document_before_text",
+    placement,
+    route,
     provider,
     free_limit: 10
   });
