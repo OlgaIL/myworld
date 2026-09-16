@@ -4,6 +4,7 @@ import test from "node:test";
 
 const componentUrl = new URL("../src/components/GuestDocumentSaveCta.jsx", import.meta.url);
 const documentPageUrl = new URL("../src/components/DocumentPage.jsx", import.meta.url);
+const packageOfferUrl = new URL("../src/components/ProcessingPackageOffer.jsx", import.meta.url);
 const appUrl = new URL("../src/pages/App.jsx", import.meta.url);
 
 test("uses the approved guest result CTA copy without prohibited promises", async () => {
@@ -25,4 +26,12 @@ test("shows the post-auth step without opening the file chooser automatically", 
   assert.match(documentPage, /post_auth_process_another_view/);
   assert.match(documentPage, /post_auth_process_another_click/);
   assert.match(app, /const handlePostAuthProcessAnother[\s\S]*?closeDocument\(\);[\s\S]*?\}, \[closeDocument\]\);/);
+});
+
+test("deduplicates package views and tracks a reached limit only at zero", async () => {
+  const source = await readFile(packageOfferUrl, "utf8");
+
+  assert.match(source, /trackGoalOnce\([\s\S]*?"package_offer_view"[\s\S]*?offerTrigger[\s\S]*?offerRemaining/);
+  assert.match(source, /if \(offerRemaining === 0 && user\?\.id\)[\s\S]*?trackGoalOnce\("free_limit_reached"/);
+  assert.doesNotMatch(source, /offerRemaining\s*<=\s*3[\s\S]*?free_limit_reached/);
 });
