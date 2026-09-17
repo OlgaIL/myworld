@@ -3427,7 +3427,6 @@ button {
   gap: 8px;
 }
 
-.guest-document-save-cta__primary,
 .post-auth-next-step button {
   min-height: 46px;
   padding: 10px 16px;
@@ -3440,7 +3439,6 @@ button {
   cursor: pointer;
 }
 
-.guest-document-save-cta__primary:hover,
 .post-auth-next-step button:hover {
   background: #1d4ed8;
 }

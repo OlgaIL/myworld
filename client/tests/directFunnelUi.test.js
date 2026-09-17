@@ -11,8 +11,11 @@ test("uses the approved guest result CTA copy without prohibited promises", asyn
   const source = await readFile(componentUrl, "utf8");
 
   assert.match(source, /Сохраните текст — откройте его на любом устройстве/);
-  assert.match(source, /Сохранить бесплатно/);
   assert.match(source, /Ещё 10 обработок после входа · карта не нужна/);
+  assert.match(source, /providers\.map\(\(provider\)/);
+  assert.match(source, /source: "guest_result_cta"/);
+  assert.match(source, /placement: "document_after_result"/);
+  assert.doesNotMatch(source, /providers\[0\]|guest-document-save-cta__primary/);
   assert.doesNotMatch(source, /30 обработок|редактировать/i);
 });
 
