@@ -26,7 +26,7 @@ function formatCreatedAt(value) {
     .replace(".", "");
 }
 
-function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocument, onUploadAnother }) {
+function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onOpenDocument, onUploadAnother }) {
   const statusMeta = getGuestDocumentStatusMeta(document.status);
   const improvementStatusMeta = getImprovementRequestStatusMeta(document.improvementRequest?.status);
   const fileUrl = getGuestDocumentFileUrl(document.id, document.updatedAt || document.filename);
@@ -49,6 +49,7 @@ function GuestDocumentCard({ document, isReplacing = false, onOpen, onOpenDocume
 
   return (
     <article
+      ref={cardRef}
       className={`gallery__item ${isReplacing ? "gallery__item--disabled" : ""} ${canOpenDocument && !isReplacing ? "gallery__item--clickable" : ""}`}
       onClick={handleCardClick}
       aria-busy={isReplacing}

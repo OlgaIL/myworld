@@ -21,6 +21,8 @@ function GuestHome({
   uploadMessage,
   error,
   replacingDocumentId,
+  scrollTargetDocumentId,
+  onScrollTargetHandled,
   onUpload,
   onOpenImage,
   onOpenDocument,
@@ -28,53 +30,33 @@ function GuestHome({
   onProviderLogin,
   authProviders
 }) {
-  const documentsListRef = useRef(null);
-  const wasUploadingRef = useRef(false);
-  const documentsBeforeUploadRef = useRef("");
+  const documentRefs = useRef(new Map());
   const uploadAllowed = access?.uploadAllowed !== false;
   const documentsUsed = Number(access?.documentsUsed || 0);
   const documentLimit = Number(access?.documentLimit || 5);
   const showAuthForError = Boolean(error && error.toLowerCase().includes("войдите"));
 
   useEffect(() => {
-    const documentsSignature = documents
-      .map((document) => `${document.id}:${document.updatedAt || ""}:${document.status || ""}`)
-      .join("|");
-
-    if (uploading) {
-      if (!wasUploadingRef.current) {
-        wasUploadingRef.current = true;
-        documentsBeforeUploadRef.current = documentsSignature;
-      }
-
+    if (!scrollTargetDocumentId) {
       return undefined;
     }
 
-    if (!wasUploadingRef.current) {
-      return undefined;
-    }
-
-    wasUploadingRef.current = false;
-
-    if (
-      loading ||
-      documents.length === 0 ||
-      documentsSignature === documentsBeforeUploadRef.current ||
-      !window.matchMedia("(max-width: 700px)").matches
-    ) {
+    const target = documentRefs.current.get(String(scrollTargetDocumentId));
+    if (!target) {
       return undefined;
     }
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const frameId = window.requestAnimationFrame(() => {
-      documentsListRef.current?.scrollIntoView({
+      target.scrollIntoView({
         behavior: reduceMotion ? "auto" : "smooth",
         block: "start"
       });
+      onScrollTargetHandled?.();
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [documents, loading, uploading]);
+  }, [documents, onScrollTargetHandled, scrollTargetDocumentId]);
 
   return (
     <section className="guest-shell">
@@ -126,11 +108,19 @@ function GuestHome({
           </section>
         ) : documents.length > 0 ? (
           <>
-            <section ref={documentsListRef} className="gallery guest-documents-list">
+            <section className="gallery guest-documents-list">
               {documents.map((document) => (
                 <GuestDocumentCard
                   key={document.id}
                   document={document}
+                  cardRef={(node) => {
+                    const documentId = String(document.id);
+                    if (node) {
+                      documentRefs.current.set(documentId, node);
+                    } else {
+                      documentRefs.current.delete(documentId);
+                    }
+                  }}
                   isReplacing={uploading && String(replacingDocumentId) === String(document.id)}
                   onOpen={onOpenImage}
                   onOpenDocument={onOpenDocument}

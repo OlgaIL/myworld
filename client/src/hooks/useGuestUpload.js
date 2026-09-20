@@ -13,6 +13,7 @@ export function useGuestUpload({
   limitMessage,
   addGuestDocument,
   onUploadStart,
+  onUploadSuccess,
   fileInputRef
 }) {
   const [uploading, setUploading] = useState(false);
@@ -90,6 +91,7 @@ export function useGuestUpload({
           upload_attempt_id: uploadAttemptId
         });
       }
+      onUploadSuccess?.(processedDocument);
       window.clearTimeout(recognizingTimer);
       window.clearTimeout(preparingTimer);
       recognizingTimer = null;

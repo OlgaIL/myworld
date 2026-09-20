@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
 import DocumentPage from "../components/DocumentPage";
-import GuestHome from "../components/GuestHome";
+import GuestExperience from "../components/GuestExperience";
 import ImprovementRequestModal from "../components/ImprovementRequestModal";
 import LegalAgreementModal from "../components/LegalAgreementModal";
 import Modal from "../components/Modal";
@@ -13,17 +13,15 @@ import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { useCabinetUpload } from "../hooks/useCabinetUpload";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocument } from "../hooks/useGuestDocument";
-import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
-import { useGuestUpload } from "../hooks/useGuestUpload";
 import { useImprovementRequest } from "../hooks/useImprovementRequest";
 import { useImprovementRequests } from "../hooks/useImprovementRequests";
 import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
 import { trackGoal } from "../services/analytics";
 import { getPhotoUrl, processPhoto, setPhotoCorrectionApplied } from "../services/api";
+import { clearPendingGuestResult, getPendingGuestResult } from "../utils/guestResultHandoff";
 
 const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
-const PENDING_GUEST_RESULT_KEY = "word2you_pending_guest_result";
 
 function rememberPendingImprovementDocument(documentId) {
   try {
@@ -44,30 +42,6 @@ function getPendingImprovementDocument() {
 function clearPendingImprovementDocument() {
   try {
     window.sessionStorage.removeItem(PENDING_IMPROVEMENT_DOCUMENT_KEY);
-  } catch {
-    // Nothing else is required when storage is unavailable.
-  }
-}
-
-function rememberPendingGuestResult(documentId) {
-  try {
-    window.sessionStorage.setItem(PENDING_GUEST_RESULT_KEY, documentId);
-  } catch {
-    // Authentication must continue when session storage is unavailable.
-  }
-}
-
-function getPendingGuestResult() {
-  try {
-    return window.sessionStorage.getItem(PENDING_GUEST_RESULT_KEY) || "";
-  } catch {
-    return "";
-  }
-}
-
-function clearPendingGuestResult() {
-  try {
-    window.sessionStorage.removeItem(PENDING_GUEST_RESULT_KEY);
   } catch {
     // Nothing else is required when storage is unavailable.
   }
@@ -96,7 +70,6 @@ function App() {
     onPhotosChanged: reloadUser
   });
   const [activePhoto, setActivePhoto] = useState(null);
-  const [activeGuestDocument, setActiveGuestDocument] = useState(null);
   const [improvementModalMode, setImprovementModalMode] = useState(null);
   const [guestImprovementDocumentId, setGuestImprovementDocumentId] = useState("");
   const [retryingDocument, setRetryingDocument] = useState(false);
@@ -106,8 +79,6 @@ function App() {
   const [showPostAuthNextStep, setShowPostAuthNextStep] = useState(false);
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
-  const guestUploadAllowed = guestAccess?.uploadAllowed !== false;
-  const guestLimitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
   const photosCount = Array.isArray(photos) ? photos.length : 0;
   const recordLimit = Number(user?.recordLimit || 0);
   const recordsUsed = Number(user?.recordsUsed ?? 0);
@@ -124,28 +95,10 @@ function App() {
     reloadUser,
     recordUploadAllowed
   });
-  const {
-    uploading: guestUploading,
-    uploadMessage: guestUploadMessage,
-    error: guestError,
-    replacingDocumentId,
-    openUpload: openGuestUpload,
-    handleUpload: handleGuestUpload
-  } = useGuestUpload({
-    uploadAllowed: guestUploadAllowed,
-    limitMessage: guestLimitMessage,
-    addGuestDocument,
-    onUploadStart: () => setActiveGuestDocument(null),
-    fileInputRef
-  });
-  const uploading = user ? cabinetUploading : guestUploading;
-  const uploadMessage = user ? cabinetUploadMessage : guestUploadMessage;
-  const { photo: activeGuestPhoto, info: activeGuestInfo } = useGuestDocumentPageData(activeGuestDocument);
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
     : null;
   const activeDocumentInfo = activeDocumentPhoto || null;
-  const activeCorrectionDocumentId = user ? documentName : activeGuestDocument?.id;
   const {
     requestsByDocumentId: improvementRequestsByDocumentId,
     upsertRequest: upsertImprovementRequest
@@ -163,7 +116,7 @@ function App() {
   useEffect(() => {
     setCorrectionError("");
     setUpdatingCorrectionId("");
-  }, [activeCorrectionDocumentId]);
+  }, [documentName]);
   const {
     searchQuery,
     setSearchQuery,
@@ -219,14 +172,6 @@ function App() {
       });
     });
   }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
-
-  const requestGuestDocumentLogin = useCallback((providerId) => {
-    const guestResultId = activeGuestDocument?.filename || activeGuestDocument?.id || "";
-    if (guestResultId) {
-      rememberPendingGuestResult(guestResultId);
-    }
-    requestProviderLogin(providerId, { placement: "document_after_result", source: "guest_result_cta" });
-  }, [activeGuestDocument, requestProviderLogin]);
 
   useEffect(() => {
     if (!user) {
@@ -331,21 +276,6 @@ function App() {
     }
   }
 
-  async function handleGuestProcessingRetry() {
-    if (!activeGuestDocument?.id || retryingDocument) return;
-    setRetryingDocument(true);
-    setRetryProcessingError("");
-    try {
-      const state = await retryGuestDocument(activeGuestDocument.id);
-      const documents = Array.isArray(state?.documents) ? state.documents : [];
-      setActiveGuestDocument(documents.find((item) => item.id === activeGuestDocument.id) || state?.document || null);
-    } catch (error) {
-      setRetryProcessingError(error.message || "Не удалось повторить обработку. Попробуйте позже.");
-    } finally {
-      setRetryingDocument(false);
-    }
-  }
-
   async function handleCabinetProcessingRetry() {
     if (!activeDocumentPhoto?.name || retryingDocument) return;
     setRetryingDocument(true);
@@ -357,28 +287,6 @@ function App() {
       setRetryProcessingError(error.message || "Не удалось повторить обработку. Попробуйте позже.");
     } finally {
       setRetryingDocument(false);
-    }
-  }
-
-  async function handleGuestCorrectionToggle(correction) {
-    if (!activeGuestDocument?.id || updatingCorrectionId) return;
-    setUpdatingCorrectionId(correction.id);
-    setCorrectionError("");
-
-    try {
-      const state = await setGuestCorrectionApplied(
-        activeGuestDocument.id,
-        correction.id,
-        !correction.applied
-      );
-      const documents = Array.isArray(state?.documents) ? state.documents : [];
-      setActiveGuestDocument(
-        documents.find((item) => item.id === activeGuestDocument.id) || state?.document || null
-      );
-    } catch (error) {
-      setCorrectionError(error.message || "Не удалось изменить замену. Попробуйте позже.");
-    } finally {
-      setUpdatingCorrectionId("");
     }
   }
 
@@ -401,51 +309,6 @@ function App() {
     }
   }
 
-  function renderGuestState() {
-    if (activeGuestDocument) {
-      return (
-        <DocumentPage
-          photo={activeGuestPhoto}
-          info={activeGuestInfo}
-          copiedMap={documentCopiedMap}
-          onBack={() => setActiveGuestDocument(null)}
-          onOpenImage={setActivePhoto}
-          onCopy={handleDocumentCopy}
-          authProviders={authProviders}
-          onProviderLogin={requestGuestDocumentLogin}
-          improvementRequest={activeGuestDocument.improvementRequest || null}
-          onRequestImprovement={() => openGuestImprovementRequest(activeGuestDocument)}
-          onRetryProcessing={handleGuestProcessingRetry}
-          retryProcessing={retryingDocument}
-          retryProcessingError={retryProcessingError}
-          onToggleCorrection={handleGuestCorrectionToggle}
-          updatingCorrectionId={updatingCorrectionId}
-          correctionError={correctionError}
-          showPostAuthNextStep={showPostAuthNextStep}
-          onProcessAnother={handlePostAuthProcessAnother}
-        />
-      );
-    }
-
-    return (
-      <GuestHome
-        documents={guestDocuments}
-        access={guestAccess}
-        loading={guestLoading}
-        uploading={uploading}
-        uploadMessage={uploadMessage}
-        error={guestError}
-        replacingDocumentId={replacingDocumentId}
-        onUpload={openGuestUpload}
-        onOpenImage={setActivePhoto}
-        onOpenDocument={setActiveGuestDocument}
-        onUploadAnother={openGuestUpload}
-        onProviderLogin={requestProviderLogin}
-        authProviders={authProviders}
-      />
-    );
-  }
-
   if (authLoading) {
     return <div className="page page--centered">Загрузка...</div>;
   }
@@ -463,18 +326,18 @@ function App() {
       />
 
       {!user && (
-        <>
-          {renderGuestState()}
-
-          <input
-            ref={fileInputRef}
-            className="upload-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleGuestUpload}
-            disabled={uploading || !guestUploadAllowed}
-          />
-        </>
+        <GuestExperience
+          documents={guestDocuments}
+          access={guestAccess}
+          loading={guestLoading}
+          addDocument={addGuestDocument}
+          retryDocument={retryGuestDocument}
+          setCorrectionApplied={setGuestCorrectionApplied}
+          authProviders={authProviders}
+          onProviderLogin={requestProviderLogin}
+          onOpenImage={setActivePhoto}
+          onRequestImprovement={openGuestImprovementRequest}
+        />
       )}
 
       {user && (
@@ -513,8 +376,8 @@ function App() {
               pendingPhotos={pendingPhotos}
               filteredPhotos={filteredPhotos}
               improvementRequestsByDocumentId={improvementRequestsByDocumentId}
-              uploadMessage={uploadMessage}
-              uploading={uploading}
+              uploadMessage={cabinetUploadMessage}
+              uploading={cabinetUploading}
               recordUploadAllowed={recordUploadAllowed}
               reloadUser={reloadUser}
               searchQuery={searchQuery}
