@@ -50,4 +50,5 @@ yarn-error.log*
 word2you-hyperframes-ad/
 word2you_reels/
 /marketing/
+/outputs/
 secret_key.txt
