@@ -70,11 +70,7 @@ export function isRetryableYandexError(error) {
     || (!error?.response && YANDEX_RETRYABLE_ERROR_CODES.has(String(error?.code || "")));
 }
 
-function wait(delayMs) {
-  return new Promise((resolve) => setTimeout(resolve, delayMs));
-}
-
-async function processYandex(text, { apiKey, folderId, modelUri, httpClient = axios, retryDelay = wait }) {
+async function processYandex(text, { apiKey, folderId, modelUri, timeoutMs = 15000, httpClient = axios }) {
   if (!apiKey) {
     return errorResult("YANDEX_API_KEY is not set");
   }
@@ -86,11 +82,8 @@ async function processYandex(text, { apiKey, folderId, modelUri, httpClient = ax
   const prompt = buildYandexUserPrompt(text);
   const resolvedModelUri = modelUri || `gpt://${folderId}/yandexgpt/latest`;
 
-  const maxAttempts = 2;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      const response = await httpClient.post(
+  try {
+    const response = await httpClient.post(
       "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
       {
         modelUri: resolvedModelUri,
@@ -115,40 +108,32 @@ async function processYandex(text, { apiKey, folderId, modelUri, httpClient = ax
           Authorization: `Api-Key ${apiKey}`,
           "Content-Type": "application/json"
         },
-        timeout: 15000
+        timeout: timeoutMs
       }
     );
 
-      const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
-      return parseAIResponse(rawText, {
-        sourceText: text,
-        correctionHints: YANDEX_CORRECTION_HINTS
-      });
-    } catch (error) {
-      const retryable = isRetryableYandexError(error);
-      console.error("YANDEX GPT REQUEST ERROR:", {
-        attempt,
-        maxAttempts,
-        retryable,
-        status: Number(error?.response?.status || 0) || null,
-        code: String(error?.code || "") || null,
-        message: String(error?.message || "Yandex GPT request failed").slice(0, 200)
-      });
+    const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
+    return parseAIResponse(rawText, {
+      sourceText: text,
+      correctionHints: YANDEX_CORRECTION_HINTS
+    });
+  } catch (error) {
+    const retryable = isRetryableYandexError(error);
+    console.error("YANDEX GPT REQUEST ERROR:", {
+      attempt: 1,
+      maxAttempts: 1,
+      retryable,
+      status: Number(error?.response?.status || 0) || null,
+      code: String(error?.code || "") || null,
+      message: String(error?.message || "Yandex GPT request failed").slice(0, 200)
+    });
 
-      if (retryable && attempt < maxAttempts) {
-        await retryDelay(500);
-        continue;
-      }
-
-      return errorResult("Yandex GPT failed", {
-        errorCode: "YANDEX_AI_UNAVAILABLE",
-        retryable,
-        attempts: attempt
-      });
-    }
+    return errorResult("Yandex GPT failed", {
+      errorCode: "YANDEX_AI_UNAVAILABLE",
+      retryable,
+      attempts: 1
+    });
   }
-
-  return errorResult("Yandex GPT failed");
 }
 
 async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {

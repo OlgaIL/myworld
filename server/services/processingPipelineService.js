@@ -12,6 +12,7 @@ import {
   PROCESSING_PAID_OCR_PROVIDER,
   PROCESSING_STANDARD_AI_PROVIDER,
   PROCESSING_STANDARD_OCR_PROVIDER,
+  YANDEX_AI_TIMEOUT_MS,
   YANDEX_GPT_MODEL_URI,
   YANDEX_OCR_LANGUAGE_CODES,
   YANDEX_OCR_MODEL
@@ -172,6 +173,7 @@ export async function enrichWithPipeline(text, pipeline) {
     apiKey: YANDEX_API_KEY,
     folderId: YANDEX_FOLDER_ID,
     modelUri: YANDEX_GPT_MODEL_URI,
+    timeoutMs: YANDEX_AI_TIMEOUT_MS,
     openAiApiKey: OPENAI_API_KEY,
     model: OPENAI_MODEL
   });

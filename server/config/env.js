@@ -56,6 +56,10 @@ export const PROCESSING_ENABLED = process.env.PROCESSING_ENABLED !== "false";
 export const GOOGLE_OCR_ENABLED = process.env.GOOGLE_OCR_ENABLED !== "false";
 export const YANDEX_OCR_ENABLED = process.env.YANDEX_OCR_ENABLED !== "false";
 export const YANDEX_AI_ENABLED = process.env.YANDEX_AI_ENABLED !== "false";
+const yandexAiTimeoutMs = Number(process.env.YANDEX_AI_TIMEOUT_MS || 15000);
+export const YANDEX_AI_TIMEOUT_MS = Number.isFinite(yandexAiTimeoutMs) && yandexAiTimeoutMs > 0
+  ? Math.floor(yandexAiTimeoutMs)
+  : 15000;
 export const OPENAI_ENABLED = process.env.OPENAI_ENABLED !== "false";
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 export const YANDEX_GPT_MODEL_URI = process.env.YANDEX_GPT_MODEL_URI || "";

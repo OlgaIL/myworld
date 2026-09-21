@@ -5,8 +5,7 @@ import { isRetryableYandexError, process } from "../services/aiService.js";
 const options = {
   provider: "yandex",
   apiKey: "test-key",
-  folderId: "test-folder",
-  retryDelay: async () => {}
+  folderId: "test-folder"
 };
 
 test("classifies only transient Yandex request failures as retryable", () => {
@@ -16,34 +15,7 @@ test("classifies only transient Yandex request failures as retryable", () => {
   assert.equal(isRetryableYandexError({ response: { status: 403 } }), false);
 });
 
-test("retries a transient Yandex failure once and returns the parsed result", async () => {
-  let attempts = 0;
-  const httpClient = {
-    async post() {
-      attempts += 1;
-      if (attempts === 1) {
-        const error = new Error("connection reset");
-        error.code = "ECONNRESET";
-        throw error;
-      }
-
-      return {
-        data: {
-          result: {
-            alternatives: [{ message: { text: JSON.stringify({ cleanText: "Готовый текст", textQuality: "full_text" }) } }]
-          }
-        }
-      };
-    }
-  };
-
-  const result = await process("Исходный текст", { ...options, httpClient });
-  assert.equal(attempts, 2);
-  assert.equal(result.error, undefined);
-  assert.equal(result.cleanText, "Готовый текст");
-});
-
-test("returns safe retry metadata after two transient failures", async () => {
+test("does not automatically retry a transient Yandex failure", async () => {
   let attempts = 0;
   const httpClient = {
     async post() {
@@ -54,10 +26,41 @@ test("returns safe retry metadata after two transient failures", async () => {
     }
   };
 
-  const result = await process("Исходный текст", { ...options, httpClient });
-  assert.equal(attempts, 2);
+  const result = await process("Source text", { ...options, httpClient });
+
+  assert.equal(attempts, 1);
   assert.equal(result.error, "Yandex GPT failed");
   assert.equal(result.errorCode, "YANDEX_AI_UNAVAILABLE");
   assert.equal(result.retryable, true);
-  assert.equal(result.attempts, 2);
+  assert.equal(result.attempts, 1);
+});
+
+test("passes the configured timeout to the Yandex request", async () => {
+  let requestTimeout = null;
+  const httpClient = {
+    async post(_url, _body, requestOptions) {
+      requestTimeout = requestOptions.timeout;
+      return {
+        data: {
+          result: {
+            alternatives: [{
+              message: {
+                text: JSON.stringify({ cleanText: "Ready text", textQuality: "full_text" })
+              }
+            }]
+          }
+        }
+      };
+    }
+  };
+
+  const result = await process("Source text", {
+    ...options,
+    timeoutMs: 23000,
+    httpClient
+  });
+
+  assert.equal(requestTimeout, 23000);
+  assert.equal(result.error, undefined);
+  assert.equal(result.cleanText, "Ready text");
 });
