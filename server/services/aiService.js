@@ -16,7 +16,8 @@ import {
 import {
   buildYandexSystemPrompt,
   buildYandexUserPrompt,
-  YANDEX_CORRECTION_HINTS
+  YANDEX_CORRECTION_HINTS,
+  YANDEX_RESPONSE_JSON_SCHEMA
 } from "./prompts/yandexPrompt.js";
 import {
   GENERIC_RECOGNITION_NOTE,
@@ -70,7 +71,19 @@ export function isRetryableYandexError(error) {
     || (!error?.response && YANDEX_RETRYABLE_ERROR_CODES.has(String(error?.code || "")));
 }
 
-async function processYandex(text, { apiKey, folderId, modelUri, timeoutMs = 15000, httpClient = axios }) {
+function toMetricNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+async function processYandex(text, {
+  apiKey,
+  folderId,
+  modelUri,
+  timeoutMs = 15000,
+  httpClient = axios,
+  logger = console
+}) {
   if (!apiKey) {
     return errorResult("YANDEX_API_KEY is not set");
   }
@@ -79,8 +92,10 @@ async function processYandex(text, { apiKey, folderId, modelUri, timeoutMs = 150
     return errorResult("YANDEX_FOLDER_ID is not set");
   }
 
+  const systemPrompt = buildYandexSystemPrompt();
   const prompt = buildYandexUserPrompt(text);
   const resolvedModelUri = modelUri || `gpt://${folderId}/yandexgpt/latest`;
+  const startedAt = Date.now();
 
   try {
     const response = await httpClient.post(
@@ -92,10 +107,13 @@ async function processYandex(text, { apiKey, folderId, modelUri, timeoutMs = 150
           temperature: 0.2,
           maxTokens: 2000
         },
+        jsonSchema: {
+          schema: YANDEX_RESPONSE_JSON_SCHEMA
+        },
         messages: [
           {
             role: "system",
-            text: buildYandexSystemPrompt()
+            text: systemPrompt
           },
           {
             role: "user",
@@ -112,16 +130,33 @@ async function processYandex(text, { apiKey, folderId, modelUri, timeoutMs = 150
       }
     );
 
-    const rawText = response.data?.result?.alternatives?.[0]?.message?.text || "";
+    const result = response.data?.result || {};
+    const alternative = result.alternatives?.[0] || {};
+    const usage = result.usage || {};
+    logger.info?.("YANDEX GPT REQUEST SUCCESS:", {
+      durationMs: Date.now() - startedAt,
+      sourceChars: String(text || "").length,
+      promptChars: systemPrompt.length + prompt.length,
+      inputTokens: toMetricNumber(usage.inputTextTokens ?? usage.input_text_tokens),
+      completionTokens: toMetricNumber(usage.completionTokens ?? usage.completion_tokens),
+      totalTokens: toMetricNumber(usage.totalTokens ?? usage.total_tokens),
+      status: String(alternative.status || "") || null,
+      modelVersion: String(result.modelVersion || result.model_version || "") || null
+    });
+
+    const rawText = alternative.message?.text || "";
     return parseAIResponse(rawText, {
       sourceText: text,
       correctionHints: YANDEX_CORRECTION_HINTS
     });
   } catch (error) {
     const retryable = isRetryableYandexError(error);
-    console.error("YANDEX GPT REQUEST ERROR:", {
+    logger.error?.("YANDEX GPT REQUEST ERROR:", {
       attempt: 1,
       maxAttempts: 1,
+      durationMs: Date.now() - startedAt,
+      sourceChars: String(text || "").length,
+      promptChars: systemPrompt.length + prompt.length,
       retryable,
       status: Number(error?.response?.status || 0) || null,
       code: String(error?.code || "") || null,
