@@ -37,7 +37,7 @@ function GuestHome({
   const showAuthForError = Boolean(error && error.toLowerCase().includes("войдите"));
 
   useEffect(() => {
-    if (!scrollTargetDocumentId) {
+    if (!scrollTargetDocumentId || uploading) {
       return undefined;
     }
 
@@ -56,7 +56,7 @@ function GuestHome({
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [documents, onScrollTargetHandled, scrollTargetDocumentId]);
+  }, [documents, onScrollTargetHandled, scrollTargetDocumentId, uploading]);
 
   return (
     <section className="guest-shell">

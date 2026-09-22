@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const appUrl = new URL("../src/pages/App.jsx", import.meta.url);
+const mainUrl = new URL("../src/main.jsx", import.meta.url);
 const experienceUrl = new URL("../src/components/GuestExperience.jsx", import.meta.url);
 const homeUrl = new URL("../src/components/GuestHome.jsx", import.meta.url);
 const uploadHookUrl = new URL("../src/hooks/useGuestUpload.js", import.meta.url);
@@ -26,7 +27,22 @@ test("scrolls to the exact uploaded guest document at every viewport width", asy
   ]);
 
   assert.match(uploadHookSource, /onUploadSuccess\?\.\(processedDocument\)/);
+  assert.match(homeSource, /if \(!scrollTargetDocumentId \|\| uploading\)/);
   assert.match(homeSource, /documentRefs\.current\.get\(String\(scrollTargetDocumentId\)\)/);
   assert.match(homeSource, /target\.scrollIntoView/);
+  assert.match(homeSource, /scrollTargetDocumentId, uploading/);
   assert.doesNotMatch(homeSource, /max-width:\s*700px/);
+});
+
+test("opens a guest document at the top with browser history", async () => {
+  const [mainSource, experienceSource] = await Promise.all([
+    readFile(mainUrl, "utf8"),
+    readFile(experienceUrl, "utf8")
+  ]);
+
+  assert.match(mainSource, /path="\/guest-documents\/:guestDocumentId"/);
+  assert.match(experienceSource, /useNavigate\(\)/);
+  assert.match(experienceSource, /navigate\(`\/guest-documents\/\$\{encodeURIComponent\(document\.id\)\}`\)/);
+  assert.match(experienceSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
+  assert.match(experienceSource, /navigate\(-1\)/);
 });

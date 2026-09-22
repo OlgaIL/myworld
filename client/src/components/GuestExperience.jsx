@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import DocumentPage from "./DocumentPage";
 import GuestHome from "./GuestHome";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
@@ -18,7 +19,9 @@ function GuestExperience({
   onOpenImage,
   onRequestImprovement
 }) {
-  const [activeDocumentId, setActiveDocumentId] = useState(null);
+  const navigate = useNavigate();
+  const { guestDocumentId } = useParams();
+  const activeDocumentId = guestDocumentId || null;
   const [scrollTargetDocumentId, setScrollTargetDocumentId] = useState(null);
   const [retryingDocument, setRetryingDocument] = useState(false);
   const [retryProcessingError, setRetryProcessingError] = useState("");
@@ -35,7 +38,6 @@ function GuestExperience({
   const limitMessage = "Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в кабинет.";
 
   const handleUploadStart = useCallback(() => {
-    setActiveDocumentId(null);
     setScrollTargetDocumentId(null);
   }, []);
 
@@ -43,6 +45,10 @@ function GuestExperience({
     if (document?.id) {
       setScrollTargetDocumentId(document.id);
     }
+  }, []);
+
+  const handleScrollTargetHandled = useCallback(() => {
+    setScrollTargetDocumentId(null);
   }, []);
 
   const {
@@ -68,12 +74,18 @@ function GuestExperience({
     resetCopied();
   }, [activeDocumentId, resetCopied]);
 
+  useEffect(() => {
+    if (activeDocumentId) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [activeDocumentId]);
+
   function openDocument(document) {
-    setActiveDocumentId(document.id);
+    navigate(`/guest-documents/${encodeURIComponent(document.id)}`);
   }
 
   function closeDocument() {
-    setActiveDocumentId(null);
+    navigate(-1);
   }
 
   function requestDocumentLogin(providerId) {
@@ -142,7 +154,7 @@ function GuestExperience({
           error={error}
           replacingDocumentId={replacingDocumentId}
           scrollTargetDocumentId={scrollTargetDocumentId}
-          onScrollTargetHandled={() => setScrollTargetDocumentId(null)}
+          onScrollTargetHandled={handleScrollTargetHandled}
           onUpload={openUpload}
           onOpenImage={onOpenImage}
           onOpenDocument={openDocument}

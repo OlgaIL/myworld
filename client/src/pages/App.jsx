@@ -425,7 +425,13 @@ function App() {
         </>
       )}
 
-      {activePhoto && <Modal src={activePhoto.startsWith("http") ? activePhoto : getPhotoUrl(activePhoto)} onClose={() => setActivePhoto(null)} />}
+      {activePhoto && (
+        <Modal
+          key={activePhoto}
+          src={activePhoto.startsWith("http") ? activePhoto : getPhotoUrl(activePhoto)}
+          onClose={() => setActivePhoto(null)}
+        />
+      )}
 
       {legalAgreementOpen && (
         <LegalAgreementModal

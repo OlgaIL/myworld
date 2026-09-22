@@ -63,6 +63,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             </AuthProvider>
           }
         />
+        <Route
+          path="/guest-documents/:guestDocumentId"
+          element={
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          }
+        />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
