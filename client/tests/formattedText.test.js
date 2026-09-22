@@ -4,6 +4,7 @@ import {
   buildManualFormattedContent,
   capitalizeFormattedLine,
   formatFormattedLine,
+  getFormattedList,
   normalizeFormattedTypography
 } from "../src/utils/formattedText.js";
 
@@ -85,6 +86,21 @@ test("builds an ordered list without duplicated numeric markers", () => {
         items: ["Первый шаг", "Второй шаг", "Третий шаг"],
         ordered: true
       }]
+    }
+  );
+});
+
+test("removes bare numeric markers from an explicitly ordered block", () => {
+  assert.deepEqual(
+    getFormattedList({
+      type: "list",
+      ordered: true,
+      items: ["1 Первый шаг", "2 Второй шаг"]
+    }),
+    {
+      ordered: true,
+      start: 1,
+      items: ["Первый шаг", "Второй шаг"]
     }
   );
 });

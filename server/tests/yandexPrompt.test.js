@@ -14,6 +14,8 @@ test("keeps correction examples but removes the expensive final comparison", () 
   assert.match(systemPrompt, /сразу добавь в corrections точную пару original/);
   assert.match(systemPrompt, /Не объединяй весь многострочный OCR-текст в одну строку/);
   assert.match(systemPrompt, /обязательным префиксом: H\|/);
+  assert.match(systemPrompt, /N\| для каждого пункта нумерованного списка/);
+  assert.match(systemPrompt, /Не смешивай N\| и L\|/);
   assert.match(systemPrompt, /короткие подписи полей.+сохраняй отдельными строками P\|/);
   assert.doesNotMatch(systemPrompt, /Ошибки и сокращения, которые явно присутствуют в самом исходнике/);
   assert.doesNotMatch(userPrompt, /Перед отправкой JSON обязательно сравни/);
@@ -34,6 +36,6 @@ test("defines the Yandex response structure outside the prompt", () => {
   assert.ok(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("corrections"));
   assert.match(
     YANDEX_RESPONSE_JSON_SCHEMA.properties.formattedText.description,
-    /Каждая строка начинается с H\|/
+    /N\| для нумерованного пункта/
   );
 });

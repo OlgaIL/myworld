@@ -327,7 +327,7 @@ function normalizeListBlock(block) {
     return null;
   }
 
-  const numberedItems = items.map((item) => item.match(/^(\d{1,3})[.)]\s+(.+)$/u));
+  const numberedItems = items.map((item) => item.match(/^(\d{1,3})(?:[.)]\s*|\s+)(.+)$/u));
   const hasSequentialMarkers = numberedItems.every(Boolean)
     && numberedItems.every((match, index) => (
       index === 0 || Number(match[1]) === Number(numberedItems[index - 1][1]) + 1
@@ -341,7 +341,7 @@ function normalizeListBlock(block) {
     type: "list",
     items: ordered
       ? items.map((item, index) => numberedItems[index]?.[2] || item)
-      : items,
+      : items.map((item) => item.replace(/^[-•]\s*/u, "")),
     ...(ordered ? { ordered: true } : {}),
     ...(ordered && start !== 1 ? { start } : {})
   };
@@ -388,7 +388,7 @@ export function compactFormattedTextToContent(value) {
       continue;
     }
 
-    const marker = line.match(/^([HPL])\|(.*)$/u);
+    const marker = line.match(/^([HPLN])\|(.*)$/u);
     if (!marker) {
       const continuation = normalizeFormattedBlockText(line);
       const previous = blocks.at(-1);
@@ -409,12 +409,17 @@ export function compactFormattedTextToContent(value) {
       continue;
     }
 
-    if (marker[1] === "L") {
+    if (marker[1] === "L" || marker[1] === "N") {
+      const ordered = marker[1] === "N";
       const previous = blocks.at(-1);
-      if (previous?.type === "list") {
+      if (previous?.type === "list" && Boolean(previous.ordered) === ordered) {
         previous.items.push(text);
       } else {
-        blocks.push({ type: "list", items: [text] });
+        blocks.push({
+          type: "list",
+          items: [text],
+          ...(ordered ? { ordered: true } : {})
+        });
       }
       continue;
     }

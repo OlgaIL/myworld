@@ -8,7 +8,7 @@ export function capitalizeFormattedLine(value) {
 
 export function getFormattedList(block) {
   const items = Array.isArray(block?.items) ? block.items.map((item) => String(item || "")) : [];
-  const numberedItems = items.map((item) => item.match(/^\s*(\d{1,3})[.)]\s+(.+)$/u));
+  const numberedItems = items.map((item) => item.match(/^\s*(\d{1,3})(?:[.)]\s*|\s+)(.+)$/u));
   const hasSequentialMarkers = items.length > 0
     && numberedItems.every(Boolean)
     && numberedItems.every((match, index) => (

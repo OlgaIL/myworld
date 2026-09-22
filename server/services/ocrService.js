@@ -2,6 +2,7 @@ import fs from "fs";
 import axios from "axios";
 
 import vision from '@google-cloud/vision';
+import { hasDetachedLeadingNumbers, repairDetachedLeadingNumbers } from "../utils/googleOcrLayout.js";
 
 const client = new vision.ImageAnnotatorClient();
 
@@ -37,7 +38,10 @@ async function recognizeGoogle(imagePath) {
       return '';
     }
 
-    const text = detections[0].description || '';
+    const detectedText = detections[0].description || '';
+    const text = hasDetachedLeadingNumbers(detectedText)
+      ? repairDetachedLeadingNumbers(detectedText, detections)
+      : detectedText;
 
     return text;
 

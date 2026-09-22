@@ -68,8 +68,8 @@ function Modal({ src, onClose }) {
 
   return (
     <div className="modal" onClick={onClose}>
-      <div className="modal__content" onClick={(event) => event.stopPropagation()}>
-        <div className="modal__toolbar" aria-label="Управление изображением">
+      <div className="modal__content">
+        <div className="modal__toolbar" aria-label="Управление изображением" onClick={(event) => event.stopPropagation()}>
           <button
             className="modal__tool"
             type="button"
@@ -108,6 +108,7 @@ function Modal({ src, onClose }) {
             src={src}
             className="modal__image"
             alt=""
+            onClick={(event) => event.stopPropagation()}
             onLoad={(event) => {
               setImageSize({
                 width: event.currentTarget.naturalWidth,

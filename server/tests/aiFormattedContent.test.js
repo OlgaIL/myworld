@@ -99,6 +99,37 @@ test("converts compact Yandex text markers into formatted blocks", () => {
   assert.equal(result.cleanText, "Заголовок\n\nАбзац");
 });
 
+test("keeps numbered and bulleted compact lists separate without duplicate numbers", () => {
+  const result = parseAIResponse(JSON.stringify({
+    formattedText: [
+      "N|1 Первый шаг",
+      "N|2 Второй шаг",
+      "N|3 Третий шаг",
+      "L|• Первый подпункт",
+      "L|• Второй подпункт"
+    ].join("\n"),
+    textQuality: "full_text"
+  }));
+
+  assert.deepEqual(result.formattedContent, {
+    blocks: [
+      {
+        type: "list",
+        ordered: true,
+        items: ["Первый шаг", "Второй шаг", "Третий шаг"]
+      },
+      {
+        type: "list",
+        items: ["Первый подпункт", "Второй подпункт"]
+      }
+    ]
+  });
+  assert.equal(
+    result.cleanText,
+    "1. Первый шаг\n2. Второй шаг\n3. Третий шаг\n\n- Первый подпункт\n- Второй подпункт"
+  );
+});
+
 test("separates paragraph blocks and joins wrapped list item lines", () => {
   const content = normalizeFormattedContent({
     blocks: [
