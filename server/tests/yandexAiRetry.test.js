@@ -107,12 +107,42 @@ test("sends a JSON schema and logs only safe request metrics", async () => {
   const result = await process(sourceText, { ...options, httpClient, logger });
 
   assert.equal(result.error, undefined);
-  assert.equal(requestBody.jsonSchema.schema.type, "object");
-  assert.ok(requestBody.jsonSchema.schema.required.includes("corrections"));
+  assert.equal(requestBody.json_schema.schema.type, "object");
+  assert.ok(requestBody.json_schema.schema.required.includes("corrections"));
   assert.equal(logEntries.length, 1);
   assert.equal(logEntries[0].details.sourceChars, sourceText.length);
   assert.equal(logEntries[0].details.inputTokens, 321);
   assert.equal(logEntries[0].details.completionTokens, 45);
   assert.equal(logEntries[0].details.status, "ALTERNATIVE_STATUS_FINAL");
   assert.doesNotMatch(JSON.stringify(logEntries), /Confidential OCR text/);
+});
+
+test("logs a safe Yandex validation message without OCR content", async () => {
+  const logEntries = [];
+  const httpClient = {
+    async post() {
+      const error = new Error("Request failed with status code 400");
+      error.code = "ERR_BAD_REQUEST";
+      error.response = {
+        status: 400,
+        data: { code: 3, message: "Invalid json_schema field" },
+        headers: { "x-request-id": "request-123" }
+      };
+      throw error;
+    }
+  };
+  const logger = {
+    info() {},
+    error(message, details) {
+      logEntries.push({ message, details });
+    }
+  };
+
+  const result = await process("Private OCR value", { ...options, httpClient, logger });
+
+  assert.equal(result.error, "Yandex GPT failed");
+  assert.equal(logEntries[0].details.serviceCode, "3");
+  assert.equal(logEntries[0].details.serviceMessage, "Invalid json_schema field");
+  assert.equal(logEntries[0].details.requestId, "request-123");
+  assert.doesNotMatch(JSON.stringify(logEntries), /Private OCR value/);
 });

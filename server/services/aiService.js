@@ -76,6 +76,18 @@ function toMetricNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function getYandexServiceError(error) {
+  const data = error?.response?.data;
+  const message = data?.message ?? data?.error?.message;
+  const code = data?.code ?? data?.error?.code;
+
+  return {
+    serviceCode: typeof code === "string" || typeof code === "number" ? String(code) : null,
+    serviceMessage: typeof message === "string" ? message.slice(0, 300) : null,
+    requestId: String(error?.response?.headers?.["x-request-id"] || "") || null
+  };
+}
+
 async function processYandex(text, {
   apiKey,
   folderId,
@@ -107,7 +119,7 @@ async function processYandex(text, {
           temperature: 0.2,
           maxTokens: 2000
         },
-        jsonSchema: {
+        json_schema: {
           schema: YANDEX_RESPONSE_JSON_SCHEMA
         },
         messages: [
@@ -151,6 +163,7 @@ async function processYandex(text, {
     });
   } catch (error) {
     const retryable = isRetryableYandexError(error);
+    const serviceError = getYandexServiceError(error);
     logger.error?.("YANDEX GPT REQUEST ERROR:", {
       attempt: 1,
       maxAttempts: 1,
@@ -160,7 +173,8 @@ async function processYandex(text, {
       retryable,
       status: Number(error?.response?.status || 0) || null,
       code: String(error?.code || "") || null,
-      message: String(error?.message || "Yandex GPT request failed").slice(0, 200)
+      message: String(error?.message || "Yandex GPT request failed").slice(0, 200),
+      ...serviceError
     });
 
     return errorResult("Yandex GPT failed", {
