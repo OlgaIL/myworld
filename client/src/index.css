@@ -4021,6 +4021,93 @@ button {
   color: #374151;
 }
 
+.document-page__copy-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.document-page__copy-guide {
+  position: absolute;
+  z-index: 2;
+  right: -4px;
+  bottom: calc(100% - 8px);
+  width: 178px;
+  color: #52606f;
+  font-family: "Segoe Print", "Comic Sans MS", cursive;
+  font-size: 13px;
+  line-height: 1.15;
+  text-align: right;
+  pointer-events: none;
+  transform: rotate(-2deg);
+}
+
+.document-page__copy-guide--below {
+  top: calc(100% - 8px);
+  bottom: auto;
+  height: 46px;
+}
+
+.document-page__copy-guide--below > span {
+  position: absolute;
+  top: 2px;
+  left: -52px;
+  width: 112px;
+  text-align: center;
+  white-space: pre-line;
+}
+
+.document-page__copy-guide--tail-label > span {
+  position: absolute;
+  top: -8px;
+  left: -36px;
+  width: 112px;
+  text-align: left;
+  white-space: pre-line;
+}
+
+.document-page__copy-guide--tail-label svg {
+  margin-top: 0;
+}
+
+.document-page__copy-guide > span {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  padding: 3px 6px;
+}
+
+.document-page__copy-guide > span::before {
+  position: absolute;
+  z-index: -1;
+  inset: -3px -7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 78%);
+  box-shadow: 0 0 13px 8px rgb(255 255 255 / 62%);
+  content: "";
+}
+
+.document-page__copy-guide svg {
+  display: block;
+  width: 150px;
+  height: 44px;
+  margin: -15px 0 0 auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.document-page__copy-guide--below svg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 34px;
+  margin: 0;
+}
+
 .document-page__copy:hover {
   background: #f5f7fb;
   border-color: #b8c1d1;
@@ -4034,6 +4121,18 @@ button {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+@media (max-width: 780px) {
+  .document-page__copy-guide {
+    right: -2px;
+    width: 154px;
+    font-size: 12px;
+  }
+
+  .document-page__copy-guide svg {
+    width: 132px;
+  }
 }
 
 .document-page__summary {

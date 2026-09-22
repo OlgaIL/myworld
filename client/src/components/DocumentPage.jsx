@@ -156,6 +156,8 @@ function DocumentPage({
             {info?.title && (
               <CopyButton
                 label="Скопировать название"
+                guideLabel={"Копировать\nзаголовок"}
+                guideAtTail
                 copied={Boolean(copiedMap?.title)}
                 onClick={() => onCopy("title", info.title)}
               />
@@ -167,6 +169,8 @@ function DocumentPage({
               <p className="document-page__summary">{info.summary}</p>
               <CopyButton
                 label="Скопировать краткое описание"
+                guideLabel={"Копировать\nописание"}
+                guidePlacement="below"
                 copied={Boolean(copiedMap?.summary)}
                 onClick={() => onCopy("summary", info.summary)}
               />

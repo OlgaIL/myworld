@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
+import {
+  COPY_GUIDE_USED_EVENT,
+  hasUsedCopyButton,
+  rememberCopyButtonUse
+} from "../utils/copyGuide";
 import AuthProviderButtons from "./AuthProviderButtons";
 
 function CopyIcon() {
@@ -19,17 +24,59 @@ function CheckIcon() {
   );
 }
 
-function CopyButton({ label, copied, onClick }) {
+function CopyButton({ label, guideLabel, guidePlacement = "above", guideAtTail = false, copied, onClick }) {
+  const [showGuide, setShowGuide] = useState(() => !hasUsedCopyButton());
+
+  useEffect(() => {
+    function hideGuide() {
+      setShowGuide(false);
+    }
+
+    window.addEventListener(COPY_GUIDE_USED_EVENT, hideGuide);
+    return () => window.removeEventListener(COPY_GUIDE_USED_EVENT, hideGuide);
+  }, []);
+
+  async function handleCopy() {
+    const copiedSuccessfully = await onClick?.();
+    if (copiedSuccessfully === true) {
+      rememberCopyButtonUse();
+      setShowGuide(false);
+    }
+  }
+
   return (
-    <button
-      className="document-page__copy"
-      type="button"
-      onClick={onClick}
-      title={copied ? "Скопировано" : label}
-      aria-label={copied ? "Скопировано" : label}
-    >
-      {copied ? <CheckIcon /> : <CopyIcon />}
-    </button>
+    <span className="document-page__copy-wrap">
+      {showGuide && (
+        <span
+          className={`document-page__copy-guide document-page__copy-guide--${guidePlacement} ${guideAtTail ? "document-page__copy-guide--tail-label" : ""}`}
+          aria-hidden="true"
+        >
+          <span>{guideLabel}</span>
+          <svg viewBox="0 0 150 44">
+            {guidePlacement === "below" ? (
+              <>
+                <path d="M8 28c68 8 117 1 125-24" />
+                <path d="m123 13 10-9 5 13" />
+              </>
+            ) : (
+              <>
+                <path d="M8 6c68-13 117-2 125 34" />
+                <path d="m123 31 10 9 5-13" />
+              </>
+            )}
+          </svg>
+        </span>
+      )}
+      <button
+        className="document-page__copy"
+        type="button"
+        onClick={handleCopy}
+        title={copied ? "Скопировано" : label}
+        aria-label={copied ? "Скопировано" : label}
+      >
+        {copied ? <CheckIcon /> : <CopyIcon />}
+      </button>
+    </span>
   );
 }
 
@@ -281,6 +328,7 @@ function DocumentTextVariants({
               <FormattedContent content={formattedContent} highlightedText={highlightedText} />
               <CopyButton
                 label="Скопировать оформленный текст"
+                guideLabel="Копировать текст целиком"
                 copied={Boolean(copiedMap?.["text-formatted"])}
                 onClick={() => onCopy("text-formatted", formattedText)}
               />
@@ -306,6 +354,7 @@ function DocumentTextVariants({
           {readableText && (
             <CopyButton
               label="Скопировать текст"
+              guideLabel="Копировать текст целиком"
               copied={Boolean(copiedMap?.[`text-${activeVariant.id}`])}
               onClick={() => onCopy(`text-${activeVariant.id}`, readableText)}
             />

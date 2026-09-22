@@ -9,7 +9,7 @@ export function useCopyFeedback() {
 
   const copyText = useCallback(async function copyText(key, text) {
     if (!text) {
-      return;
+      return false;
     }
 
     try {
@@ -18,9 +18,11 @@ export function useCopyFeedback() {
       setTimeout(() => {
         setCopiedMap((prev) => ({ ...prev, [key]: false }));
       }, 1500);
+      return true;
     } catch (error) {
       console.error("Copy failed:", error);
       alert("Не удалось скопировать текст");
+      return false;
     }
   }, []);
 
