@@ -80,7 +80,7 @@ test("sends a JSON schema and logs only safe request metrics", async () => {
               status: "ALTERNATIVE_STATUS_FINAL",
               message: {
                 text: JSON.stringify({
-                  formattedContent: { blocks: [{ type: "paragraph", text: "Ready text" }] },
+                  formattedText: "P|Ready text",
                   textQuality: "full_text",
                   corrections: []
                 })
@@ -108,11 +108,15 @@ test("sends a JSON schema and logs only safe request metrics", async () => {
 
   assert.equal(result.error, undefined);
   assert.equal(requestBody.json_schema.schema.type, "object");
+  assert.ok(requestBody.json_schema.schema.required.includes("formattedText"));
+  assert.equal(requestBody.json_schema.schema.required.includes("formattedContent"), false);
   assert.ok(requestBody.json_schema.schema.required.includes("corrections"));
   assert.equal(logEntries.length, 1);
   assert.equal(logEntries[0].details.sourceChars, sourceText.length);
   assert.equal(logEntries[0].details.inputTokens, 321);
   assert.equal(logEntries[0].details.completionTokens, 45);
+  assert.equal(logEntries[0].details.formattedBlockCount, 1);
+  assert.ok(logEntries[0].details.responseChars > 0);
   assert.equal(logEntries[0].details.status, "ALTERNATIVE_STATUS_FINAL");
   assert.doesNotMatch(JSON.stringify(logEntries), /Confidential OCR text/);
 });

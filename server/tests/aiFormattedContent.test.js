@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  compactFormattedTextToContent,
   formattedContentToText,
   normalizeFormattedContent,
   parseAIResponse
@@ -72,6 +73,30 @@ test("keeps compatibility with an older cleanText response", () => {
       { type: "paragraph", text: "Второй абзац" }
     ]
   });
+});
+
+test("converts compact Yandex text markers into formatted blocks", () => {
+  const content = compactFormattedTextToContent([
+    "H|Заголовок",
+    "P|Первый абзац",
+    "продолжение абзаца",
+    "L|Первый пункт",
+    "L|Второй пункт"
+  ].join("\n"));
+
+  assert.deepEqual(content, {
+    blocks: [
+      { type: "heading", text: "Заголовок" },
+      { type: "paragraph", text: "Первый абзац продолжение абзаца" },
+      { type: "list", items: ["Первый пункт", "Второй пункт"] }
+    ]
+  });
+
+  const result = parseAIResponse(JSON.stringify({
+    formattedText: "H|Заголовок\nP|Абзац",
+    textQuality: "full_text"
+  }));
+  assert.equal(result.cleanText, "Заголовок\n\nАбзац");
 });
 
 test("separates paragraph blocks and joins wrapped list item lines", () => {

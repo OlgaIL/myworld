@@ -12,6 +12,9 @@ test("keeps correction examples but removes the expensive final comparison", () 
 
   assert.match(systemPrompt, /"Евишня" в списке людей или рядом с именами может быть "Евгения"/);
   assert.match(systemPrompt, /сразу добавь в corrections точную пару original/);
+  assert.match(systemPrompt, /Не объединяй весь многострочный OCR-текст в одну строку/);
+  assert.match(systemPrompt, /обязательным префиксом: H\|/);
+  assert.match(systemPrompt, /короткие подписи полей.+сохраняй отдельными строками P\|/);
   assert.doesNotMatch(systemPrompt, /Ошибки и сокращения, которые явно присутствуют в самом исходнике/);
   assert.doesNotMatch(userPrompt, /Перед отправкой JSON обязательно сравни/);
   assert.match(userPrompt, /Ильина Евишня/);
@@ -26,10 +29,11 @@ test("defines the Yandex response structure outside the prompt", () => {
     YANDEX_RESPONSE_JSON_SCHEMA.properties.textQuality.enum,
     ["full_text", "fragment", "low_confidence", "no_meaningful_text"]
   );
-  assert.ok(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("formattedContent"));
+  assert.ok(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("formattedText"));
+  assert.equal(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("formattedContent"), false);
   assert.ok(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("corrections"));
-  assert.deepEqual(
-    YANDEX_RESPONSE_JSON_SCHEMA.properties.formattedContent.properties.blocks.items.required,
-    ["type", "text", "items"]
+  assert.match(
+    YANDEX_RESPONSE_JSON_SCHEMA.properties.formattedText.description,
+    /Каждая строка начинается с H\|/
   );
 });

@@ -92,7 +92,7 @@ async function processYandex(text, {
   apiKey,
   folderId,
   modelUri,
-  timeoutMs = 15000,
+  timeoutMs = 20000,
   httpClient = axios,
   logger = console
 }) {
@@ -145,10 +145,17 @@ async function processYandex(text, {
     const result = response.data?.result || {};
     const alternative = result.alternatives?.[0] || {};
     const usage = result.usage || {};
+    const rawText = alternative.message?.text || "";
+    const parsedResponse = parseAIResponse(rawText, {
+      sourceText: text,
+      correctionHints: YANDEX_CORRECTION_HINTS
+    });
     logger.info?.("YANDEX GPT REQUEST SUCCESS:", {
       durationMs: Date.now() - startedAt,
       sourceChars: String(text || "").length,
       promptChars: systemPrompt.length + prompt.length,
+      responseChars: rawText.length,
+      formattedBlockCount: parsedResponse.formattedContent?.blocks?.length || 0,
       inputTokens: toMetricNumber(usage.inputTextTokens ?? usage.input_text_tokens),
       completionTokens: toMetricNumber(usage.completionTokens ?? usage.completion_tokens),
       totalTokens: toMetricNumber(usage.totalTokens ?? usage.total_tokens),
@@ -156,11 +163,7 @@ async function processYandex(text, {
       modelVersion: String(result.modelVersion || result.model_version || "") || null
     });
 
-    const rawText = alternative.message?.text || "";
-    return parseAIResponse(rawText, {
-      sourceText: text,
-      correctionHints: YANDEX_CORRECTION_HINTS
-    });
+    return parsedResponse;
   } catch (error) {
     const retryable = isRetryableYandexError(error);
     const serviceError = getYandexServiceError(error);
@@ -376,6 +379,55 @@ export function normalizeFormattedContent(value, fallbackText = "") {
   return blocks.length > 0 ? { blocks } : buildFallbackFormattedContent(fallbackText);
 }
 
+export function compactFormattedTextToContent(value) {
+  const blocks = [];
+
+  for (const rawLine of String(value || "").split(/\r?\n/u)) {
+    const line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+
+    const marker = line.match(/^([HPL])\|(.*)$/u);
+    if (!marker) {
+      const continuation = normalizeFormattedBlockText(line);
+      const previous = blocks.at(-1);
+
+      if (!previous) {
+        blocks.push({ type: "paragraph", text: continuation });
+      } else if (previous.type === "list") {
+        const lastItemIndex = previous.items.length - 1;
+        previous.items[lastItemIndex] = `${previous.items[lastItemIndex]} ${continuation}`.trim();
+      } else {
+        previous.text = `${previous.text} ${continuation}`.trim();
+      }
+      continue;
+    }
+
+    const text = normalizeFormattedBlockText(marker[2]);
+    if (!text) {
+      continue;
+    }
+
+    if (marker[1] === "L") {
+      const previous = blocks.at(-1);
+      if (previous?.type === "list") {
+        previous.items.push(text);
+      } else {
+        blocks.push({ type: "list", items: [text] });
+      }
+      continue;
+    }
+
+    blocks.push({
+      type: marker[1] === "H" ? "heading" : "paragraph",
+      text
+    });
+  }
+
+  return { blocks };
+}
+
 export function formattedContentToText(content) {
   return (content?.blocks || []).map((block) => {
     if (block.type === "list") {
@@ -435,7 +487,11 @@ export function parseAIResponse(raw, { sourceText = "", correctionHints = [] } =
     const jsonString = raw.slice(jsonStart, jsonEnd + 1);
     const parsed = JSON.parse(jsonString);
     const resolvedSourceText = sourceText || parsed.ocrText || "";
-    const formattedContent = normalizeFormattedContent(parsed.formattedContent, parsed.cleanText);
+    const compactFormattedContent = compactFormattedTextToContent(parsed.formattedText);
+    const formattedContent = normalizeFormattedContent(
+      compactFormattedContent.blocks.length > 0 ? compactFormattedContent : parsed.formattedContent,
+      parsed.cleanText
+    );
     const cleanText = formattedContentToText(formattedContent);
     const textQuality = normalizeTextQuality(parsed.textQuality);
     const corrections = normalizeTextCorrections(
