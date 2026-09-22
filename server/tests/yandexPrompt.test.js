@@ -28,4 +28,8 @@ test("defines the Yandex response structure outside the prompt", () => {
   );
   assert.ok(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("formattedContent"));
   assert.ok(YANDEX_RESPONSE_JSON_SCHEMA.required.includes("corrections"));
+  assert.deepEqual(
+    YANDEX_RESPONSE_JSON_SCHEMA.properties.formattedContent.properties.blocks.items.required,
+    ["type", "text", "items"]
+  );
 });

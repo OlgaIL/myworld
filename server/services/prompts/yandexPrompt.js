@@ -48,7 +48,7 @@ export const YANDEX_RESPONSE_JSON_SCHEMA = Object.freeze({
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["type"],
+            required: ["type", "text", "items"],
             properties: {
               type: { type: "string", enum: ["heading", "paragraph", "list"] },
               text: { type: "string" },
@@ -100,6 +100,7 @@ export function buildYandexSystemPrompt() {
 Структура formattedContent:
 - Это полный восстановленный текст, а не пересказ.
 - Используй heading только для явного заголовка, paragraph для абзаца, list для настоящего списка или последовательности.
+- Для heading и paragraph заполняй text, а items возвращай пустым массивом. Для list заполняй items, а text возвращай пустой строкой.
 - Не объединяй независимые зоны и колонки. Технические маркеры зон в результат не включай.
 - В документах сохраняй шапку, реквизиты и существующие подписи полей. Не добавляй поясняющие названия полей, которых нет в OCR.
 - Формулы, числа, знаки и обозначения сохраняй максимально близко к OCR; не решай задачи и не заменяй формулы пересказом.
