@@ -15,7 +15,7 @@ export function getRotatedImageFit({
   const availableHeight = Number(frameHeight) || 0;
 
   if (width <= 0 || height <= 0 || availableWidth <= 0 || availableHeight <= 0) {
-    return { width, height, scale: 1 };
+    return { width: 0, height: 0, scale: 1 };
   }
 
   const sideways = normalizeRotation(rotation) % 180 === 90;
@@ -27,5 +27,9 @@ export function getRotatedImageFit({
     1
   );
 
-  return { width, height, scale };
+  return {
+    width: Math.max(1, Math.floor(width * scale)),
+    height: Math.max(1, Math.floor(height * scale)),
+    scale
+  };
 }

@@ -34,9 +34,16 @@ function Modal({ src, onClose }) {
     };
     updateFrameSize();
 
-    const observer = new ResizeObserver(updateFrameSize);
-    observer.observe(frame);
-    return () => observer.disconnect();
+    window.addEventListener("resize", updateFrameSize);
+    const observer = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(updateFrameSize);
+    observer?.observe(frame);
+
+    return () => {
+      window.removeEventListener("resize", updateFrameSize);
+      observer?.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -110,7 +117,9 @@ function Modal({ src, onClose }) {
             style={fit.width > 0 ? {
               width: `${fit.width}px`,
               height: `${fit.height}px`,
-              transform: `rotate(${normalizedRotation}deg) scale(${fit.scale})`
+              maxWidth: "none",
+              maxHeight: "none",
+              transform: `translate(-50%, -50%) rotate(${normalizedRotation}deg)`
             } : undefined}
           />
         </div>

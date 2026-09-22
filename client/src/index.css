@@ -4699,19 +4699,24 @@ button {
 }
 
 .modal__image-frame {
-  display: grid;
+  position: relative;
   min-width: 0;
   min-height: 0;
-  place-items: center;
   overflow: hidden;
 }
 
 .modal__image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: block;
-  max-width: none;
-  max-height: none;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   border-radius: 8px;
   transform-origin: center;
+  transform: translate(-50%, -50%);
   transition: transform 180ms ease;
 }
 
