@@ -16,8 +16,7 @@ import {
 import {
   buildYandexSystemPrompt,
   buildYandexUserPrompt,
-  YANDEX_CORRECTION_HINTS,
-  YANDEX_RESPONSE_JSON_SCHEMA
+  YANDEX_CORRECTION_HINTS
 } from "./prompts/yandexPrompt.js";
 import {
   GENERIC_RECOGNITION_NOTE,
@@ -118,9 +117,6 @@ async function processYandex(text, {
           stream: false,
           temperature: 0.2,
           maxTokens: 2000
-        },
-        json_schema: {
-          schema: YANDEX_RESPONSE_JSON_SCHEMA
         },
         messages: [
           {

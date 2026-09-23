@@ -66,7 +66,7 @@ test("passes the configured timeout to the Yandex request", async () => {
   assert.equal(result.cleanText, "Ready text");
 });
 
-test("sends a JSON schema and logs only safe request metrics", async () => {
+test("uses the detailed prompt without JSON schema and logs only safe request metrics", async () => {
   const sourceText = "Confidential OCR text";
   let requestBody = null;
   const logEntries = [];
@@ -80,7 +80,9 @@ test("sends a JSON schema and logs only safe request metrics", async () => {
               status: "ALTERNATIVE_STATUS_FINAL",
               message: {
                 text: JSON.stringify({
-                  formattedText: "P|Ready text",
+                  formattedContent: {
+                    blocks: [{ type: "paragraph", text: "Ready text", items: [] }]
+                  },
                   textQuality: "full_text",
                   corrections: []
                 })
@@ -107,10 +109,10 @@ test("sends a JSON schema and logs only safe request metrics", async () => {
   const result = await process(sourceText, { ...options, httpClient, logger });
 
   assert.equal(result.error, undefined);
-  assert.equal(requestBody.json_schema.schema.type, "object");
-  assert.ok(requestBody.json_schema.schema.required.includes("formattedText"));
-  assert.equal(requestBody.json_schema.schema.required.includes("formattedContent"), false);
-  assert.ok(requestBody.json_schema.schema.required.includes("corrections"));
+  assert.equal("json_schema" in requestBody, false);
+  assert.match(requestBody.messages[0].text, /Каждый самостоятельный абзац/);
+  assert.match(requestBody.messages[1].text, /"formattedContent"/);
+  assert.ok(requestBody.messages[1].text.includes(sourceText));
   assert.equal(logEntries.length, 1);
   assert.equal(logEntries[0].details.sourceChars, sourceText.length);
   assert.equal(logEntries[0].details.inputTokens, 321);
@@ -129,7 +131,7 @@ test("logs a safe Yandex validation message without OCR content", async () => {
       error.code = "ERR_BAD_REQUEST";
       error.response = {
         status: 400,
-        data: { code: 3, message: "Invalid json_schema field" },
+        data: { code: 3, message: "Invalid request" },
         headers: { "x-request-id": "request-123" }
       };
       throw error;
@@ -146,7 +148,7 @@ test("logs a safe Yandex validation message without OCR content", async () => {
 
   assert.equal(result.error, "Yandex GPT failed");
   assert.equal(logEntries[0].details.serviceCode, "3");
-  assert.equal(logEntries[0].details.serviceMessage, "Invalid json_schema field");
+  assert.equal(logEntries[0].details.serviceMessage, "Invalid request");
   assert.equal(logEntries[0].details.requestId, "request-123");
   assert.doesNotMatch(JSON.stringify(logEntries), /Private OCR value/);
 });
