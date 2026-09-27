@@ -10,8 +10,8 @@ const appUrl = new URL("../src/pages/App.jsx", import.meta.url);
 test("uses the approved guest result CTA copy without prohibited promises", async () => {
   const source = await readFile(componentUrl, "utf8");
 
-  assert.match(source, /Сохраните текст — откройте его на любом устройстве/);
-  assert.match(source, /Ещё 10 обработок после входа · карта не нужна/);
+  assert.match(source, /Сохранить в личный архив/);
+  assert.match(source, /10 обработок бесплатно · пакетная загрузка после входа · доступ с телефона и компьютера/);
   assert.match(source, /providers\.map\(\(provider\)/);
   assert.match(source, /source: "guest_result_cta"/);
   assert.match(source, /placement: "document_after_result"/);

@@ -49,14 +49,13 @@ function PhotoToTextLanding() {
       <section className="landing-hero">
         <div className="landing-hero__copy">
           <p className="landing-eyebrow">Фото в текст и личный архив записей</p>
-          <h1>Сохраняйте любые записи. Находите их за секунды.</h1>
+          <h1>Фото и записи — в личный цифровой архив</h1>
           <p className="landing-hero__text">
-            Word2you Записи превращает фото заметок, конспектов, документов и рецептов
-            в понятный текст с описанием, тегами и поиском.
+            Загрузите фото с телефона, получите текст и откройте его на компьютере.
           </p>
           <div className="landing-actions">
             <Link className="landing-button landing-button--primary" to="/">Попробовать бесплатно</Link>
-            <span>Можно загрузить первую запись без сложной настройки.</span>
+            <span>После входа можно загрузить сразу несколько фотографий.</span>
           </div>
         </div>
 
@@ -73,18 +72,15 @@ function PhotoToTextLanding() {
         </div>
       </section>
 
-      <section className="landing-proof" aria-label="Главные преимущества">
+      <section className="landing-proof landing-archive-flow" aria-label="Как запись попадает в личный архив">
         <div>
-          <strong>Не теряется</strong>
-          <span>запись хранится в архиве</span>
+          <strong>Сфотографируйте на телефоне</strong>
         </div>
         <div>
-          <strong>Ищется</strong>
-          <span>по словам и смыслу</span>
+          <strong>Сохраните текст и исходное фото в архиве</strong>
         </div>
         <div>
-          <strong>Под рукой</strong>
-          <span>на телефоне и компьютере</span>
+          <strong>Откройте и редактируйте на компьютере</strong>
         </div>
       </section>
 

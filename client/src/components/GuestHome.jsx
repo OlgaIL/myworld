@@ -62,16 +62,17 @@ function GuestHome({
     <section className="guest-shell">
       <div className="guest-hero">
         <header className="guest-hero__intro">
-          <h1 className="guest-hero__title">Переведите фото записи в текст</h1>
+          <h1 className="guest-hero__title">Фото записи — в текст и личный архив</h1>
           <p className="guest-hero__text">
-            Получите аккуратно оформленную запись и сохраните её в личном архиве — чтобы легко найти позже.
+            Загрузите фото с телефона, получите текст и после входа сохраните запись вместе
+            с исходным фото. Откройте и редактируйте её на компьютере.
           </p>
         </header>
 
         {uploadAllowed && (
           <UploadZone
             title="Перетащите сюда фото записи или выберите файл"
-            description="Мы распознаем текст, оформим результат и сохраним его в архиве"
+            description="Распознаем текст и оформим результат. После входа сохраните его в личном архиве"
             actionLabel="Выбрать фото"
             footnote={`До ${documentLimit} обработок без регистрации`}
             statusMessage={uploadMessage}
@@ -81,7 +82,7 @@ function GuestHome({
           />
         )}
         {uploadAllowed && (
-          <p className="guest-hero__signup-bonus">После регистрации — ещё 10 обработок бесплатно</p>
+          <p className="guest-hero__signup-bonus">После входа — ещё 10 обработок бесплатно и пакетная загрузка фотографий</p>
         )}
         {uploadAllowed && <LegalConsentText />}
 
@@ -130,7 +131,7 @@ function GuestHome({
             </section>
 
             <section className="guest-login-cta">
-              <p>Чтобы сохранить ваши записи и продолжить работу, войдите в аккаунт.</p>
+              <p>Войдите, чтобы сохранить текст и исходное фото в личном архиве и открыть их на компьютере.</p>
               <div className="guest-login-cta__actions">
                 <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
               </div>

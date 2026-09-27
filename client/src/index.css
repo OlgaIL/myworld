@@ -207,6 +207,34 @@ body {
   line-height: 1.55;
 }
 
+.landing-archive-flow {
+  align-items: stretch;
+}
+
+.landing-archive-flow div {
+  position: relative;
+  align-items: center;
+  min-height: 88px;
+  padding: 14px 18px;
+}
+
+.landing-archive-flow div:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -15px;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: #28745a;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.landing-archive-flow strong {
+  font-size: 17px;
+  line-height: 1.35;
+}
+
 .landing-section,
 .landing-split,
 .landing-video-band,
@@ -5907,6 +5935,14 @@ button {
   .landing-proof,
   .landing-steps {
     grid-template-columns: 1fr;
+  }
+
+  .landing-archive-flow div:not(:last-child)::after {
+    top: auto;
+    right: 50%;
+    bottom: -19px;
+    transform: translateX(50%);
+    content: "↓";
   }
 
   .cabinet-filter,

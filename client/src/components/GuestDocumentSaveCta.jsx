@@ -24,7 +24,7 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
   return (
     <section className="guest-document-save-cta" aria-label="Продолжить обработку фотографий">
       <div className="guest-document-save-cta__copy">
-        <h2>Сохраните текст — откройте его на любом устройстве</h2>
+        <h2>Сохранить в личный архив</h2>
         <p>Исходное фото, распознанный текст и улучшенная версия останутся в личном архиве. Запись можно открыть с телефона или компьютера после входа в тот же аккаунт</p>
       </div>
 
@@ -56,7 +56,7 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
         })}
       </div>
 
-      <p className="guest-document-save-cta__footnote">Ещё 10 обработок после входа · карта не нужна</p>
+      <p className="guest-document-save-cta__footnote">10 обработок бесплатно · пакетная загрузка после входа · доступ с телефона и компьютера</p>
     </section>
   );
 }
