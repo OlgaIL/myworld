@@ -9,6 +9,7 @@ const testId = crypto.randomUUID();
 let appServer;
 let baseUrl;
 let userId;
+let guestSessionId;
 
 before(async () => {
   const user = await query(
@@ -38,6 +39,40 @@ before(async () => {
   );
   userId = user.rows[0].id;
 
+  const photos = await query(
+    `
+      insert into photos (user_id, filename, storage_path, status)
+      values
+        ($1, 'processed.jpg', 'test/processed.jpg', 'processed'),
+        ($1, 'recognized.jpg', 'test/recognized.jpg', 'recognized'),
+        ($1, 'error.jpg', 'test/error.jpg', 'error'),
+        ($1, 'no-text.jpg', 'test/no-text.jpg', 'no_text'),
+        ($1, 'pending.jpg', 'test/pending.jpg', 'processing')
+      returning id, status
+    `,
+    [userId]
+  );
+  const processedPhotoId = photos.rows.find((photo) => photo.status === "processed").id;
+  const guestSession = await query(
+    "insert into guest_sessions (session_token) values ($1) returning id",
+    [`admin-analytics-${testId}`]
+  );
+  guestSessionId = guestSession.rows[0].id;
+  await query(
+    `
+      insert into guest_documents (
+        guest_session_id,
+        filename,
+        storage_path,
+        status,
+        expires_at,
+        claimed_photo_id
+      )
+      values ($1, 'guest.jpg', 'test/guest.jpg', 'claimed', now() + interval '1 day', $2)
+    `,
+    [guestSessionId, processedPhotoId]
+  );
+
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => {
@@ -55,6 +90,9 @@ before(async () => {
 after(async () => {
   if (appServer) {
     await new Promise((resolve, reject) => appServer.close((error) => (error ? reject(error) : resolve())));
+  }
+  if (guestSessionId) {
+    await query("delete from guest_sessions where id = $1", [guestSessionId]);
   }
   if (userId) {
     await query("delete from users where id = $1", [userId]);
@@ -83,6 +121,14 @@ test("maps compact and detailed user analytics without personal Metrika paramete
   assert.equal(listed.documentsCreatedTotal, 5);
   assert.equal(listed.documentsDeletedTotal, 5);
   assert.equal(listed.documentsHistoryComplete, true);
+  assert.equal(listed.documentsCount, 5);
+  assert.equal(listed.documentsProcessedCount, 1);
+  assert.equal(listed.documentsRecognizedCount, 1);
+  assert.equal(listed.documentsErrorCount, 1);
+  assert.equal(listed.documentsNoTextCount, 1);
+  assert.equal(listed.documentsPendingCount, 1);
+  assert.equal(listed.documentsTransferredFromGuest, 1);
+  assert.equal(detail.documentsRecognizedCount, 1);
   assert.equal(detail.acquisitionContext.utm_term, "phrase");
   assert.equal("email" in detail.acquisitionContext, false);
 });

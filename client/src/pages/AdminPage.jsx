@@ -53,7 +53,32 @@ function getCompactProcessingUsage(user) {
     return "безлимит";
   }
 
-  return `${Number(user.processingUsed || 0)}/${Number(user.processingQuota || 0)}`;
+  const processedTotal = Math.max(Number(user.recordsProcessedTotal || 0), 0);
+  const freeLimit = Math.max(Number(user.recordLimit || 0), 0);
+  const paidQuota = Math.max(Number(user.processingQuota || 0), 0);
+  const paidUsed = Math.min(Math.max(Number(user.processingUsed || 0), 0), paidQuota);
+  const parts = [];
+
+  if (freeLimit > 0) {
+    parts.push(`бесплатно ${Math.min(processedTotal, freeLimit)} из ${freeLimit}`);
+  }
+  if (paidQuota > 0) {
+    parts.push(`платный пакет ${paidUsed} из ${paidQuota}`);
+  }
+
+  return parts.join(" · ") || "лимит не задан";
+}
+
+function getDocumentStatusSummary(user) {
+  return [
+    `сейчас ${Number(user.documentsCount || 0)}`,
+    `полностью обработано ${Number(user.documentsProcessedCount || 0)}`,
+    `только OCR ${Number(user.documentsRecognizedCount || 0)}`,
+    `ошибки ${Number(user.documentsErrorCount || 0)}`,
+    `без текста ${Number(user.documentsNoTextCount || 0)}`,
+    `в работе ${Number(user.documentsPendingCount || 0)}`,
+    `из гостевого режима ${Number(user.documentsTransferredFromGuest || 0)}`
+  ].join(" · ");
 }
 
 function getWebvisorUrl() {
@@ -269,10 +294,10 @@ function AdminUsersList({
                   <span>Источник: {getAcquisitionSourceLabel(acquisition)}</span>
                   <span>Фраза: {acquisition.utm_term || "—"}</span>
                   <span>Устройство: {user.firstDeviceType || "—"}</span>
-                  <span>Обработки: {getCompactProcessingUsage(user)}</span>
-                  <span>
-                    Документы: сейчас {user.documentsCount} / создано {user.documentsCreatedTotal} / удалено {user.documentsDeletedTotal}
-                  </span>
+                  <span>Лимит: {getCompactProcessingUsage(user)}</span>
+                  <span>Списано обработок: {Number(user.recordsProcessedTotal || 0)}</span>
+                  <span>Документы: {getDocumentStatusSummary(user)}</span>
+                  <span>История: создано {user.documentsCreatedTotal} · удалено {user.documentsDeletedTotal}</span>
                 </span>
               </button>
               <div className="admin-user-row__actions">
@@ -435,8 +460,11 @@ function AdminUserDetails({ user, onSaved }) {
         <div className="admin-current-access__value">
           <div>
             <strong>
-              Сейчас {user.documentsCount} · создано {user.documentsCreatedTotal} · удалено {user.documentsDeletedTotal}
+              {getDocumentStatusSummary(user)}
             </strong>
+            <p className="admin-muted">
+              Создано {user.documentsCreatedTotal} · удалено {user.documentsDeletedTotal}
+            </p>
             {!user.documentsHistoryComplete && (
               <p className="admin-muted">Для старого аккаунта создания восстановлены по текущему архиву, прежние удаления неизвестны.</p>
             )}

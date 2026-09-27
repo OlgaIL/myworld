@@ -248,6 +248,18 @@ export async function listUsersForAdmin() {
         users.created_at,
         users.updated_at,
         count(photos.id)::int as documents_count,
+        count(photos.id) filter (where photos.status = 'processed')::int as documents_processed_count,
+        count(photos.id) filter (where photos.status = 'recognized')::int as documents_recognized_count,
+        count(photos.id) filter (where photos.status = 'error')::int as documents_error_count,
+        count(photos.id) filter (where photos.status = 'no_text')::int as documents_no_text_count,
+        count(photos.id) filter (where photos.status in ('uploaded', 'processing'))::int as documents_pending_count,
+        count(photos.id) filter (
+          where exists (
+            select 1
+            from guest_documents
+            where guest_documents.claimed_photo_id = photos.id
+          )
+        )::int as documents_transferred_from_guest,
         max(photos.created_at) as last_document_at
       from users
       left join photos on photos.user_id = users.id
@@ -293,6 +305,18 @@ export async function findUserForAdmin(userId) {
         users.created_at,
         users.updated_at,
         count(photos.id)::int as documents_count,
+        count(photos.id) filter (where photos.status = 'processed')::int as documents_processed_count,
+        count(photos.id) filter (where photos.status = 'recognized')::int as documents_recognized_count,
+        count(photos.id) filter (where photos.status = 'error')::int as documents_error_count,
+        count(photos.id) filter (where photos.status = 'no_text')::int as documents_no_text_count,
+        count(photos.id) filter (where photos.status in ('uploaded', 'processing'))::int as documents_pending_count,
+        count(photos.id) filter (
+          where exists (
+            select 1
+            from guest_documents
+            where guest_documents.claimed_photo_id = photos.id
+          )
+        )::int as documents_transferred_from_guest,
         max(photos.created_at) as last_document_at
       from users
       left join photos on photos.user_id = users.id

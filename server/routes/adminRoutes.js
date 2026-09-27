@@ -142,6 +142,12 @@ function mapAdminUser(user, { metrikaVisits = null } = {}) {
     acquisitionContext: user.acquisition_context || null,
     acquisitionCapturedAt: user.acquisition_captured_at || null,
     documentsCount: Number(user.documents_count || 0),
+    documentsProcessedCount: Number(user.documents_processed_count || 0),
+    documentsRecognizedCount: Number(user.documents_recognized_count || 0),
+    documentsErrorCount: Number(user.documents_error_count || 0),
+    documentsNoTextCount: Number(user.documents_no_text_count || 0),
+    documentsPendingCount: Number(user.documents_pending_count || 0),
+    documentsTransferredFromGuest: Number(user.documents_transferred_from_guest || 0),
     createdAt: user.created_at,
     updatedAt: user.updated_at,
     lastDocumentAt: user.last_document_at || null
