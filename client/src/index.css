@@ -4244,7 +4244,7 @@ button {
 }
 
 .document-page__formatted-content h3 {
-  margin: 18px 0 8px;
+  margin: 22px 0 16px;
   color: #111827;
   font-size: 17px;
 }
@@ -4254,12 +4254,12 @@ button {
 }
 
 .document-page__formatted-content p {
-  margin: 0 0 12px;
+  margin: 0 0 22px;
 }
 
 .document-page__formatted-content ul,
 .document-page__formatted-content ol {
-  margin: 0 0 14px;
+  margin: 0 0 22px;
   padding-left: 22px;
   color: #364152;
 }
@@ -4267,6 +4267,10 @@ button {
 .document-page__formatted-content li {
   margin-bottom: 5px;
   line-height: 1.5;
+}
+
+.document-page__formatted-content > :last-child {
+  margin-bottom: 0;
 }
 
 .document-page__format-login {
