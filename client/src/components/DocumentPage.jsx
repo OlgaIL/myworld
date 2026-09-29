@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
+import { AI_UNAVAILABLE_MESSAGE, getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import DocumentTextVariants, { CopyButton } from "./DocumentTextVariants";
@@ -177,7 +177,11 @@ function DocumentPage({
             </div>
           )}
 
-          {info?.notes && <p className="gallery__ai-note">{info.notes}</p>}
+          {(info?.notes || info?.status === "recognized") && (
+            <p className="gallery__ai-note">
+              {info?.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : info.notes}
+            </p>
+          )}
 
           {enrichmentPending && onRetryProcessing && (
             <section className="document-improvement document-processing-retry" aria-label="Повторная обработка">

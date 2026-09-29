@@ -1,5 +1,5 @@
 export const RECOGNIZED_STATUS = "recognized";
-export const AI_UNAVAILABLE_MESSAGE = "Описание и оформление временно недоступны. Попробуйте повторить обработку.";
+export const AI_UNAVAILABLE_MESSAGE = "Описание и оформление временно недоступны. Обработка не списана. Попробуйте повторить обработку.";
 
 export function buildRecognizedResult(text, error = "Yandex GPT failed") {
   return {

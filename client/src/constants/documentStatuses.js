@@ -1,3 +1,5 @@
+export const AI_UNAVAILABLE_MESSAGE = "Описание и оформление временно недоступны. Обработка не списана. Попробуйте повторить обработку.";
+
 export const GUEST_DOCUMENT_STATUS_META = {
   uploaded: {
     label: "Загружается",

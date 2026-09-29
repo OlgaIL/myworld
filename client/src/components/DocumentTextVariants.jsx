@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AI_UNAVAILABLE_MESSAGE } from "../constants/documentStatuses";
 import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
 import {
   COPY_GUIDE_USED_EVENT,
@@ -335,7 +336,7 @@ function DocumentTextVariants({
             </div>
           ) : enrichmentPending && isAuthenticated ? (
             <div className="document-page__format-login">
-              <p>Описание и оформление временно недоступны. Попробуйте повторить обработку.</p>
+              <p>{AI_UNAVAILABLE_MESSAGE}</p>
             </div>
           ) : (
             <div className="document-page__format-login">

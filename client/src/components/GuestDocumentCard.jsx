@@ -1,4 +1,4 @@
-import { getGuestDocumentStatusMeta } from "../constants/documentStatuses";
+import { AI_UNAVAILABLE_MESSAGE, getGuestDocumentStatusMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import { getGuestDocumentFileUrl } from "../services/api";
 import HourglassIcon from "./HourglassIcon";
@@ -87,7 +87,11 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
                 </div>
               )}
 
-              {document.notes && <p className="gallery__ai-note">{document.notes}</p>}
+              {(document.notes || document.status === "recognized") && (
+                <p className="gallery__ai-note">
+                  {document.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : document.notes}
+                </p>
+              )}
 
               {hasTags && (
                 <div className="gallery__tags">

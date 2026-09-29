@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { getPhotoStatusMeta } from "../constants/documentStatuses";
+import { AI_UNAVAILABLE_MESSAGE, getPhotoStatusMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import HourglassIcon from "./HourglassIcon";
 
@@ -175,7 +175,7 @@ function PhotoCard({
           {!isPendingUpload && info?.status === "recognized" && (
             <>
               <h4>{info.title || "Запись"}</h4>
-              <p>{info.notes || "Описание и оформление временно недоступны. Попробуйте повторить обработку."}</p>
+              <p>{AI_UNAVAILABLE_MESSAGE}</p>
             </>
           )}
 
