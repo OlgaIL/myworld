@@ -104,3 +104,30 @@ test("removes bare numeric markers from an explicitly ordered block", () => {
     }
   );
 });
+
+test("preserves quantities inside an explicitly ordered list", () => {
+  assert.deepEqual(
+    getFormattedList({
+      type: "list",
+      ordered: true,
+      items: [
+        "Грудки куриного филе отварить, порезать",
+        "2 средние луковицы пассеровать",
+        "2 морковки пожарить",
+        "700 г шампиньонов (очистить)",
+        "3 яйца"
+      ]
+    }),
+    {
+      ordered: true,
+      start: 1,
+      items: [
+        "Грудки куриного филе отварить, порезать",
+        "2 средние луковицы пассеровать",
+        "2 морковки пожарить",
+        "700 г шампиньонов (очистить)",
+        "3 яйца"
+      ]
+    }
+  );
+});

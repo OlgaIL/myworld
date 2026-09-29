@@ -21,7 +21,7 @@ export function getFormattedList(block) {
   return {
     ordered,
     start: block?.ordered === true ? explicitStart : inferredStart,
-    items: ordered
+    items: hasSequentialMarkers
       ? items.map((item, index) => numberedItems[index]?.[2] || item)
       : items
   };

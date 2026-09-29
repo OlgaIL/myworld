@@ -179,6 +179,20 @@ function DocumentPage({
 
           {info?.notes && <p className="gallery__ai-note">{info.notes}</p>}
 
+          {enrichmentPending && onRetryProcessing && (
+            <section className="document-improvement document-processing-retry" aria-label="Повторная обработка">
+              {retryProcessingError && <p className="document-improvement__error">{retryProcessingError}</p>}
+              <button
+                className="document-improvement__button"
+                type="button"
+                onClick={onRetryProcessing}
+                disabled={retryProcessing}
+              >
+                {retryProcessing ? "Повторяем обработку..." : "Повторить обработку"}
+              </button>
+            </section>
+          )}
+
           <DocumentTextVariants
             documentId={photo.name}
             info={info}
@@ -194,20 +208,6 @@ function DocumentPage({
             isAuthenticated={isAuthenticated}
             enrichmentPending={enrichmentPending}
           />
-
-          {enrichmentPending && onRetryProcessing && (
-            <section className="document-improvement document-processing-retry" aria-label="Повторная обработка">
-              {retryProcessingError && <p className="document-improvement__error">{retryProcessingError}</p>}
-              <button
-                className="document-improvement__button"
-                type="button"
-                onClick={onRetryProcessing}
-                disabled={retryProcessing}
-              >
-                {retryProcessing ? "Повторяем обработку..." : "Повторить обработку"}
-              </button>
-            </section>
-          )}
 
           {showImprovementSection && (
             <section className="document-improvement" aria-label="Улучшение распознавания">
