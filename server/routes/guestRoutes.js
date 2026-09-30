@@ -149,7 +149,7 @@ async function findReplaceableGuestDocument(req, guestSession) {
   return document;
 }
 
-async function enrichGuestDocumentWithAi({ text, timer }) {
+async function enrichGuestDocumentWithAi({ text, timer, trigger = "upload" }) {
   const pipeline = getProcessingPipelineForUser(null, { audience: "guest" });
   const serviceGuardError = getProcessingServiceGuardError(pipeline);
 
@@ -167,7 +167,7 @@ async function enrichGuestDocumentWithAi({ text, timer }) {
     textLength: text.trim().length
   });
 
-  const aiResult = await enrichWithPipeline(text, pipeline);
+  const aiResult = await enrichWithPipeline(text, pipeline, { trigger });
 
   timer.log("ai_finished", {
     pipeline: pipeline.pipeline,
@@ -348,7 +348,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
 
     await updateGuestDocumentStatus(guestDocument.id, "processing", null);
     const text = guestDocument.ocr_text || "";
-    const aiResult = await enrichGuestDocumentWithAi({ text, timer });
+    const aiResult = await enrichGuestDocumentWithAi({ text, timer, trigger: "retry" });
 
     if (aiResult.error) {
       await updateGuestDocumentProcessingResult(

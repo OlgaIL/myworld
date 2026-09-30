@@ -19,6 +19,7 @@ import {
 } from "../config/env.js";
 import { OPENAI_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
 import * as aiService from "./aiService.js";
+import { runMeasuredLlmAttempt } from "./llmAttemptMetricsService.js";
 import ocrService from "./ocrService.js";
 
 export const PROCESSING_PIPELINES = {
@@ -149,11 +150,16 @@ export function canProcessImageWithPipeline(pipeline) {
   return pipeline.pipeline === PROCESSING_PIPELINES.FAST && pipeline.aiProvider === "openai";
 }
 
-export async function processImageWithPipeline(imagePath, pipeline) {
-  return aiService.processImage(imagePath, {
-    provider: pipeline.aiProvider,
-    openAiApiKey: OPENAI_API_KEY,
-    model: OPENAI_MODEL
+export async function processImageWithPipeline(imagePath, pipeline, { trigger = "upload" } = {}) {
+  return runMeasuredLlmAttempt({
+    pipeline,
+    trigger,
+    inputKind: "image",
+    execute: () => aiService.processImage(imagePath, {
+      provider: pipeline.aiProvider,
+      openAiApiKey: OPENAI_API_KEY,
+      model: OPENAI_MODEL
+    })
   });
 }
 
@@ -167,15 +173,20 @@ export async function recognizeWithPipeline(imagePath, pipeline) {
   });
 }
 
-export async function enrichWithPipeline(text, pipeline) {
-  return aiService.process(text, {
-    provider: pipeline.aiProvider,
-    apiKey: YANDEX_API_KEY,
-    folderId: YANDEX_FOLDER_ID,
-    modelUri: YANDEX_GPT_MODEL_URI,
-    timeoutMs: YANDEX_AI_TIMEOUT_MS,
-    openAiApiKey: OPENAI_API_KEY,
-    model: OPENAI_MODEL
+export async function enrichWithPipeline(text, pipeline, { trigger = "upload" } = {}) {
+  return runMeasuredLlmAttempt({
+    pipeline,
+    trigger,
+    inputKind: "text",
+    execute: () => aiService.process(text, {
+      provider: pipeline.aiProvider,
+      apiKey: YANDEX_API_KEY,
+      folderId: YANDEX_FOLDER_ID,
+      modelUri: YANDEX_GPT_MODEL_URI,
+      timeoutMs: YANDEX_AI_TIMEOUT_MS,
+      openAiApiKey: OPENAI_API_KEY,
+      model: OPENAI_MODEL
+    })
   });
 }
 

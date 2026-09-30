@@ -307,7 +307,9 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
         provider: pipeline.aiProvider
       });
 
-      const aiResult = await processImageWithPipeline(imagePath, pipeline);
+      const aiResult = await processImageWithPipeline(imagePath, pipeline, {
+        trigger: retryStoredEnrichment ? "retry" : "upload"
+      });
 
       timer.log("image_ai_finished", {
         pipeline: pipeline.pipeline,
@@ -453,7 +455,9 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       textLength: text.trim().length
     });
 
-    const aiResult = await enrichWithPipeline(text, pipeline);
+    const aiResult = await enrichWithPipeline(text, pipeline, {
+      trigger: retryStoredEnrichment ? "retry" : "upload"
+    });
 
     timer.log("ai_finished", {
       pipeline: pipeline.pipeline,

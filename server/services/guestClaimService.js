@@ -105,7 +105,7 @@ export async function claimGuestDocumentForUser(req) {
       continue;
     }
 
-    const aiResult = await enrichWithPipeline(guestDocument.ocr_text || "", pipeline);
+    const aiResult = await enrichWithPipeline(guestDocument.ocr_text || "", pipeline, { trigger: "claim" });
 
     if (aiResult.error) {
       claimedPhotos.push(await updatePhotoProcessingResult(claimedPhoto.id, {

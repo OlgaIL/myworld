@@ -63,6 +63,12 @@ const YANDEX_RETRYABLE_ERROR_CODES = new Set([
   "ERR_NETWORK"
 ]);
 
+function isLlmTimeoutError(error) {
+  return error?.code === "ETIMEDOUT"
+    || (error?.code === "ECONNABORTED" && /timeout/i.test(String(error?.message || "")))
+    || error?.name === "APIConnectionTimeoutError";
+}
+
 export function isRetryableYandexError(error) {
   const status = Number(error?.response?.status || 0);
   return status === 429
@@ -178,6 +184,7 @@ async function processYandex(text, {
 
     return errorResult("Yandex GPT failed", {
       errorCode: "YANDEX_AI_UNAVAILABLE",
+      failureKind: isLlmTimeoutError(error) ? "timeout" : "error",
       retryable,
       attempts: 1
     });
@@ -224,7 +231,9 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
       console.error("OPENAI NETWORK ERROR:", error.message);
     }
 
-    return errorResult("OpenAI request failed");
+    return errorResult("OpenAI request failed", {
+      failureKind: isLlmTimeoutError(error) ? "timeout" : "error"
+    });
   }
 }
 
@@ -280,7 +289,9 @@ async function processOpenAIImage(imagePath, { openAiApiKey, model = "gpt-4o-min
       console.error("OPENAI IMAGE NETWORK ERROR:", error.message);
     }
 
-    return errorResult("OpenAI image request failed");
+    return errorResult("OpenAI image request failed", {
+      failureKind: isLlmTimeoutError(error) ? "timeout" : "error"
+    });
   }
 }
 
