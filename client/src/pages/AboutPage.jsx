@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
 
@@ -19,8 +20,48 @@ const audiences = [
   "студентам",
   "для личных заметок",
   "для документов и записей",
-  "для фото текстов на потом"
+  "для рецептов и бытовых записей"
 ];
+
+const archiveFlow = ["Фото на телефоне", "Распознанный текст", "Личный архив", "Работа на компьютере"];
+
+const seo = {
+  title: "О Word2you — личный архив записей с поиском",
+  description: "Узнайте, как Word2you помогает сохранять фото и тексты записей в личном архиве, находить их и работать с ними на телефоне и компьютере.",
+  canonical: "https://word2you.ru/about"
+};
+
+function useAboutSeo() {
+  useEffect(() => {
+    const previousTitle = document.title;
+    const description = document.head.querySelector('meta[name="description"]');
+    const previousDescription = description?.getAttribute("content");
+    const existingCanonical = document.head.querySelector('link[rel="canonical"]');
+    const canonical = existingCanonical || document.createElement("link");
+    const previousCanonical = canonical.getAttribute("href");
+
+    document.title = seo.title;
+    description?.setAttribute("content", seo.description);
+    if (!existingCanonical) {
+      canonical.setAttribute("rel", "canonical");
+      document.head.append(canonical);
+    }
+    canonical.setAttribute("href", seo.canonical);
+
+    return () => {
+      document.title = previousTitle;
+      if (previousDescription !== null && previousDescription !== undefined) {
+        description?.setAttribute("content", previousDescription);
+      }
+      if (existingCanonical) {
+        if (previousCanonical === null) canonical.removeAttribute("href");
+        else canonical.setAttribute("href", previousCanonical);
+      } else {
+        canonical.remove();
+      }
+    };
+  }, []);
+}
 
 function AboutLogo() {
   return (
@@ -31,6 +72,8 @@ function AboutLogo() {
 }
 
 function AboutPage() {
+  useAboutSeo();
+
   return (
     <main className="about-page">
       <header className="about-topbar">
@@ -51,7 +94,7 @@ function AboutPage() {
             <Link className="about-button about-button--primary" to="/">
               Попробовать бесплатно
             </Link>
-            <span>До 5 записей без регистрации.</span>
+            <span>5 обработок без регистрации.</span>
           </div>
         </div>
 
@@ -103,21 +146,59 @@ function AboutPage() {
       </section>
 
       <section className="about-notice">
-        <h2>Наш проект молодой и активно развивается.</h2>
-        <p>
-          Мы улучшаем распознавание текста, работу с рукописными записями и загрузку нескольких фото. Уже сейчас можно
-          сохранять фото текстов, получать краткое описание и быстро находить записи в архиве.
-        </p>
+        <div className="about-notice__copy">
+          <h2>Работайте с записями на любом устройстве</h2>
+          <p>
+            Сфотографируйте запись на телефоне, сохраните текст и откройте его на компьютере.
+            После входа можно загрузить сразу несколько фотографий. Исходные фото и готовые тексты
+            останутся в личном архиве.
+          </p>
+          <div className="about-archive-flow" aria-label="От фото на телефоне до работы на компьютере">
+            {archiveFlow.map((step, index) => (
+              <span key={step}>
+                {index > 0 && <span className="about-archive-flow__arrow" aria-hidden="true">→</span>}
+                {step}
+              </span>
+            ))}
+          </div>
+          <p className="about-notice__links">
+            Подробнее: <Link to="/photo-to-text">фото в текст</Link> и <Link to="/handwriting-to-text">рукописные записи</Link>.
+          </p>
+        </div>
+        <div className="about-notice__examples" aria-label="Пример: от фото записи к готовому тексту">
+          <figure>
+            <img
+              src="/handwriting-examples/marketplace-plan-photo.png"
+              alt="Фото рукописного плана выхода на маркетплейс в тетради"
+              loading="lazy"
+            />
+            <figcaption>Исходное фото</figcaption>
+          </figure>
+          <span className="about-notice__example-arrow" aria-hidden="true">→</span>
+          <figure>
+            <img
+              src="/handwriting-examples/marketplace-plan-result.png"
+              alt="Оформленный текст плана выхода на маркетплейс после распознавания в Word2you"
+              loading="lazy"
+            />
+            <figcaption>Готовый текст</figcaption>
+          </figure>
+        </div>
       </section>
 
       <section className="about-limits">
         <div>
           <span>Без регистрации</span>
-          <strong>до 5 записей</strong>
+          <strong>5 обработок</strong>
         </div>
         <div>
           <span>После входа в аккаунт</span>
-          <strong>до 10 обработок бесплатно</strong>
+          <strong>ещё 10 обработок</strong>
+        </div>
+        <div>
+          <span>После входа</span>
+          <strong>Пакетная загрузка и единый архив</strong>
+          <small>На телефоне и компьютере</small>
         </div>
       </section>
 
