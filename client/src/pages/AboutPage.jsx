@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
 
@@ -72,7 +72,20 @@ function AboutLogo() {
 }
 
 function AboutPage() {
+  const [lightbox, setLightbox] = useState(null);
+
   useAboutSeo();
+
+  useEffect(() => {
+    if (!lightbox) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setLightbox(null);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightbox]);
 
   return (
     <main className="about-page">
@@ -99,15 +112,19 @@ function AboutPage() {
         </div>
 
         <aside className="about-preview" aria-label="Пример записи">
-          <div className="about-preview__image" />
+          <img
+            className="about-preview__image"
+            src="/handwriting-examples/marketplace-plan-photo.png"
+            alt="Фрагмент рукописного конспекта"
+          />
           <div className="about-preview__body">
             <span>14 мая 2026 · ✓ Текст загружен</span>
-            <h2>Конспект по истории</h2>
+            <h2>Конспект</h2>
             <p>Краткое описание записи и основные мысли, которые потом легко найти в архиве.</p>
             <div className="about-preview__tags">
               <span>учеба</span>
               <span>конспект</span>
-              <span>история</span>
+              <span>план</span>
             </div>
           </div>
         </aside>
@@ -167,20 +184,42 @@ function AboutPage() {
         </div>
         <div className="about-notice__examples" aria-label="Пример: от фото записи к готовому тексту">
           <figure>
-            <img
-              src="/handwriting-examples/marketplace-plan-photo.png"
-              alt="Фото рукописного плана выхода на маркетплейс в тетради"
-              loading="lazy"
-            />
+            <button
+              type="button"
+              className="about-notice__image-button"
+              onClick={() => setLightbox({
+                src: "/handwriting-examples/marketplace-plan-photo.png",
+                alt: "Фото рукописного плана выхода на маркетплейс в тетради",
+                label: "Исходное фото"
+              })}
+              aria-label="Увеличить исходное фото"
+            >
+              <img
+                src="/handwriting-examples/marketplace-plan-photo.png"
+                alt="Фото рукописного плана выхода на маркетплейс в тетради"
+                loading="lazy"
+              />
+            </button>
             <figcaption>Исходное фото</figcaption>
           </figure>
           <span className="about-notice__example-arrow" aria-hidden="true">→</span>
           <figure>
-            <img
-              src="/handwriting-examples/marketplace-plan-result.png"
-              alt="Оформленный текст плана выхода на маркетплейс после распознавания в Word2you"
-              loading="lazy"
-            />
+            <button
+              type="button"
+              className="about-notice__image-button"
+              onClick={() => setLightbox({
+                src: "/handwriting-examples/marketplace-plan-result.png",
+                alt: "Оформленный текст плана выхода на маркетплейс после распознавания в Word2you",
+                label: "Готовый текст"
+              })}
+              aria-label="Увеличить готовый текст"
+            >
+              <img
+                src="/handwriting-examples/marketplace-plan-result.png"
+                alt="Оформленный текст плана выхода на маркетплейс после распознавания в Word2you"
+                loading="lazy"
+              />
+            </button>
             <figcaption>Готовый текст</figcaption>
           </figure>
         </div>
@@ -210,6 +249,29 @@ function AboutPage() {
       </section>
 
       <PageFooter />
+
+      {lightbox && (
+        <div
+          className="handwriting-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.label}
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            className="handwriting-lightbox__close"
+            aria-label="Закрыть увеличенное изображение"
+            onClick={() => setLightbox(null)}
+          >
+            ×
+          </button>
+          <div className="handwriting-lightbox__content" onClick={(event) => event.stopPropagation()}>
+            <img src={lightbox.src} alt={lightbox.alt} />
+            <p>{lightbox.label}</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

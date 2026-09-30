@@ -1923,10 +1923,11 @@ button {
 }
 
 .about-preview__image {
+  display: block;
+  width: 100%;
   height: 190px;
-  background:
-    linear-gradient(135deg, rgba(51, 51, 119, 0.16), rgba(37, 99, 235, 0.08)),
-    repeating-linear-gradient(0deg, #fff 0, #fff 23px, #edf1f7 24px);
+  object-fit: cover;
+  object-position: center 18%;
 }
 
 .about-preview__body {
@@ -2027,20 +2028,14 @@ button {
 }
 
 .about-notice {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
-  align-items: center;
-  gap: 28px;
   max-width: 1120px;
   margin: 0 auto 54px;
-  padding: 24px;
-  border: 1px solid #e4e8f0;
-  border-radius: 18px;
-  background: #f8fafc;
+  padding: 54px 0 0;
+  border-top: 1px solid #e4e7ec;
 }
 
 .about-notice__copy {
-  min-width: 0;
+  max-width: 900px;
 }
 
 .about-notice p {
@@ -2053,36 +2048,42 @@ button {
 
 .about-notice__examples {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.7fr) auto minmax(0, 1.35fr);
   align-items: center;
-  gap: 8px;
+  gap: 18px;
   min-width: 0;
+  margin-top: 32px;
 }
 
 .about-notice__examples figure {
   min-width: 0;
   margin: 0;
-  padding: 8px;
+}
+
+.about-notice__image-button {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  padding: 0;
   border: 1px solid #e4e8f0;
-  border-radius: 12px;
-  background: #fff;
+  border-radius: 8px;
+  background: #f2f4f7;
+  cursor: zoom-in;
+}
+
+.about-notice__image-button:focus-visible {
+  outline: 3px solid #333377;
+  outline-offset: 3px;
 }
 
 .about-notice__examples img {
   display: block;
   width: 100%;
-  height: 190px;
-  border-radius: 7px;
-  object-fit: cover;
-  object-position: top;
-}
-
-.about-notice__examples figure:last-child img {
-  object-fit: contain;
+  height: auto;
 }
 
 .about-notice__examples figcaption {
-  padding: 9px 2px 2px;
+  padding: 10px 0 0;
   color: #475467;
   font-size: 12px;
   text-align: center;
@@ -2119,23 +2120,27 @@ button {
   text-underline-offset: 3px;
 }
 
-@media (max-width: 900px) {
-  .about-notice {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 720px) {
   .about-notice__examples {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 16px;
+  }
+
+  .about-notice__image-button {
+    position: relative;
+    aspect-ratio: 742 / 551;
   }
 
   .about-notice__examples img {
-    height: 185px;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .about-notice__example-arrow {
+    justify-self: center;
     text-align: center;
     transform: rotate(90deg);
   }
@@ -6302,7 +6307,7 @@ button {
 
   .about-notice {
     margin-bottom: 38px;
-    padding: 20px;
+    padding-top: 38px;
   }
 
   .about-final {
