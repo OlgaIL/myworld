@@ -271,7 +271,7 @@ function getAuthProviderSettings() {
   ];
 }
 
-function getAdminSettings() {
+export function getAdminSettings() {
   return {
     auth: {
       providersFromEnv: AUTH_PROVIDERS,
@@ -311,8 +311,8 @@ function getAdminSettings() {
       },
       pipelines: {
         guest: getProcessingPipelineForUser(null, { audience: "guest" }),
-        free: getProcessingPipelineForUser(null, { audience: "free" }),
-        paid: getProcessingPipelineForUser(null, { audience: "paid" })
+        free: getProcessingPipelineForUser({}, { audience: "free" }),
+        paid: getProcessingPipelineForUser({}, { audience: "paid" })
       }
     },
     limits: {
