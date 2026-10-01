@@ -118,6 +118,10 @@ fi
 
 find "$BACKUP_DIR" -type f -name 'myworld-*' -mtime "+$RETENTION_DAYS" -delete
 
+if [[ -n "$S3_BUCKET" && -n "${BACKUP_HEARTBEAT_URL:-}" ]]; then
+  curl --fail --silent --show-error --max-time 10 "$BACKUP_HEARTBEAT_URL" >/dev/null
+fi
+
 echo "Backup complete:"
 echo "$db_backup"
 echo "$uploads_backup"

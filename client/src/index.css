@@ -5174,6 +5174,81 @@ button {
   background: #f8fafc;
 }
 
+.admin-llm-summary {
+  margin-bottom: 18px;
+  padding: 16px 0;
+  border-top: 1px solid #e4e8f0;
+  border-bottom: 1px solid #e4e8f0;
+}
+
+.admin-llm-summary__heading,
+.admin-llm-summary__metrics,
+.admin-presence {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.admin-llm-summary__heading {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.admin-llm-summary__heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.admin-llm-summary__heading label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475467;
+  font-size: 13px;
+}
+
+.admin-llm-summary__heading select {
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #d7dce5;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+}
+
+.admin-llm-summary__metrics strong,
+.admin-presence strong {
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-llm-summary__details {
+  margin-top: 12px;
+  color: #475467;
+  font-size: 12px;
+}
+
+.admin-llm-summary__details p {
+  margin: 4px 0;
+}
+
+.admin-presence {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.admin-presence__hint {
+  margin: 6px 0 16px;
+  font-size: 12px;
+}
+
+.admin-user-row__client-id {
+  color: #667085;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);

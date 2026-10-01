@@ -62,6 +62,8 @@ import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from 
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
 import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
+import { getLlmAttemptSummary, LLM_SUMMARY_HOURS } from "../services/llmAttemptSummaryService.js";
+import { countPaidActiveUsers, getPresenceSnapshot } from "../services/presenceService.js";
 import { isAuthProviderConfigured } from "../auth/providers.js";
 
 const router = Router();
@@ -374,6 +376,20 @@ router.get("/admin-api/users", requireAdmin, async (req, res) => {
   const users = await listUsersForAdmin();
   const metrikaVisits = await loadMetrikaVisitsForUsers(users);
   return res.json(users.map((user) => mapAdminUser(user, { metrikaVisits })));
+});
+
+router.get("/admin-api/presence", requireAdmin, async (req, res) => {
+  const snapshot = getPresenceSnapshot();
+  const paid = await countPaidActiveUsers(snapshot.userIds);
+  return res.json({ total: snapshot.total, authenticated: snapshot.authenticated, paid, windowSeconds: 120 });
+});
+
+router.get("/admin-api/llm-attempts", requireAdmin, async (req, res) => {
+  const hours = Number(req.query.hours || 24);
+  if (!LLM_SUMMARY_HOURS.has(hours)) {
+    return res.status(400).json({ error: "INVALID_PERIOD" });
+  }
+  return res.json(await getLlmAttemptSummary(hours));
 });
 
 router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {

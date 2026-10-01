@@ -20,6 +20,14 @@ export function getAdminUsers() {
   return axios.get(`${API_URL}/admin-api/users`).then((res) => res.data);
 }
 
+export function getAdminPresence() {
+  return axios.get(`${API_URL}/admin-api/presence`).then((res) => res.data);
+}
+
+export function getAdminLlmAttempts(hours = 24) {
+  return axios.get(`${API_URL}/admin-api/llm-attempts`, { params: { hours } }).then((res) => res.data);
+}
+
 export function getAdminAccessRequests() {
   return axios.get(`${API_URL}/admin-api/access-requests`).then((res) => res.data);
 }

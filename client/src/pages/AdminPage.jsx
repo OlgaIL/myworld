@@ -7,6 +7,8 @@ import {
   createAdminManualProcessingCredit,
   getAdminAccessRequests,
   getAdminImprovementRequests,
+  getAdminLlmAttempts,
+  getAdminPresence,
   getAdminProcessingCredits,
   getAdminSession,
   getAdminSettings,
@@ -21,6 +23,9 @@ import {
 import { getProcessingUsageText } from "../utils/processingAccessText";
 
 const METRIKA_COUNTER_ID = import.meta.env.VITE_YANDEX_METRIKA_ID || "109386353";
+const LLM_AUDIENCE_LABELS = { guest: "Гости", free: "Бесплатные", paid: "Платные" };
+const LLM_PROVIDER_LABELS = { yandex: "Яндекс", openai: "OpenAI" };
+const LLM_TRIGGER_LABELS = { upload: "загрузка", retry: "повтор", claim: "перенос" };
 
 function formatCompactDateTime(value) {
   if (!value) {
@@ -82,7 +87,7 @@ function getDocumentStatusSummary(user) {
 }
 
 function getWebvisorUrl() {
-  return `https://metrika.yandex.ru/visor?period=week&id=${encodeURIComponent(METRIKA_COUNTER_ID)}`;
+  return `https://metrika.yandex.ru/stat/visor?period=week&id=${encodeURIComponent(METRIKA_COUNTER_ID)}`;
 }
 
 function getMetrikaVisitsLabel(user) {
@@ -105,14 +110,6 @@ function getMetrikaVisitsDescription(user) {
   }
 
   return "Визиты: — · Метрика временно недоступна.";
-}
-
-function copyClientIdForWebvisor(clientId) {
-  if (!clientId || !navigator.clipboard?.writeText) {
-    return;
-  }
-
-  navigator.clipboard.writeText(clientId).catch(() => {});
 }
 
 function formatAccessDate(value) {
@@ -308,20 +305,15 @@ function AdminUsersList({
                 >
                   Улучшения: {improvementCount}
                 </button>
-                <a
-                  className={`admin-user-row__webvisor ${user.metrikaClientId ? "" : "admin-user-row__webvisor--disabled"}`}
-                  href={user.metrikaClientId ? getWebvisorUrl() : undefined}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-disabled={!user.metrikaClientId}
-                  title={user.metrikaClientId ? "ClientID будет скопирован" : "ClientID ещё не получен"}
-                  onClick={(event) => {
-                    if (!user.metrikaClientId) event.preventDefault();
-                    else copyClientIdForWebvisor(user.metrikaClientId);
-                  }}
-                >
-                  Вебвизор
-                </a>
+                <span className="admin-user-row__client-id">ClientID: {user.metrikaClientId || "—"}</span>
+                {user.metrikaClientId && (
+                  <>
+                    <AdminCopyButton label="Скопировать ClientID" value={user.metrikaClientId} />
+                    <a className="admin-user-row__webvisor" href={getWebvisorUrl()} target="_blank" rel="noreferrer">
+                      Вебвизор
+                    </a>
+                  </>
+                )}
                 {savedUserId === user.id && (
                   <span className="admin-user-row__saved">✓ изменения сохранены</span>
                 )}
@@ -532,20 +524,11 @@ function AdminUserDetails({ user, onSaved }) {
           </div>
           {user.metrikaClientId && <AdminCopyButton label="Скопировать ClientID" value={user.metrikaClientId} />}
         </div>
-        <a
-          className={`admin-button ${user.metrikaClientId ? "" : "admin-button--disabled"}`}
-          href={user.metrikaClientId ? getWebvisorUrl() : undefined}
-          target="_blank"
-          rel="noreferrer"
-          aria-disabled={!user.metrikaClientId}
-          title={user.metrikaClientId ? "ClientID будет скопирован" : "ClientID ещё не получен"}
-          onClick={(event) => {
-            if (!user.metrikaClientId) event.preventDefault();
-            else copyClientIdForWebvisor(user.metrikaClientId);
-          }}
-        >
-          Скопировать ClientID и открыть Вебвизор
-        </a>
+        {user.metrikaClientId && (
+          <a className="admin-button" href={getWebvisorUrl()} target="_blank" rel="noreferrer">
+            Открыть Вебвизор
+          </a>
+        )}
       </div>
 
       <form className="admin-access-form" onSubmit={handleSave}>
@@ -649,6 +632,10 @@ function AdminDashboard({ onLogout }) {
   const [improvementRequests, setImprovementRequests] = useState([]);
   const [improvementUserFilterId, setImprovementUserFilterId] = useState(null);
   const [settings, setSettings] = useState(null);
+  const [presence, setPresence] = useState(null);
+  const [llmHours, setLlmHours] = useState(24);
+  const [llmSummary, setLlmSummary] = useState(null);
+  const [llmSummaryError, setLlmSummaryError] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -720,6 +707,39 @@ function AdminDashboard({ onLogout }) {
       cancelled = true;
     };
   }, [selectedId]);
+
+  useEffect(() => {
+    if (activeTab !== "users") return undefined;
+    let active = true;
+    async function refreshPresence() {
+      try {
+        const result = await getAdminPresence();
+        if (active) setPresence(result);
+      } catch {
+        if (active) setPresence(null);
+      }
+    }
+    refreshPresence();
+    const interval = window.setInterval(refreshPresence, 30000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "overview") return undefined;
+    let active = true;
+    async function refreshLlmSummary() {
+      try {
+        const result = await getAdminLlmAttempts(llmHours);
+        if (active) { setLlmSummary(result); setLlmSummaryError(false); }
+      } catch {
+        if (active) { setLlmSummary(null); setLlmSummaryError(true); }
+      }
+    }
+    setLlmSummary(null);
+    refreshLlmSummary();
+    const interval = window.setInterval(refreshLlmSummary, 60000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [activeTab, llmHours]);
 
   const usersCount = users.length;
   const documentsCount = useMemo(() => users.reduce((sum, user) => sum + user.documentsCount, 0), [users]);
@@ -943,7 +963,45 @@ function AdminDashboard({ onLogout }) {
         <p className="admin-error">{error}</p>
       ) : (
         <>
-          {activeTab === "overview" && <AdminSettingsPanel settings={settings} />}
+          {activeTab === "overview" && (
+            <>
+              <section className="admin-llm-summary" aria-label="Работа LLM">
+                <div className="admin-llm-summary__heading">
+                  <h2>Работа LLM</h2>
+                  <label>Период
+                    <select value={llmHours} onChange={(event) => setLlmHours(Number(event.target.value))}>
+                      <option value={24}>24 часа</option>
+                      <option value={48}>48 часов</option>
+                      <option value={168}>7 дней</option>
+                      <option value={720}>30 дней</option>
+                    </select>
+                  </label>
+                </div>
+                {llmSummaryError ? <p className="admin-error">Статистика LLM временно недоступна.</p> :
+                  !llmSummary ? <p className="admin-muted">Загрузка...</p> : (
+                    <>
+                      <div className="admin-llm-summary__metrics">
+                        <span>Вызовы <strong>{llmSummary.totals.attempts}</strong></span>
+                        <span>Успешно <strong>{llmSummary.totals.successes}</strong></span>
+                        <span>Таймауты <strong>{llmSummary.totals.timeouts}</strong></span>
+                        <span>Другие ошибки <strong>{llmSummary.totals.otherErrors}</strong></span>
+                        <span>Успех <strong>{llmSummary.totals.successPercent === null ? "—" : `${llmSummary.totals.successPercent}%`}</strong></span>
+                      </div>
+                      {llmSummary.groups.length > 0 && (
+                        <div className="admin-llm-summary__details">
+                          {llmSummary.groups.map((group) => (
+                            <p key={`${group.audience}-${group.provider}-${group.trigger}`}>
+                              {LLM_AUDIENCE_LABELS[group.audience] || group.audience} · {LLM_PROVIDER_LABELS[group.provider] || group.provider} · {LLM_TRIGGER_LABELS[group.trigger] || group.trigger}: попыток {group.attempts}, успешно {group.successes}, таймаутов {group.timeouts}, других ошибок {group.otherErrors}, среднее {group.averageDurationMs} мс
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+              </section>
+              <AdminSettingsPanel settings={settings} />
+            </>
+          )}
 
           {activeTab === "requests" && (
             <AdminAccessRequests
@@ -976,18 +1034,26 @@ function AdminDashboard({ onLogout }) {
           )}
 
           {activeTab === "users" && (
-            <div className="admin-layout" ref={userDetailsRef}>
-              <AdminUsersList
-              users={users}
-              selectedUserId={selectedId}
-              savedUserId={savedUserId}
-              requestCountsByUser={requestCountsByUser}
-              improvementCountsByUser={improvementCountsByUser}
-              onSelectUser={handleSelectUser}
-              onShowImprovements={handleShowUserImprovements}
-            />
-              <AdminUserDetails user={selectedUser} onSaved={handleSaved} />
-            </div>
+            <>
+              <div className="admin-presence" aria-live="polite">
+                <span>Сейчас на сайте: <strong>{presence ? presence.total : "—"}</strong></span>
+                <span>авторизованных: <strong>{presence ? presence.authenticated : "—"}</strong></span>
+                <span>с оплатой и остатком: <strong>{presence ? presence.paid : "—"}</strong></span>
+              </div>
+              <p className="admin-muted admin-presence__hint">Активны за последние 2 минуты. Оплаченный статус — оценка по общей квоте.</p>
+              <div className="admin-layout" ref={userDetailsRef}>
+                <AdminUsersList
+                  users={users}
+                  selectedUserId={selectedId}
+                  savedUserId={savedUserId}
+                  requestCountsByUser={requestCountsByUser}
+                  improvementCountsByUser={improvementCountsByUser}
+                  onSelectUser={handleSelectUser}
+                  onShowImprovements={handleShowUserImprovements}
+                />
+                <AdminUserDetails user={selectedUser} onSaved={handleSaved} />
+              </div>
+            </>
           )}
         </>
       )}

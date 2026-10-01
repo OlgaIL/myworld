@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
+import PresenceTracker from "./components/PresenceTracker";
 import CookieNotice from "./components/CookieNotice";
 import App from "./pages/App";
 import AccountPage from "./pages/AccountPage";
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <AnalyticsTracker />
+      <PresenceTracker />
       <CookieNotice />
       <Routes>
         <Route path="/admin-control" element={<AdminPage />} />

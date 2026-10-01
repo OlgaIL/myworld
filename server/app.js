@@ -24,7 +24,9 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
 import processingHistoryRoutes from "./routes/processingHistoryRoutes.js";
 import clientDiagnosticsRoutes from "./routes/clientDiagnosticsRoutes.js";
+import presenceRoutes from "./routes/presenceRoutes.js";
 import improvementRequestRoutes from "./routes/improvementRequestRoutes.js";
+import { query } from "./db/index.js";
 import { buildCorsOptions } from "./middleware/corsOptions.js";
 import {
   buildNotFoundHtml,
@@ -76,9 +78,13 @@ function normalizePageUrl(req, res, next) {
 
 export function createApp({
   clientDistDirectory = clientDistDir,
-  getDatabaseStatus = () => EMPTY_DATABASE_STATUS
+  getDatabaseStatus = () => EMPTY_DATABASE_STATUS,
+  checkMonitorDatabase = () => query({ text: "select 1", query_timeout: 3000 })
 } = {}) {
   const app = express();
+  let monitorResult = null;
+  let monitorCheckedAt = 0;
+  let monitorPending = null;
 
   app.set("passport", passport);
 
@@ -125,7 +131,25 @@ export function createApp({
     });
   });
 
+  app.get("/api/monitor/health", async (req, res) => {
+    if (!monitorResult || Date.now() - monitorCheckedAt >= 10000) {
+      if (!monitorPending) {
+        monitorPending = Promise.resolve().then(checkMonitorDatabase)
+          .then(() => ({ status: "ok" }), () => ({ status: "unavailable" }))
+          .then((result) => {
+            monitorResult = result;
+            monitorCheckedAt = Date.now();
+            return result;
+          })
+          .finally(() => { monitorPending = null; });
+      }
+      await monitorPending;
+    }
+    return res.status(monitorResult.status === "ok" ? 200 : 503).json(monitorResult);
+  });
+
   app.use(authRoutes);
+  app.use(presenceRoutes);
   app.use(clientDiagnosticsRoutes);
   app.use(accessRequestRoutes);
   app.use(adminRoutes);
