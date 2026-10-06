@@ -2,6 +2,9 @@ import "./config/load-env.js";
 
 import { checkDatabaseConnection, isDatabaseConfigured } from "./db/index.js";
 import { createApp } from "./app.js";
+import { TELEGRAM_EVENTS_CHAT_ID } from "./config/env.js";
+import { TELEGRAM_BOT_TOKEN } from "./config/private-env.js";
+import { startTelegramNotificationWorker } from "./services/telegramNotificationsService.js";
 
 let databaseStatus = {
   configured: isDatabaseConfigured(),
@@ -39,5 +42,9 @@ async function initializeDatabaseStatus() {
 }
 
 await initializeDatabaseStatus();
+
+if (databaseStatus.connected) {
+  startTelegramNotificationWorker({ token: TELEGRAM_BOT_TOKEN, chatId: TELEGRAM_EVENTS_CHAT_ID });
+}
 
 app.listen(4000, () => console.log("Server running on http://localhost:4000"));

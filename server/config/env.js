@@ -36,6 +36,7 @@ export const SMTP_SECURE = process.env.SMTP_SECURE !== "false";
 export const SMTP_USER = process.env.SMTP_USER || "";
 export const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 export const IMPROVEMENT_NOTIFICATION_EMAIL = process.env.IMPROVEMENT_NOTIFICATION_EMAIL || SMTP_USER;
+export const TELEGRAM_EVENTS_CHAT_ID = process.env.TELEGRAM_EVENTS_CHAT_ID || "";
 
 export const OCR_PROVIDER = process.env.OCR_PROVIDER || "google";
 export const AI_PROVIDER = process.env.AI_PROVIDER || "openai";
