@@ -19,6 +19,7 @@ before(async () => {
     select column_name
     from information_schema.columns
     where table_name = 'photos'
+      and table_schema = current_schema()
       and column_name in ('formatted_content', 'formatted_at', 'has_table', 'has_formulas', 'has_recognition_errors', 'corrections')
   `);
   assert.equal(columns.rows.length, 6, "Run db:migrate before document content tests");

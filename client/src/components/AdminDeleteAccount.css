@@ -1,0 +1,14 @@
+.admin-account-delete { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+.admin-account-delete .admin-button--danger,
+.admin-delete-dialog .admin-button--danger { color: #a12727; border-color: #d69898; background: #fff5f5; }
+.admin-delete-dialog {
+  width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+  box-sizing: border-box; overflow-y: auto; border: 1px solid #d9dde5;
+  border-radius: 16px; padding: 24px; color: #263342; overflow-wrap: anywhere;
+}
+.admin-delete-dialog::backdrop { background: rgb(20 30 45 / 55%); }
+.admin-delete-dialog h2 { margin-top: 0; font-size: 22px; }
+.admin-delete-dialog p { line-height: 1.5; }
+.admin-delete-dialog__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.admin-delete-dialog__actions .admin-button { flex: 1 1 180px; }
+.admin-deletion-notice { padding: 16px; margin: 16px 0; border: 1px solid #bcd9c6; border-radius: 12px; background: #f2faf5; }

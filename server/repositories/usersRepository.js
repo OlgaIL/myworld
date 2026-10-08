@@ -258,6 +258,8 @@ export async function listUsersForAdmin() {
             select 1
             from guest_documents
             where guest_documents.claimed_photo_id = photos.id
+            union all
+            select 1 from guest_document_claims where guest_document_claims.photo_id = photos.id
           )
         )::int as documents_transferred_from_guest,
         max(photos.created_at) as last_document_at
@@ -315,6 +317,8 @@ export async function findUserForAdmin(userId) {
             select 1
             from guest_documents
             where guest_documents.claimed_photo_id = photos.id
+            union all
+            select 1 from guest_document_claims where guest_document_claims.photo_id = photos.id
           )
         )::int as documents_transferred_from_guest,
         max(photos.created_at) as last_document_at

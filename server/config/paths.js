@@ -14,3 +14,24 @@ if (!fs.existsSync(configuredUploadsDir)) {
 }
 
 export const uploadsDir = fs.realpathSync(configuredUploadsDir);
+
+function privateUploadDirectory(name) {
+  const directory = path.join(uploadsDir, name);
+  try {
+    const stat = fs.lstatSync(directory);
+    if (stat.isSymbolicLink() || !stat.isDirectory()) throw new Error(`Unsafe upload directory: ${name}`);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  return directory;
+}
+
+export const guestUploadsDir = privateUploadDirectory("guests");
+export const userUploadsDir = privateUploadDirectory("users");
+
+export function ensurePrivateUploadDirectories() {
+  for (const name of ["guests", "users"]) {
+    fs.mkdirSync(privateUploadDirectory(name), { recursive: true });
+    privateUploadDirectory(name);
+  }
+}

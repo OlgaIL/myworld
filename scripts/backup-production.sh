@@ -31,7 +31,7 @@ fi
 database_url="$(
   cd "$SERVER_DIR"
   DOTENV_CONFIG_PATH="$ENV_FILE" node --input-type=module -e \
-    "import 'dotenv/config'; process.stdout.write(process.env.DATABASE_URL || '')"
+    "import dotenv from 'dotenv'; dotenv.config({path: process.env.DOTENV_CONFIG_PATH, quiet: true}); process.stdout.write(process.env.DATABASE_URL || '')"
 )"
 
 if [[ -z "$database_url" ]]; then

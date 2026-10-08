@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS } from "../config/env.js";
-import { uploadsDir } from "../config/paths.js";
+import { guestUploadsDir } from "../config/paths.js";
 import {
   createGuestDocument,
   findGuestDocumentById,
@@ -32,8 +32,22 @@ import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingServiceGuardError } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
+import { findPhotoById, updatePhotoCorrectionState } from "../repositories/photosRepository.js";
+import { acquireAccountOperationLock } from "../services/accountOperationLocks.js";
+
+import { acquireGuestStorageLock } from "../services/guestStorageLocks.js";
+import { managedFile, removeManagedFile } from "../services/guestStorageFiles.js";
+import { registerGuestUpload } from "../services/guestFileIntentService.js";
+import { attachUploadIntent, cancelFileIntent } from "../repositories/guestFileIntentsRepository.js";
 
 const router = Router();
+
+function refreshGuestCookie(res, token, expiresAt = getGuestDocumentExpiryDate()) {
+  res.cookie(GUEST_SESSION_COOKIE_NAME, token, {
+    httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production",
+    maxAge: Math.max(new Date(expiresAt).getTime() - Date.now(), GUEST_DOCUMENT_TTL_HOURS * 3600000)
+  });
+}
 
 function getUploadAttemptId(req) {
   const headerValue = String(req.get("X-Upload-Attempt-ID") || "").trim();
@@ -77,13 +91,61 @@ function hasGuestSessionCookie(req) {
 }
 
 const storage = multer.diskStorage({
-  destination: uploadsDir,
+  destination: guestUploadsDir,
   filename: (req, file, cb) => {
-    const ext = file.originalname.split(".").pop();
-    const uniqueName = `${Date.now()}-guest.${ext}`;
-    cb(null, uniqueName);
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.mimetype];
+    const uniqueName = `${Date.now()}-${crypto.randomUUID()}-guest.${ext}`;
+    req.guestUploadPreparation = prepareGuestUpload(req, uniqueName);
+    req.guestUploadPreparation.then(() => cb(null, uniqueName), cb);
   }
 });
+
+// Multer's disk writer does not close its output on a disconnected request.
+// Keep our locks until that descriptor closes, including preparation failures.
+storage._handleFile = (req, file, cb) => {
+  let settle;
+  req.guestUploadWriteFinished = new Promise((resolve) => { settle = resolve; });
+  storage.getFilename(req, file, (error, filename) => {
+    if (error) { settle(); cb(error); return; }
+    const destination = path.join(guestUploadsDir, filename);
+    const output = fs.createWriteStream(destination, { flags: "wx" });
+    let failure;
+    const abort = (error) => {
+      failure = error instanceof Error ? error : Object.assign(new Error("UPLOAD_ABORTED"), { code: "UPLOAD_ABORTED" });
+      file.stream.unpipe(output);
+      output.destroy(failure);
+    };
+    req.once("aborted", abort);
+    file.stream.once("error", abort);
+    output.once("error", (error) => { failure = error; });
+    output.once("close", () => {
+      req.removeListener("aborted", abort);
+      file.stream.removeListener("error", abort);
+      settle();
+      cb(failure, failure ? undefined : { destination: guestUploadsDir, filename, path: destination, size: output.bytesWritten });
+    });
+    if (req.aborted) abort(); else file.stream.pipe(output);
+  });
+};
+
+async function prepareGuestUpload(req, filename) {
+  // Multer cannot open the file until this callback returns. Register first,
+  // while holding the session lock, then keep it through streaming and OCR.
+  while (true) {
+    const session = await getOrCreateGuestSession(req, req.res);
+    const release = await acquireGuestStorageLock(session.id);
+    req.guestStorageRelease = release;
+    const current = await findGuestSessionByToken(session.session_token);
+    if (!current || current.converted_user_id) { await release(); req.guestStorageRelease = null; continue; }
+    req.guestUploadSession = current;
+    const guardError = getGuestUploadGuardError(current);
+    if (guardError) throw Object.assign(new Error(guardError), { code: guardError });
+    if (req.aborted) throw Object.assign(new Error("UPLOAD_ABORTED"), { code: "UPLOAD_ABORTED" });
+    req.guestFileIntent = await registerGuestUpload(current.id, filename);
+    if (req.aborted) throw Object.assign(new Error("UPLOAD_ABORTED"), { code: "UPLOAD_ABORTED" });
+    return;
+  }
+}
 
 const upload = multer({
   storage,
@@ -122,6 +184,7 @@ function hashValue(value) {
 }
 
 function buildGuestDocumentResponse(document) {
+  if (!document || isGuestDocumentExpired(document)) return null;
   return {
     ...mapGuestDocumentInfo(document),
     previewUrl: `/api/guest/documents/${document.id}/file`
@@ -186,7 +249,7 @@ async function enrichGuestDocumentWithAi({ text, timer, trigger = "upload" }) {
 }
 
 function buildGuestStateResponse({ guestSession = null, guestDocuments = [] } = {}) {
-  const documents = guestDocuments.map(buildGuestDocumentResponse);
+  const documents = guestDocuments.map(buildGuestDocumentResponse).filter(Boolean);
 
   return {
     document: documents[0] || null,
@@ -195,12 +258,22 @@ function buildGuestStateResponse({ guestSession = null, guestDocuments = [] } = 
   };
 }
 
-async function buildGuestStateForSession(guestSession) {
+const authenticatedUserId = (req) => req?.isAuthenticated?.() ? req.user?.id : null;
+
+async function canReadGuestDocument(req, document) {
+  if (document.status !== "claimed") return true;
+  const userId = authenticatedUserId(req);
+  if (!userId) return false;
+  const photo = await findPhotoById(document.claimed_photo_id);
+  return photo && String(photo.user_id) === String(userId);
+}
+
+async function buildGuestStateForSession(guestSession, req) {
   if (!guestSession) {
     return buildGuestStateResponse();
   }
 
-  const guestDocuments = await listGuestDocumentsBySessionId(guestSession.id);
+  const guestDocuments = await listGuestDocumentsBySessionId(guestSession.id, authenticatedUserId(req));
   return buildGuestStateResponse({ guestSession, guestDocuments });
 }
 
@@ -211,7 +284,8 @@ async function getOrCreateGuestSession(req, res) {
   if (existingToken) {
     const existingSession = await findGuestSessionByToken(existingToken);
 
-    if (existingSession) {
+    if (existingSession && !existingSession.converted_user_id) {
+      refreshGuestCookie(res, existingToken);
       const touchedSession = await touchGuestSession(existingSession.id);
       return touchedSession || existingSession;
     }
@@ -224,17 +298,13 @@ async function getOrCreateGuestSession(req, res) {
     userAgentHash: hashValue(req.get("user-agent"))
   });
 
-  res.cookie(GUEST_SESSION_COOKIE_NAME, sessionToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: GUEST_DOCUMENT_TTL_HOURS * 60 * 60 * 1000
-  });
+  refreshGuestCookie(res, sessionToken);
 
   return guestSession;
 }
 
 router.get("/api/guest/document", async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
   try {
     const cookies = parseCookies(req.headers.cookie);
     const sessionToken = cookies[GUEST_SESSION_COOKIE_NAME];
@@ -251,7 +321,7 @@ router.get("/api/guest/document", async (req, res) => {
 
     await touchGuestSession(guestSession.id);
 
-    return res.json(await buildGuestStateForSession(guestSession));
+    return res.json(await buildGuestStateForSession(guestSession, req));
   } catch (error) {
     console.error("Guest document fetch error:", error);
     return res.status(500).json({ error: "GUEST_DOCUMENT_FETCH_FAILED" });
@@ -279,12 +349,14 @@ router.get("/api/guest/documents/:id/file", async (req, res) => {
       !guestDocument ||
       guestDocument.guest_session_id !== guestSession.id ||
       isGuestDocumentExpired(guestDocument) ||
+      !await canReadGuestDocument(req, guestDocument) ||
       !fs.existsSync(guestDocument.storage_path)
     ) {
       return res.status(404).json({ error: "Guest document not found" });
     }
 
-    return res.sendFile(guestDocument.storage_path);
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.sendFile(await managedFile(guestDocument.storage_path, ["legacy", "guests", "users"]));
   } catch (error) {
     console.error("Guest document file error:", error);
     return res.status(500).json({ error: "GUEST_DOCUMENT_FILE_FAILED" });
@@ -292,23 +364,30 @@ router.get("/api/guest/documents/:id/file", async (req, res) => {
 });
 
 router.patch("/api/guest/documents/:id/corrections/:correctionId", async (req, res) => {
+  let releaseGuestLock, releaseAccount;
   try {
     if (typeof req.body?.applied !== "boolean") {
       return res.status(400).json({ error: "INVALID_CORRECTION_STATE" });
     }
 
     const cookies = parseCookies(req.headers.cookie);
+    if (authenticatedUserId(req)) {
+      releaseAccount = await acquireAccountOperationLock(authenticatedUserId(req));
+      if (!releaseAccount) return res.status(409).json({ error: "ACCOUNT_BUSY" });
+    }
     const guestSession = await findGuestSessionByToken(cookies[GUEST_SESSION_COOKIE_NAME]);
+    if (guestSession) releaseGuestLock = await acquireGuestStorageLock(guestSession.id);
     const document = await findGuestDocumentById(req.params.id);
 
     if (!guestSession || !document
       || document.guest_session_id !== guestSession.id
-      || isGuestDocumentExpired(document)) {
+      || isGuestDocumentExpired(document) || !await canReadGuestDocument(req, document)) {
       return res.status(404).json({ error: "Guest document not found" });
     }
 
-    const updatedDocument = await updateGuestDocumentCorrectionState(
-      document.id,
+    const updateCorrection = document.status === "claimed" ? updatePhotoCorrectionState : updateGuestDocumentCorrectionState;
+    const updatedDocument = await updateCorrection(
+      document.status === "claimed" ? document.claimed_photo_id : document.id,
       req.params.correctionId,
       req.body.applied
     );
@@ -317,24 +396,29 @@ router.patch("/api/guest/documents/:id/corrections/:correctionId", async (req, r
       return res.status(404).json({ error: "Correction not found" });
     }
 
-    return res.json(await buildGuestStateForSession(guestSession));
+    return res.json(await buildGuestStateForSession(guestSession, req));
   } catch (error) {
     console.error("Guest document correction update error:", error);
     return res.status(500).json({ error: "GUEST_DOCUMENT_CORRECTION_UPDATE_FAILED" });
+  } finally {
+    if (releaseGuestLock) await releaseGuestLock();
+    if (releaseAccount) await releaseAccount();
   }
 });
 
 router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
   const timer = createRequestTimer("guest-retry", { documentId: req.params.id });
 
+  let releaseGuestLock;
   try {
     const cookies = parseCookies(req.headers.cookie);
     const guestSession = await findGuestSessionByToken(cookies[GUEST_SESSION_COOKIE_NAME]);
+    if (guestSession) releaseGuestLock = await acquireGuestStorageLock(guestSession.id);
     const guestDocument = await findGuestDocumentById(req.params.id);
 
     if (!guestSession || !guestDocument
       || guestDocument.guest_session_id !== guestSession.id
-      || isGuestDocumentExpired(guestDocument)) {
+      || isGuestDocumentExpired(guestDocument) || !await canReadGuestDocument(req, guestDocument)) {
       return res.status(404).json({ error: "Guest document not found" });
     }
 
@@ -355,7 +439,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
         guestDocument.id,
         buildRecognizedResult(text, aiResult.error)
       );
-      return res.json(await buildGuestStateForSession(guestSession));
+      return res.json(await buildGuestStateForSession(guestSession, req));
     }
 
     const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
@@ -386,12 +470,12 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
       processedAt: new Date()
     });
 
-    return res.json(await buildGuestStateForSession(consumedSession));
+    return res.json(await buildGuestStateForSession(consumedSession, req));
   } catch (error) {
     timer.log("response_failed", { error: error.message });
     console.error("Guest retry error:", error);
     return res.status(500).json({ error: "GUEST_RETRY_FAILED" });
-  }
+  } finally { if (releaseGuestLock) await releaseGuestLock(); }
 });
 
 router.post("/api/guest/upload", (req, res) => {
@@ -445,6 +529,9 @@ router.post("/api/guest/upload", (req, res) => {
   timer.log("multipart_read_started");
 
   upload.single("photo")(req, res, async function (err) {
+    if (req.guestUploadPreparation) await req.guestUploadPreparation.catch(() => {});
+    let documentPersisted = false;
+    try {
     if (err) {
       timer.log("multer_error", {
         errorCode: String(err.code || "UPLOAD_ERROR").slice(0, 80),
@@ -456,6 +543,7 @@ router.post("/api/guest/upload", (req, res) => {
       });
 
       if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "FILE_TOO_LARGE" });
+      if (err.code === "GUEST_LIMIT_REACHED") return res.status(409).json({ error: err.code });
       if (err.message === "INVALID_FILE_TYPE") return res.status(400).json({ error: "INVALID_FILE_TYPE" });
       return res.status(500).json({ error: "UPLOAD_ERROR" });
     }
@@ -470,8 +558,7 @@ router.post("/api/guest/upload", (req, res) => {
       sizeBytes: req.file.size
     });
 
-    try {
-      const guestSession = await getOrCreateGuestSession(req, res);
+      const guestSession = req.guestUploadSession;
       timer.log("guest_session_ready", {
         documentsUsed: guestSession.documents_used,
         documentLimit: GUEST_DOCUMENT_LIMIT
@@ -480,7 +567,7 @@ router.post("/api/guest/upload", (req, res) => {
       const guardError = getGuestUploadGuardError(guestSession);
 
       if (guardError) {
-        const filePath = path.join(uploadsDir, req.file.filename);
+        const filePath = path.join(guestUploadsDir, req.file.filename);
 
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
@@ -494,7 +581,7 @@ router.post("/api/guest/upload", (req, res) => {
       }
 
       const replacementDocument = await findReplaceableGuestDocument(req, guestSession);
-      const newStoragePath = path.join(uploadsDir, req.file.filename);
+      const newStoragePath = path.join(guestUploadsDir, req.file.filename);
       const pipeline = getProcessingPipelineForUser(null, { audience: "guest" });
       const guestDocument = replacementDocument
         ? await replaceGuestDocumentUpload(replacementDocument.id, {
@@ -503,8 +590,7 @@ router.post("/api/guest/upload", (req, res) => {
           mimeType: req.file.mimetype,
           sizeBytes: req.file.size,
           status: "processing",
-          ocrProvider: pipeline.ocrProvider,
-          expiresAt: getGuestDocumentExpiryDate()
+          ocrProvider: pipeline.ocrProvider
         })
         : await createGuestDocument({
           guestSessionId: guestSession.id,
@@ -514,15 +600,21 @@ router.post("/api/guest/upload", (req, res) => {
           sizeBytes: req.file.size,
           status: "processing",
           ocrProvider: pipeline.ocrProvider,
-          expiresAt: getGuestDocumentExpiryDate()
+          createdAt: req.guestFileIntent.created_at,
+          expiresAt: req.guestFileIntent.expires_at
         });
+
+      documentPersisted = true;
+      await attachUploadIntent(req.guestFileIntent.id, guestDocument);
+      refreshGuestCookie(res, guestSession.session_token, guestDocument.expires_at);
 
       if (
         replacementDocument?.storage_path &&
         replacementDocument.storage_path !== newStoragePath &&
+        path.dirname(replacementDocument.storage_path) === guestUploadsDir &&
         fs.existsSync(replacementDocument.storage_path)
       ) {
-        fs.unlinkSync(replacementDocument.storage_path);
+        await removeManagedFile(replacementDocument.storage_path);
       }
 
       timer.log("document_created", {
@@ -551,8 +643,8 @@ router.post("/api/guest/upload", (req, res) => {
           });
 
           return res.status(200).json({
-            ...(await buildGuestStateForSession(guestSession)),
-            document: {
+            ...(await buildGuestStateForSession(guestSession, req)),
+            document: isGuestDocumentExpired(updatedDocument) ? null : {
               ...buildGuestDocumentResponse(updatedDocument),
               error: aiResult.error
             }
@@ -573,13 +665,13 @@ router.post("/api/guest/upload", (req, res) => {
             textLength: text.trim().length
           });
 
-          return res.status(200).json(await buildGuestStateForSession(guestSession));
+          return res.status(200).json(await buildGuestStateForSession(guestSession, req));
         }
 
         const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
 
         if (!consumedSession) {
-          const filePath = path.join(uploadsDir, req.file.filename);
+          const filePath = path.join(guestUploadsDir, req.file.filename);
 
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
@@ -621,7 +713,7 @@ router.post("/api/guest/upload", (req, res) => {
           textLength: text.trim().length
         });
 
-        return res.status(200).json(await buildGuestStateForSession(consumedSession));
+        return res.status(200).json(await buildGuestStateForSession(consumedSession, req));
       }
 
       timer.log("ocr_started", {
@@ -648,8 +740,8 @@ router.post("/api/guest/upload", (req, res) => {
         });
 
         return res.status(200).json({
-          ...(await buildGuestStateForSession(guestSession)),
-          document: {
+          ...(await buildGuestStateForSession(guestSession, req)),
+          document: isGuestDocumentExpired(updatedDocument) ? null : {
             ...buildGuestDocumentResponse(updatedDocument),
             error: ocrResult.error
           }
@@ -670,7 +762,7 @@ router.post("/api/guest/upload", (req, res) => {
           textLength: text.trim().length
         });
 
-        return res.status(200).json(await buildGuestStateForSession(guestSession));
+        return res.status(200).json(await buildGuestStateForSession(guestSession, req));
       }
 
       const aiResult = await enrichGuestDocumentWithAi({
@@ -689,7 +781,7 @@ router.post("/api/guest/upload", (req, res) => {
           retryable: Boolean(aiResult.retryable),
           attempts: aiResult.attempts || 1
         });
-        return res.status(200).json(await buildGuestStateForSession(guestSession));
+        return res.status(200).json(await buildGuestStateForSession(guestSession, req));
       }
 
       const consumedSession = await consumeGuestDocumentSlot(guestSession.id, GUEST_DOCUMENT_LIMIT);
@@ -731,11 +823,11 @@ router.post("/api/guest/upload", (req, res) => {
         textLength: text.trim().length
       });
 
-      return res.status(200).json(await buildGuestStateForSession(consumedSession));
+      return res.status(200).json(await buildGuestStateForSession(consumedSession, req));
     } catch (error) {
-      const filePath = req.file ? path.join(uploadsDir, req.file.filename) : null;
+      const filePath = req.file ? path.join(guestUploadsDir, req.file.filename) : null;
 
-      if (filePath && fs.existsSync(filePath)) {
+      if (!documentPersisted && filePath && fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
 
@@ -744,6 +836,15 @@ router.post("/api/guest/upload", (req, res) => {
       });
       console.error("Guest upload error:", error);
       return res.status(500).json({ error: "GUEST_UPLOAD_FAILED" });
+    } finally {
+      try {
+        if (req.guestFileIntent && !documentPersisted) await cancelFileIntent(req.guestFileIntent.id);
+      } catch (error) { console.error("Guest upload intent cleanup:", { code: error.code || "INTENT_ERROR" }); }
+      finally {
+        if (req.guestUploadWriteFinished) await req.guestUploadWriteFinished;
+        if (req.guestFileIntent) await req.guestFileIntent.release();
+        if (req.guestStorageRelease) await req.guestStorageRelease();
+      }
     }
   });
 });

@@ -5,6 +5,7 @@ import { createApp } from "./app.js";
 import { TELEGRAM_EVENTS_CHAT_ID } from "./config/env.js";
 import { TELEGRAM_BOT_TOKEN } from "./config/private-env.js";
 import { startTelegramNotificationWorker } from "./services/telegramNotificationsService.js";
+import { startAccountDeletionCleanupWorker } from "./services/accountDeletionCleanupService.js";
 
 let databaseStatus = {
   configured: isDatabaseConfigured(),
@@ -44,6 +45,7 @@ async function initializeDatabaseStatus() {
 await initializeDatabaseStatus();
 
 if (databaseStatus.connected) {
+  startAccountDeletionCleanupWorker();
   startTelegramNotificationWorker({ token: TELEGRAM_BOT_TOKEN, chatId: TELEGRAM_EVENTS_CHAT_ID });
 }
 

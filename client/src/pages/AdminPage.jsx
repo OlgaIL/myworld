@@ -3,6 +3,7 @@ import AdminAccessRequests from "../components/AdminAccessRequests";
 import AdminImprovementRequests from "../components/AdminImprovementRequests";
 import AdminProcessingCredits from "../components/AdminProcessingCredits";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
+import AdminDeleteAccount, { AdminAccountDeletionNotice } from "../components/AdminDeleteAccount";
 import {
   createAdminManualProcessingCredit,
   getAdminAccessRequests,
@@ -327,7 +328,7 @@ function AdminUsersList({
   );
 }
 
-function AdminUserDetails({ user, onSaved }) {
+function AdminUserDetails({ user, onSaved, onDeleted }) {
   const [processingEnabled, setProcessingEnabled] = useState(false);
   const [processingQuota, setProcessingQuota] = useState(0);
   const [processingUsed, setProcessingUsed] = useState(0);
@@ -621,11 +622,14 @@ function AdminUserDetails({ user, onSaved }) {
           )}
         </div>
       </form>
+      <AdminDeleteAccount key={user.id} user={user} onDeleted={onDeleted} />
     </section>
   );
 }
 
 function AdminDashboard({ onLogout }) {
+  const [accountDeletion, setAccountDeletion] = useState(null);
+  const [deletionRefreshError, setDeletionRefreshError] = useState("");
   const [users, setUsers] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [processingCredits, setProcessingCredits] = useState([]);
@@ -804,6 +808,25 @@ function AdminDashboard({ onLogout }) {
     }, 3500);
   }
 
+  function handleDeleted(userId, result) {
+    setSelectedUserId(null);
+    setSelectedUser(null);
+    setSavedUserId(null);
+    setActiveTab("users");
+    setUsers((current) => current.filter((user) => String(user.id) !== String(userId)));
+    setAccessRequests((current) => current.filter((request) => String(request.userId) !== String(userId)));
+    setProcessingCredits((current) => current.filter((credit) => String(credit.userId) !== String(userId)));
+    setImprovementRequests((current) => current.filter((request) => String(request.userId) !== String(userId)));
+    setImprovementUserFilterId(null);
+    setAccountDeletion(result);
+    setDeletionRefreshError("");
+    Promise.all([getAdminUsers(), getAdminAccessRequests(), getAdminProcessingCredits(), getAdminImprovementRequests()])
+      .then(([loadedUsers, requests, credits, improvements]) => {
+        setUsers(loadedUsers); setAccessRequests(requests); setProcessingCredits(credits); setImprovementRequests(improvements);
+      }).catch(() => setDeletionRefreshError("Аккаунт удалён. Не удалось обновить список; обновите страницу."));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function handleSelectUser(userId) {
     setSavedUserId(null);
     setSelectedUserId(userId);
@@ -957,6 +980,8 @@ function AdminDashboard({ onLogout }) {
         </button>
       </section>
 
+      {accountDeletion && <AdminAccountDeletionNotice key={accountDeletion.jobId} deletion={accountDeletion} />}
+      {deletionRefreshError && <p className="admin-muted">{deletionRefreshError}</p>}
       {loading ? (
         <p className="admin-muted">Загрузка...</p>
       ) : error ? (
@@ -1051,7 +1076,7 @@ function AdminDashboard({ onLogout }) {
                   onSelectUser={handleSelectUser}
                   onShowImprovements={handleShowUserImprovements}
                 />
-                <AdminUserDetails user={selectedUser} onSaved={handleSaved} />
+                <AdminUserDetails user={selectedUser} onSaved={handleSaved} onDeleted={handleDeleted} />
               </div>
             </>
           )}

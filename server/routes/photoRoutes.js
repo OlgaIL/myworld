@@ -2,7 +2,8 @@ import { Router } from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { uploadsDir } from "../config/paths.js";
+import crypto from "node:crypto";
+import { userUploadsDir } from "../config/paths.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import {
   createPhoto,
@@ -25,14 +26,15 @@ import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
+import { withAccountOperation } from "../services/accountOperationLocks.js";
 
 const router = Router();
 
 const storage = multer.diskStorage({
-  destination: uploadsDir,
+  destination: userUploadsDir,
   filename: (req, file, cb) => {
     const ext = file.originalname.split(".").pop();
-    const uniqueName = `${Date.now()}.${ext}`;
+    const uniqueName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
     cb(null, uniqueName);
   }
 });
@@ -75,10 +77,10 @@ async function requireRecordUploadAccess(req, res, next) {
   }
 }
 
-router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, (req, res) => {
+router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, withAccountOperation(async (req, res) => {
   const timer = createRequestTimer("photo-upload");
 
-  upload.single("photo")(req, res, async function (err) {
+  const err = await new Promise((resolve) => upload.single("photo")(req, res, resolve));
     if (err) {
       timer.log("multer_error", {
         errorCode: err.code || err.message
@@ -106,7 +108,7 @@ router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, 
       await createPhoto({
         userId: req.user.id,
         filename: req.file.filename,
-        storagePath: path.join(uploadsDir, req.file.filename),
+        storagePath: path.join(userUploadsDir, req.file.filename),
         mimeType: req.file.mimetype,
         sizeBytes: req.file.size,
         status: "uploaded",
@@ -117,7 +119,7 @@ router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, 
       timer.log("photo_created");
       res.json({ id: req.file.filename, filename: req.file.filename });
     } catch (error) {
-      const filePath = path.join(uploadsDir, req.file.filename);
+      const filePath = path.join(userUploadsDir, req.file.filename);
 
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
@@ -129,8 +131,7 @@ router.post("/api/upload", requireAuthenticatedUser, requireRecordUploadAccess, 
       console.error("DB create photo error:", error);
       res.status(500).json({ error: "PHOTO_CREATE_FAILED" });
     }
-  });
-});
+}));
 
 router.get("/api/photos", requireAuthenticatedUser, async (req, res) => {
   try {
@@ -157,7 +158,7 @@ router.get("/api/photos/:name", requireAuthenticatedUser, async (req, res) => {
   }
 });
 
-router.delete("/api/photos/:name", requireAuthenticatedUser, async (req, res) => {
+router.delete("/api/photos/:name", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   try {
     const photo = await findPhotoByFilenameAndUser(req.params.name, req.user.id);
 
@@ -175,7 +176,7 @@ router.delete("/api/photos/:name", requireAuthenticatedUser, async (req, res) =>
     console.error("Delete photo error:", error);
     res.status(500).json({ error: "PHOTO_DELETE_FAILED" });
   }
-});
+}));
 
 router.get("/api/photos-metadata", requireAuthenticatedUser, async (req, res) => {
   try {
@@ -217,7 +218,7 @@ router.get("/api/photos/:id/info", requireAuthenticatedUser, async (req, res) =>
   }
 });
 
-router.patch("/api/photos/:id/corrections/:correctionId", requireAuthenticatedUser, async (req, res) => {
+router.patch("/api/photos/:id/corrections/:correctionId", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   try {
     if (typeof req.body?.applied !== "boolean") {
       return res.status(400).json({ error: "INVALID_CORRECTION_STATE" });
@@ -244,9 +245,9 @@ router.patch("/api/photos/:id/corrections/:correctionId", requireAuthenticatedUs
     console.error("Photo correction update error:", error);
     return res.status(500).json({ error: "PHOTO_CORRECTION_UPDATE_FAILED" });
   }
-});
+}));
 
-router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res) => {
+router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   const timer = createRequestTimer("photo-process");
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
 
@@ -552,6 +553,6 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, async (req, res
       error: errorMessage
     });
   }
-});
+}));
 
 export default router;

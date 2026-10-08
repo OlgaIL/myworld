@@ -102,16 +102,19 @@ photos_count="$(table_count photos)"
 guest_documents_count="$(table_count guest_documents)"
 payments_count="$(table_count payments)"
 credit_events_count="$(table_count processing_credit_events)"
-uploads_count="$(find "$restore_dir/uploads" -maxdepth 1 -type f | wc -l | tr -d ' ')"
+uploads_count="$(find "$restore_dir/uploads" -type f | wc -l | tr -d ' ')"
 
 missing_photo_files=0
-while IFS= read -r filename; do
-  [[ -z "$filename" ]] && continue
-  if [[ ! -f "$restore_dir/uploads/$filename" ]]; then
-    echo "Missing photo file: $filename" >> "$report"
+while IFS= read -r relative_path; do
+  [[ -z "$relative_path" ]] && continue
+  case "$relative_path" in
+    /*|../*|*/../*|*/..|*\\*) fail "Unsafe stored photo path in restore report" ;;
+  esac
+  if [[ ! -f "$restore_dir/uploads/$relative_path" ]]; then
+    echo "Missing photo file: $relative_path" >> "$report"
     missing_photo_files=$((missing_photo_files + 1))
   fi
-done < <(psql "$restore_database_url" -X -A -t -v ON_ERROR_STOP=1 -c "select filename from photos order by id")
+done < <(psql "$restore_database_url" -X -A -t -v ON_ERROR_STOP=1 -c "select regexp_replace(replace(storage_path, chr(92), '/'), '^.*[/]uploads[/]', '') from photos order by id")
 
 {
   echo "backup_stamp=$BACKUP_STAMP"

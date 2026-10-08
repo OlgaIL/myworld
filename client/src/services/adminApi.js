@@ -68,6 +68,22 @@ export function getAdminUser(id) {
   return axios.get(`${API_URL}/admin-api/users/${id}`).then((res) => res.data);
 }
 
+export function deleteAdminAccount(id, confirmationId, csrfToken) {
+  return axios.delete(`${API_URL}/admin-api/users/${encodeURIComponent(id)}`, {
+    data: { confirmationId }, headers: { "X-Admin-Deletion-CSRF": csrfToken }
+  }).then((res) => res.data);
+}
+
+export function getAdminAccountDeletion(jobId) {
+  return axios.get(`${API_URL}/admin-api/account-deletions/${encodeURIComponent(jobId)}`).then((res) => res.data);
+}
+
+export function retryAdminAccountDeletion(jobId, csrfToken) {
+  return axios.post(`${API_URL}/admin-api/account-deletions/${encodeURIComponent(jobId)}/retry`, {}, {
+    headers: { "X-Admin-Deletion-CSRF": csrfToken }
+  }).then((res) => res.data);
+}
+
 export function updateAdminUserProcessingAccess(id, access) {
   return axios.patch(`${API_URL}/admin-api/users/${id}/processing-access`, access).then((res) => res.data);
 }

@@ -239,8 +239,8 @@ async function updatePhotoProcessingResultWithExecutor(execute, id, updates) {
   return result.rows[0] || null;
 }
 
-export async function updatePhotoProcessingResult(id, updates) {
-  return updatePhotoProcessingResultWithExecutor(query, id, updates);
+export async function updatePhotoProcessingResult(id, updates, { client = null } = {}) {
+  return updatePhotoProcessingResultWithExecutor(client ? (text, params) => client.query(text, params) : query, id, updates);
 }
 
 export async function updatePhotoProcessingResultAndRecordSuccess({ id, userId, updates }) {

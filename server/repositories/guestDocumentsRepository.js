@@ -1,5 +1,6 @@
 import { query, withTransaction } from "../db/index.js";
 import { getEffectiveTextContent, getStoredTextCorrections } from "../utils/textCorrections.js";
+import { getGuestDocumentExpiryDate } from "../utils/guest.js";
 
 export async function createGuestDocument({
   guestSessionId,
@@ -9,7 +10,8 @@ export async function createGuestDocument({
   sizeBytes,
   status = "uploaded",
   ocrProvider = null,
-  expiresAt
+  expiresAt = null,
+  createdAt = new Date()
 }) {
   const result = await query(
     `
@@ -21,19 +23,20 @@ export async function createGuestDocument({
         size_bytes,
         status,
         ocr_provider,
-        expires_at
+        expires_at,
+        created_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       returning *
     `,
-    [guestSessionId, filename, storagePath, mimeType, sizeBytes, status, ocrProvider, expiresAt]
+    [guestSessionId, filename, storagePath, mimeType, sizeBytes, status, ocrProvider, expiresAt || getGuestDocumentExpiryDate(createdAt), createdAt]
   );
 
   return result.rows[0] || null;
 }
 
 export async function findGuestDocumentById(id) {
-  const result = await query("select * from guest_documents where id = $1", [id]);
+  const result = await query("select * from guest_documents_visible where id = $1 and expires_at > now()", [id]);
   return result.rows[0] || null;
 }
 
@@ -47,7 +50,7 @@ export async function findLatestGuestDocumentBySessionId(guestSessionId) {
         rir.status as improvement_request_status,
         rir.created_at as improvement_request_created_at,
         rir.updated_at as improvement_request_updated_at
-      from guest_documents gd
+      from guest_documents_visible gd
       left join photos p on p.id = gd.claimed_photo_id
       left join lateral (
         select id, status, created_at, updated_at
@@ -66,20 +69,21 @@ export async function findLatestGuestDocumentBySessionId(guestSessionId) {
   return result.rows[0] || null;
 }
 
-export async function listGuestDocumentsBySessionId(guestSessionId) {
+export async function listGuestDocumentsBySessionId(guestSessionId, userId = null) {
   const result = await query(
     `
       select
         gd.*,
         (p.id is not null) as claimed_photo_exists
-      from guest_documents gd
+      from guest_documents_visible gd
       left join photos p on p.id = gd.claimed_photo_id
       where gd.guest_session_id = $1
         and gd.expires_at > now()
         and not (gd.status = 'claimed' and p.id is null)
+        and (gd.status <> 'claimed' or p.user_id = $2)
       order by gd.created_at desc
     `,
-    [guestSessionId]
+    [guestSessionId, userId]
   );
 
   return result.rows;
@@ -141,10 +145,13 @@ export async function replaceGuestDocumentUpload(id, {
   mimeType,
   sizeBytes,
   status = "processing",
-  ocrProvider = null,
-  expiresAt
+  ocrProvider = null
 }) {
-  const result = await query(
+  return withTransaction(async (client) => {
+    const previous = (await client.query("select * from guest_documents where id = $1 for update", [id])).rows[0];
+    if (!previous) return null;
+    await client.query("insert into guest_storage_retirements (storage_path, guest_session_id) values ($1, $2) on conflict do nothing", [previous.storage_path, previous.guest_session_id]);
+    const result = await client.query(
     `
       update guest_documents
       set
@@ -173,15 +180,15 @@ export async function replaceGuestDocumentUpload(id, {
         text_quality = '',
         ai_notes = '',
         processed_at = null,
-        expires_at = $8,
         updated_at = now()
       where id = $1
       returning *
     `,
-    [id, filename, storagePath, mimeType, sizeBytes, status, ocrProvider, expiresAt]
+    [id, filename, storagePath, mimeType, sizeBytes, status, ocrProvider]
   );
 
-  return result.rows[0] || null;
+    return result.rows[0] || null;
+  });
 }
 
 export async function updateGuestDocumentProcessingResult(id, updates) {

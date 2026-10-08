@@ -101,6 +101,5 @@ export function getGuestUploadGuardError(session) {
 
 export function getGuestDocumentExpiryDate(fromDate = new Date()) {
   const expiresAt = new Date(fromDate);
-  expiresAt.setHours(expiresAt.getHours() + GUEST_DOCUMENT_TTL_HOURS);
-  return expiresAt;
+  return new Date(expiresAt.getTime() + GUEST_DOCUMENT_TTL_HOURS * 60 * 60 * 1000);
 }

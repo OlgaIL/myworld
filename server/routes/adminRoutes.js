@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { timingSafeEqual } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import fs from "fs";
 import path from "path";
 import {
   ADMIN_ENABLED,
   ADMIN_LOGIN,
   ADMIN_PASSWORD,
+  CLIENT_URL,
+  SERVER_URL,
   AUTH_PROVIDERS,
   GOOGLE_OCR_ENABLED,
   GUEST_DOCUMENT_LIMIT,
@@ -65,6 +67,9 @@ import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
 import { getLlmAttemptSummary, LLM_SUMMARY_HOURS } from "../services/llmAttemptSummaryService.js";
 import { countPaidActiveUsers, getPresenceSnapshot } from "../services/presenceService.js";
 import { isAuthProviderConfigured } from "../auth/providers.js";
+import { deleteAccount, getAccountDeletionEligibility } from "../services/accountDeletionService.js";
+import { cleanupAccountDeletion, getAccountDeletionJob } from "../services/accountDeletionCleanupService.js";
+import { AccountDeletionError, deletionMessages, validUserId } from "../services/accountDeletionPolicy.js";
 
 const router = Router();
 
@@ -93,6 +98,31 @@ function requireAdmin(req, res, next) {
   }
 
   return next();
+}
+
+function deletionCsrfToken(req) {
+  req.session.accountDeletionCsrf ||= randomBytes(32).toString("hex");
+  return req.session.accountDeletionCsrf;
+}
+
+function requireDeletionCsrf(req, res, next) {
+  const origin = req.get("origin");
+  const allowedOrigins = [CLIENT_URL, SERVER_URL].filter(Boolean).map((url) => {
+    try { return new URL(url).origin; } catch { return null; }
+  });
+  if ((origin && !allowedOrigins.includes(origin)) || req.get("sec-fetch-site") === "cross-site"
+    || !req.session.accountDeletionCsrf || !safeCompare(req.get("x-admin-deletion-csrf"), req.session.accountDeletionCsrf)) {
+    console.error("Account deletion:", { userId: req.params.id, outcome: "refused", code: "DELETION_CSRF" });
+    return res.status(403).json({ error: "DELETION_CSRF", message: deletionMessages.DELETION_CSRF });
+  }
+  return next();
+}
+
+function sendDeletionError(req, res, error) {
+  const known = error instanceof AccountDeletionError;
+  console.error("Account deletion:", { userId: req.params.id, outcome: "refused", code: known ? error.code : error.code || "ACCOUNT_DELETE_FAILED" });
+  return res.status(known ? error.status : 500).json({ error: known ? error.code : "ACCOUNT_DELETE_FAILED",
+    message: known ? error.message : deletionMessages.ACCOUNT_DELETE_FAILED });
 }
 
 function getUserAuthProviders(user) {
@@ -504,6 +534,7 @@ router.patch("/admin-api/access-requests/:id/status", requireAdmin, async (req, 
 });
 
 router.get("/admin-api/users/:id", requireAdmin, async (req, res) => {
+  if (!validUserId(req.params.id)) return sendDeletionError(req, res, new AccountDeletionError("INVALID_USER_ID", 400));
   const user = await findUserForAdmin(req.params.id);
 
   if (!user) {
@@ -511,7 +542,39 @@ router.get("/admin-api/users/:id", requireAdmin, async (req, res) => {
   }
 
   const metrikaVisits = await loadMetrikaVisitsForUsers([user]);
-  return res.json(mapAdminUser(user, { metrikaVisits }));
+  const deletion = await getAccountDeletionEligibility(req.params.id, req.user?.id);
+  res.set("Cache-Control", "private, no-store");
+  return res.json({ ...mapAdminUser(user, { metrikaVisits }), deletion: { ...deletion, csrfToken: deletionCsrfToken(req) } });
+});
+
+router.delete("/admin-api/users/:id", requireAdmin, requireDeletionCsrf, async (req, res) => {
+  let result;
+  try { result = await deleteAccount(req.params.id, req.body?.confirmationId, req.user?.id); }
+  catch (error) { return sendDeletionError(req, res, error); }
+  console.info("Account deletion:", { userId: req.params.id, outcome: "deleted", jobId: result.jobId });
+  // A cleanup failure must never turn a committed deletion into 'not deleted'.
+  let cleanup = { jobId: result.jobId, cleanupPending: true, hasErrors: true };
+  try { cleanup = await cleanupAccountDeletion(result.jobId); }
+  catch (error) { console.error("Account deletion cleanup:", { jobId: result.jobId, code: error.code || "CLEANUP_ERROR" }); }
+  return res.status(cleanup.cleanupPending ? 202 : 200).json({ ...result, ...cleanup });
+});
+
+router.get("/admin-api/account-deletions/:jobId", requireAdmin, async (req, res) => {
+  if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(req.params.jobId)) return res.status(400).json({ error: "INVALID_JOB_ID" });
+  const job = await getAccountDeletionJob(req.params.jobId);
+  res.set("Cache-Control", "private, no-store");
+  return job ? res.json(job) : res.status(404).json({ error: "JOB_NOT_FOUND" });
+});
+
+router.post("/admin-api/account-deletions/:jobId/retry", requireAdmin, requireDeletionCsrf, async (req, res) => {
+  if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(req.params.jobId)) return res.status(400).json({ error: "INVALID_JOB_ID" });
+  const job = await getAccountDeletionJob(req.params.jobId);
+  if (!job) return res.status(404).json({ error: "JOB_NOT_FOUND" });
+  try { return res.json(await cleanupAccountDeletion(req.params.jobId)); }
+  catch (error) {
+    console.error("Account cleanup retry:", { jobId: req.params.jobId, code: error.code || "CLEANUP_ERROR" });
+    return res.status(503).json({ error: "CLEANUP_RETRY_FAILED", message: "Очистка файлов пока не завершена. Повторите позже." });
+  }
 });
 
 router.patch("/admin-api/users/:id/processing-access", requireAdmin, async (req, res) => {

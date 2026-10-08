@@ -71,10 +71,15 @@ export const YANDEX_OCR_LANGUAGE_CODES = (process.env.YANDEX_OCR_LANGUAGE_CODES 
 export const YANDEX_OCR_MODEL = process.env.YANDEX_OCR_MODEL || "";
 export const GUEST_DOCUMENT_LIMIT = Number(process.env.GUEST_DOCUMENT_LIMIT || 5);
 export const USER_RECORD_LIMIT = Number(process.env.USER_RECORD_LIMIT || 100);
-export const GUEST_DOCUMENT_TTL_HOURS = Number(process.env.GUEST_DOCUMENT_TTL_HOURS || 24);
+const guestTtlHours = Number(process.env.GUEST_DOCUMENT_TTL_HOURS || 240);
+if (!Number.isFinite(guestTtlHours) || guestTtlHours <= 0) {
+  throw new Error("GUEST_DOCUMENT_TTL_HOURS must be a positive number");
+}
+export const GUEST_DOCUMENT_TTL_HOURS = guestTtlHours;
 export const ADMIN_ENABLED = process.env.ADMIN_ENABLED === "true";
 export const ADMIN_LOGIN = process.env.ADMIN_LOGIN || "";
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+export const ADMIN_PROTECTED_USER_IDS = process.env.ADMIN_PROTECTED_USER_IDS || "";
 export const YOOKASSA_ENABLED = process.env.YOOKASSA_ENABLED === "true";
 export const YOOKASSA_RETURN_URL = process.env.YOOKASSA_RETURN_URL || `${CLIENT_URL || ""}/account`;
 export const YOOKASSA_MOCK_SUCCESS = process.env.YOOKASSA_MOCK_SUCCESS === "true";

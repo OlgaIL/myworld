@@ -18,7 +18,7 @@ let userId;
 let photoId;
 
 before(async () => {
-  const table = await query("select to_regclass('public.recognition_improvement_requests') as table_name");
+  const table = await query("select to_regclass('recognition_improvement_requests') as table_name");
   assert.equal(
     table.rows[0].table_name,
     "recognition_improvement_requests",

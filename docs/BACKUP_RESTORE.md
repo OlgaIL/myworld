@@ -6,6 +6,8 @@
 
 - Базу PostgreSQL из переменной `DATABASE_URL` в `server/.env`.
 - Загруженные файлы из `/root/myworld/server/uploads`.
+- Вложенные `uploads/guests/` и `uploads/users/` входят в тот же tar-архив;
+  скрипт репетиции проверяет пути из `photos.storage_path`, включая обе папки.
 - Боевые `.env` и приватные ключи провайдеров храним отдельно и безопасно. В git их не добавляем.
 
 ## Ручной бекап
@@ -114,11 +116,23 @@ npm install --prefix client
 5. Получить `DATABASE_URL` из `.env`, не выводя его на экран:
 
 ```bash
-DATABASE_URL="$(cd /root/myworld/server && DOTENV_CONFIG_PATH=/root/myworld/server/.env node --input-type=module -e "import 'dotenv/config'; process.stdout.write(process.env.DATABASE_URL || '')")"
+DATABASE_URL="$(cd /root/myworld/server && DOTENV_CONFIG_PATH=/root/myworld/server/.env node --input-type=module -e "import dotenv from 'dotenv'; dotenv.config({path: process.env.DOTENV_CONFIG_PATH, quiet: true}); process.stdout.write(process.env.DATABASE_URL || '')")"
 export DATABASE_URL
 ```
 
 6. Восстановить базу:
+
+Для дампа ДО гостевого перехода новые таблицы отсутствуют в его TOC.
+При восстановлении поверх уже обновлённой БД, с остановленным backend,
+сначала убрать только дополнительные объекты гостевого хранения:
+
+```bash
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c 'drop view if exists guest_documents_visible; drop table if exists guest_file_intents; drop table if exists guest_document_claims; drop table if exists guest_storage_retirements;'
+```
+
+Этот шаг относится только к старому дампу без 033/035; для свежего снимка
+обычный `pg_restore --clean` восстанавливает и журнал. Защиту платежей 034
+вручную не отключать; совместное восстановление описано в runbook удаления.
 
 ```bash
 pg_restore --clean --if-exists --no-owner --no-acl --dbname "$DATABASE_URL" /root/myworld-backups/myworld-db-LATEST.dump
@@ -134,10 +148,29 @@ tar -xzf /root/myworld-backups/myworld-uploads-LATEST.tar.gz
 8. Запустить миграции:
 
 ```bash
+cd /root/myworld
 npm run db:migrate --prefix server
 ```
 
-9. Собрать клиент и перезапустить сервис:
+9. До открытия приложения пользователям выполнить переход структуры (для старой
+копии) и гостевую очистку. Backend должен оставаться остановленным:
+
+```bash
+cd /root/myworld/server
+node scripts/transitionGuestStorage.js --dry-run
+# После просмотра плана Ольгой:
+node scripts/transitionGuestStorage.js --apply
+node scripts/cleanupGuests.js --dry-run
+node scripts/cleanupGuests.js --apply
+```
+
+Если скрипт возвращает `errors > 0`, устранить причину и повторить до запуска.
+Срок считается от исходной загрузки, поэтому восстановленные просроченные
+гостевые данные и зарегистрированные незавершённые upload/copy/temp удаляются.
+Живой архив остаётся по ссылке `photos`. При текущем коде должны быть
+применены 033/034/035. Инструкция: `docs/GUEST_STORAGE.md`.
+
+10. Собрать клиент и перезапустить сервис:
 
 ```bash
 npm run build --prefix client
@@ -146,7 +179,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-10. Проверить:
+11. Проверить:
 
 ```bash
 curl https://word2you.ru/api/health
@@ -159,6 +192,10 @@ curl https://word2you.ru/api/health
 - открытие существующей записи;
 - превью загруженного изображения;
 - тестовую загрузку.
+
+Удаление гостевых документов из приложения не удаляет их из уже созданных
+бэкапов. В старых локальных/S3-копиях они остаются до истечения действующего
+срока хранения соответствующих копий. Этот срок и настройки S3 не изменены.
 
 ## Безопасная репетиция восстановления
 
