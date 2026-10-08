@@ -417,6 +417,10 @@ function AdminUserDetails({ user, onSaved, onDeleted }) {
             {user.email && <AdminCopyButton label="Скопировать email" value={user.email} />}
           </div>
           <p>{user.displayName || "Без имени"}</p>
+          <div className="admin-user-details__title-row">
+            <span>ID аккаунта: {user.id}</span>
+            <AdminCopyButton label="Скопировать ID аккаунта" value={String(user.id)} />
+          </div>
           <div className="admin-auth-providers" aria-label="Способы входа">
             {user.authProviders?.length > 0 ? (
               user.authProviders.map((provider) => (
