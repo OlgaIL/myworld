@@ -9,7 +9,7 @@ import { durableCopy, managedFile, removeManagedFile } from "./guestStorageFiles
 // session locks additionally protect local concurrent guest work/tests.
 export async function transitionGuestStorage({ dryRun = true, copy = durableCopy, remove = removeManagedFile, log = console.log } = {}) {
   const releaseJob = await acquireGuestStorageLock("maintenance", { maintenance: true, tryOnly: true });
-  const counts = { planned: 0, changed: 0, retired: 0, orphanLegacy: 0, busy: 0, errors: 0, dryRun };
+  const counts = { planned: 0, changed: 0, retired: 0, orphanLegacy: 0, orphanClaims: 0, busy: 0, errors: 0, dryRun };
   if (!releaseJob) return { ...counts, busy: 1 };
   const relative = (file) => path.relative(uploadsDir, file).split(path.sep).join("/");
   try {
@@ -32,6 +32,16 @@ export async function transitionGuestStorage({ dryRun = true, copy = durableCopy
               if (table === "guest_documents" && row.status === "claimed") {
                 const photos = await client.query("select * from photos where id = $1 for update", [row.claimed_photo_id]);
                 const photo = photos.rows[0];
+                // Legacy photo deletion sets this FK to NULL but leaves the
+                // claimed guest row. Preserve it for review: do not infer a
+                // replacement archive link, resurrect it, or retire its file.
+                // The remaining guest row protects its source from retirement.
+                if (!photo && row.claimed_photo_id === null) {
+                  counts.orphanClaims++;
+                  log(JSON.stringify({ table, id: row.id, source: relative(row.storage_path),
+                    action: "unlinked-claim-manual-review" }));
+                  return;
+                }
                 if (!photo || (!dryRun && path.dirname(photo.storage_path) !== userUploadsDir)) throw Object.assign(new Error("CLAIM_LINK_REQUIRES_REVIEW"), { code: "CLAIM_LINK_REQUIRES_REVIEW" });
                 if (!dryRun) await fs.stat(await managedFile(photo.storage_path, ["users"]));
                 counts.planned++;

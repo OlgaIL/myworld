@@ -365,6 +365,65 @@ test("legacy claimed text removed while archive, improvement request and transfe
   assert.equal((await findUserForAdmin(user.id)).documents_transferred_from_guest, 1);
 });
 
+test("legacy claims whose archive was deleted are reported and preserved without blocking other documents", async () => {
+  const expired = await document({ directory: uploadsDir, status: "claimed", expired: true });
+  const recent = await document({ directory: uploadsDir, status: "claimed" });
+  for (const guest of [expired, recent]) {
+    const personal = await photo(guest.storage_path);
+    await query("update guest_documents set claimed_photo_id=$2, claimed_at=now() where id=$1", [guest.id, personal.id]);
+    await query("delete from photos where id=$1", [personal.id]);
+  }
+  // The old individual photo delete may also have removed the shared image.
+  await fs.unlink(recent.storage_path);
+  const other = await document({ directory: uploadsDir });
+  const before = (await query("select * from guest_documents where id=any($1::bigint[]) order by id", [[expired.id, recent.id]])).rows;
+  assert.ok(before.every(row => row.claimed_photo_id === null));
+  const reports = [];
+  const preview = await transitionGuestStorage({ log: line => reports.push(JSON.parse(line)) });
+  assert.equal(preview.errors, 0);
+  assert.equal(preview.orphanClaims, 2);
+  assert.equal(preview.planned, 1);
+  assert.equal(reports.filter(row => row.action === "unlinked-claim-manual-review").length, 2);
+  assert.deepEqual((await query("select * from guest_documents where id=any($1::bigint[]) order by id", [[expired.id, recent.id]])).rows, before);
+
+  const applied = await transitionGuestStorage({ dryRun: false, log: quiet });
+  assert.equal(applied.errors, 0);
+  assert.equal(applied.orphanClaims, 2);
+  assert.equal(applied.changed, 1);
+  assert.deepEqual((await query("select * from guest_documents where id=any($1::bigint[]) order by id", [[expired.id, recent.id]])).rows, before);
+  assert.equal((await query("select count(*)::int as n from photos")).rows[0].n, 0);
+  assert.equal((await query("select count(*)::int as n from guest_document_claims")).rows[0].n, 0);
+  assert.equal(path.dirname((await query("select storage_path from guest_documents where id=$1", [other.id])).rows[0].storage_path), guestUploadsDir);
+  await fs.stat(expired.storage_path);
+  await cleanupGuests({ dryRun: false, log: quiet });
+  await fs.stat(expired.storage_path);
+  assert.equal((await query("select count(*)::int as n from guest_documents where id=any($1::bigint[])", [[expired.id, recent.id]])).rows[0].n, 2);
+  const repeated = await transitionGuestStorage({ dryRun: false, log: quiet });
+  assert.equal(repeated.errors, 0);
+  assert.equal(repeated.planned, 0);
+  assert.equal(repeated.orphanClaims, 2);
+});
+
+test("an unlinked legacy claim keeps its source even when another live archive used the same file", async () => {
+  const guest = await document({ directory: uploadsDir, status: "claimed", expired: true });
+  const deleted = await photo(guest.storage_path);
+  await query("update guest_documents set claimed_photo_id=$2 where id=$1", [guest.id, deleted.id]);
+  await query("delete from photos where id=$1", [deleted.id]);
+  const live = await photo(guest.storage_path);
+  const result = await transitionGuestStorage({ dryRun: false, log: quiet });
+  assert.equal(result.errors, 0);
+  assert.equal(result.orphanClaims, 1);
+  await fs.stat(guest.storage_path);
+  const archive = (await query("select * from photos where id=$1", [live.id])).rows[0];
+  assert.equal(path.dirname(archive.storage_path), userUploadsDir);
+  await fs.stat(archive.storage_path);
+  assert.equal((await query("select * from guest_documents where id=$1", [guest.id])).rows[0].claimed_photo_id, null);
+  const repeated = await transitionGuestStorage({ dryRun: false, log: quiet });
+  assert.equal(repeated.errors, 0);
+  assert.equal(repeated.planned, 0);
+  await fs.stat(guest.storage_path);
+});
+
 test("backup tar preserves nested guest/user folders and restore permits expiry cleanup", async () => {
   const expired = await document({ expired: true }); const personal = await photo();
   const archive = path.join(serverDir, `${prefix}.tar.gz`); files.add(archive);
