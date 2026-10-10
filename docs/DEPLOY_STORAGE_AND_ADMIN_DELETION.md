@@ -9,7 +9,9 @@
 - Гостевые фото и тексты хранятся 10 суток от загрузки каждого документа;
   фото гостей и личных кабинетов находятся в отдельных папках.
 - После входа файл и результаты переносятся в личный архив.
-- Просроченные гости очищаются раз в час.
+- Просроченные гости очищаются раз в сутки, в 05:00 по часовому поясу серверного cron.
+  Гостевой доступ истекает через 240 часов от загрузки; физическая очистка
+  происходит на следующем ежедневном запуске (обычно не позднее ещё 24 часов).
 - Админка позволяет удалять аккаунты без платежей; административные
   пользовательские аккаунты защищаются явным списком ID.
 - Годовая очистка личных архивов и Telegram-уведомления бэкапов не входят
@@ -130,10 +132,18 @@ npm run build --prefix client
 существующий cron бэкапа и другие задания:
 
 ```bash
+bash <<'BASH'
+set -euo pipefail
+umask 077
+mkdir -p /root/myworld-backups
+CRON_SNAPSHOT="/root/myworld-backups/crontab-before-guest-cleanup-$(date +%Y%m%d-%H%M%S)"
+crontab -l > "$CRON_SNAPSHOT"
 NODE_BIN="$(command -v node)"
-CRON_LINE="7 * * * * cd /root/myworld/server && $NODE_BIN scripts/cleanupGuests.js --apply >> /root/myworld-backups/guest-cleanup.log 2>&1"
-(crontab -l 2>/dev/null | sed '\#scripts/cleanupGuests.js#d'; printf '%s\n' "$CRON_LINE") | crontab -
-crontab -l
+sed '\#scripts/cleanupGuests\.js#d' "$CRON_SNAPSHOT" > "$CRON_SNAPSHOT.new"
+printf '%s\n' "0 5 * * * cd /root/myworld/server && $NODE_BIN scripts/cleanupGuests.js --apply >> /root/myworld-backups/guest-cleanup.log 2>&1" >> "$CRON_SNAPSHOT.new"
+crontab "$CRON_SNAPSHOT.new"
+crontab -l | grep -F 'scripts/cleanupGuests.js'
+BASH
 pm2 restart myworld-server --update-env
 pm2 logs myworld-server --lines 50 --nostream
 ```
@@ -144,7 +154,7 @@ pm2 logs myworld-server --lines 50 --nostream
 ## 5. Проверить после публикации — выполняет Ольга
 
 ```bash
-curl --fail --silent --show-error https://word2you.ru/api/health
+curl --fail --silent --show-error https://word2you.ru/api/monitor/health
 cd /root/myworld/server
 node scripts/cleanupGuests.js --dry-run
 node scripts/cleanupDeletedAccounts.js --dry-run
@@ -164,6 +174,10 @@ node scripts/cleanupDeletedAccounts.js --dry-run
 Не запускать тестовые suites на production и не менять даты реальных
 документов для проверки десятидневного срока. Реальное распознавание расходует
 API/лимит и выполняется только самой Ольгой.
+
+`/api/health` содержит сохранённый результат проверки БД при старте и не
+подтверждает текущую доступность. Для текущего состояния использовать
+`/api/monitor/health` (проверка SELECT 1, кэш на 10 секунд).
 
 ## При ошибке
 

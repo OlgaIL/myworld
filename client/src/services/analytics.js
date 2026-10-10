@@ -18,6 +18,11 @@ function readStoredJson(key) {
 }
 
 export function captureAcquisitionContext(defaultIntent = "") {
+  const firstContext = getAcquisitionContext();
+  if (ACQUISITION_KEYS.some((key) => firstContext[key])) {
+    return firstContext;
+  }
+
   const searchParams = new URLSearchParams(window.location.search);
   const context = {};
 
@@ -34,11 +39,15 @@ export function captureAcquisitionContext(defaultIntent = "") {
   }
 
   if (Object.keys(context).length === 0) {
-    return getAcquisitionContext();
+    return firstContext;
+  }
+
+  // An untagged landing may remember intent, but cannot block the first source.
+  if (!ACQUISITION_KEYS.some((key) => context[key]) && Object.keys(firstContext).length > 0) {
+    return firstContext;
   }
 
   const capturedContext = {
-    ...getAcquisitionContext(),
     ...context,
     landing_path: `${window.location.pathname}${window.location.search}`.slice(0, 1500),
     captured_at: new Date().toISOString()

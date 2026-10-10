@@ -54,6 +54,20 @@ function sanitizeAnalyticsIdentity(value) {
   };
 }
 
+function logInWithAnalyticsContext(req, user, done) {
+  // Passport regenerates the session on login. Carry only validated analytics
+  // fields across that boundary; never retain the rest of the anonymous session.
+  const acquisitionContext = sanitizeAcquisitionContext(req.session?.acquisitionContext);
+  const analyticsIdentity = sanitizeAnalyticsIdentity(req.session?.analyticsIdentity);
+
+  return req.logIn(user, (error) => {
+    if (error) return done(error);
+    req.session.acquisitionContext = acquisitionContext;
+    req.session.analyticsIdentity = analyticsIdentity;
+    return done();
+  });
+}
+
 function redirectWithAuthError(res, providerId, errorCode = "oauth_failed") {
   const target = new URL(CLIENT_URL || "/", "http://localhost");
   target.searchParams.set("auth_error", errorCode);
@@ -78,7 +92,7 @@ function authenticateProviderCallback(providerId, getOptions = () => ({})) {
         return redirectWithAuthError(res, providerId);
       }
 
-      return req.logIn(user, (loginError) => {
+      return logInWithAnalyticsContext(req, user, (loginError) => {
         if (loginError) {
           return redirectWithAuthError(res, providerId);
         }
@@ -221,7 +235,7 @@ router.post("/api/auth/email/verify", async (req, res) => {
     const sessionUser = mapUserForSession(user);
 
     await new Promise((resolve, reject) => {
-      req.logIn(sessionUser, (error) => (error ? reject(error) : resolve()));
+      logInWithAnalyticsContext(req, sessionUser, (error) => (error ? reject(error) : resolve()));
     });
 
     await completeLogin(req);

@@ -15,7 +15,8 @@
   файла или копирования. Записываются точные destination и UUID-temp, исходный
   expiry, guest/session/user IDs. Нет каскадных FK: запись переживает rollback
   переноса и исчезновение гостевого документа/сессии. Отказ журнала запрещает FS.
-- Очистка зарегистрированных остатков работает в том же hourly cleanup,
+- Очистка зарегистрированных остатков работает в том же guest cleanup
+  (10 октября Ольга согласовала ежедневный запуск вместо ежечасного),
   порциями по 100: account/session/intent locks, короткая блокировка таблиц,
   проверка ссылок photos/guests/claims/retirements/других intents. После hard kill
   upload, partial temp и prepared users-copy убираются по исходному expiry без

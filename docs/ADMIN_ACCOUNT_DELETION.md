@@ -104,7 +104,7 @@ converted_user_id доказывают принадлежность аккаун
 есть отдельные незакоммиченные OCR/LLM, гостевые и документальные изменения.
 Общий локальный последовательный прогон 8 октября описан в GUEST_STORAGE_REPORT.md.
 Если гостевой переход ещё не опубликован, совместить эти команды с полным
-runbook `docs/GUEST_STORAGE.md`, включая TTL=240, dry-run/переход и hourly cron.
+runbook `docs/GUEST_STORAGE.md`, включая TTL=240, dry-run/переход и ежедневный cron.
 
 ```bash
 cd /root/myworld

@@ -164,14 +164,25 @@ node scripts/cleanupGuests.js --apply
 При ошибке копирования, БД или удаления устранить причину и повторить `--apply`.
 Не удалять оригиналы вручную: журнал/проверка ссылок определяет, когда это безопасно.
 
-Установить запуск раз в час, сохранив остальной cron:
+Установить запуск раз в сутки в 05:00 по часовому поясу серверного cron,
+сохранив остальные задания. Частота согласована Ольгой 10 октября.
+Гостевой доступ истекает через 240 часов от загрузки, а файлы и строки БД
+удаляются на следующем ежедневном запуске (при успешной очистке — в пределах
+дополнительных 24 часов):
 
 ```bash
+bash <<'BASH'
+set -euo pipefail
+umask 077
 mkdir -p /root/myworld-backups
+CRON_SNAPSHOT="/root/myworld-backups/crontab-before-guest-cleanup-$(date +%Y%m%d-%H%M%S)"
+crontab -l > "$CRON_SNAPSHOT"
 NODE_BIN="$(command -v node)"
-CRON_LINE="7 * * * * cd /root/myworld/server && $NODE_BIN scripts/cleanupGuests.js --apply >> /root/myworld-backups/guest-cleanup.log 2>&1"
-(crontab -l 2>/dev/null | sed '\#scripts/cleanupGuests.js#d'; printf '%s\n' "$CRON_LINE") | crontab -
-crontab -l
+sed '\#scripts/cleanupGuests\.js#d' "$CRON_SNAPSHOT" > "$CRON_SNAPSHOT.new"
+printf '%s\n' "0 5 * * * cd /root/myworld/server && $NODE_BIN scripts/cleanupGuests.js --apply >> /root/myworld-backups/guest-cleanup.log 2>&1" >> "$CRON_SNAPSHOT.new"
+crontab "$CRON_SNAPSHOT.new"
+crontab -l | grep -F 'scripts/cleanupGuests.js'
+BASH
 ```
 
 Часовой пояс — существующий часовой пояс серверного cron. Перезапуск:
@@ -188,7 +199,7 @@ pm2 logs myworld-server --lines 50 --nostream
 ## Проверка production — выполняет Ольга
 
 ```bash
-curl --fail https://word2you.ru/api/health
+curl --fail https://word2you.ru/api/monitor/health
 cd /root/myworld/server
 node scripts/cleanupGuests.js --dry-run
 tail -n 30 /root/myworld-backups/guest-cleanup.log
