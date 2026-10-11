@@ -3,6 +3,7 @@ import {
   GOOGLE_OCR_ENABLED,
   OCR_PROVIDER,
   OPENAI_ENABLED,
+  TIMEWEB_AI_ENABLED,
   PROCESSING_ALLOWLIST_EMAILS,
   PROCESSING_ENABLED,
   YANDEX_AI_ENABLED,
@@ -128,6 +129,7 @@ function isOcrProviderEnabled(provider = OCR_PROVIDER) {
 }
 
 function isAiProviderEnabled(provider = AI_PROVIDER) {
+  if (provider === "timeweb") return TIMEWEB_AI_ENABLED;
   if (provider === "yandex") {
     return YANDEX_AI_ENABLED;
   }

@@ -15,7 +15,7 @@ import {
   SESSION_SECRET
 } from "./config/env.js";
 import { clientDistDir } from "./config/paths.js";
-import { getProcessingPipelineForUser } from "./services/processingPipelineService.js";
+import { getProcessingPipelineForUser, getTimewebSettings } from "./services/processingPipelineService.js";
 import authRoutes from "./routes/authRoutes.js";
 import accessRequestRoutes from "./routes/accessRequestRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -121,10 +121,11 @@ export function createApp({
         paidMode: PROCESSING_PAID_MODE,
         standardOcrProvider: PROCESSING_STANDARD_OCR_PROVIDER,
         standardAiProvider: PROCESSING_STANDARD_AI_PROVIDER,
+        providers: { timeweb: getTimewebSettings() },
         pipelines: {
           guest: getProcessingPipelineForUser(null, { audience: "guest" }),
-          free: getProcessingPipelineForUser(null, { audience: "free" }),
-          paid: getProcessingPipelineForUser(null, { audience: "paid" })
+          free: getProcessingPipelineForUser({}, { audience: "free" }),
+          paid: getProcessingPipelineForUser({}, { audience: "paid" })
         },
         allowlistEnabled: PROCESSING_ALLOWLIST_EMAILS.length > 0
       }

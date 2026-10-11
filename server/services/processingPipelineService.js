@@ -1,5 +1,10 @@
 import {
   OPENAI_MODEL,
+  TIMEWEB_AI_ENABLED,
+  TIMEWEB_BASE_URL,
+  TIMEWEB_MODEL,
+  TIMEWEB_TIMEOUT_MS,
+  TIMEWEB_MAX_TOKENS,
   PROCESSING_FREE_AI_PROVIDER,
   PROCESSING_FREE_MODE,
   PROCESSING_FREE_OCR_PROVIDER,
@@ -17,7 +22,8 @@ import {
   YANDEX_OCR_LANGUAGE_CODES,
   YANDEX_OCR_MODEL
 } from "../config/env.js";
-import { OPENAI_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
+import { OPENAI_API_KEY, TIMEWEB_API_KEY, YANDEX_API_KEY, YANDEX_FOLDER_ID } from "../config/private-env.js";
+import { safeTimewebSettings } from "../config/timeweb.js";
 import * as aiService from "./aiService.js";
 import { runMeasuredLlmAttempt } from "./llmAttemptMetricsService.js";
 import ocrService from "./ocrService.js";
@@ -28,7 +34,16 @@ export const PROCESSING_PIPELINES = {
 };
 
 const STANDARD_OCR_PROVIDERS = new Set(["google", "yandex"]);
-const STANDARD_AI_PROVIDERS = new Set(["openai", "yandex"]);
+const STANDARD_AI_PROVIDERS = new Set(["openai", "yandex", "timeweb"]);
+
+export function getTimewebOptions() {
+  return { enabled: TIMEWEB_AI_ENABLED, apiKey: TIMEWEB_API_KEY, baseURL: TIMEWEB_BASE_URL,
+    model: TIMEWEB_MODEL, timeoutMs: TIMEWEB_TIMEOUT_MS, maxTokens: TIMEWEB_MAX_TOKENS };
+}
+
+export function getTimewebSettings() {
+  return safeTimewebSettings(getTimewebOptions());
+}
 
 function hasActiveExtendedAccess(user) {
   const accessExpiresAt = user?.accessExpiresAt ?? user?.access_expires_at ?? null;
@@ -184,6 +199,7 @@ export async function enrichWithPipeline(text, pipeline, { trigger = "upload" } 
       folderId: YANDEX_FOLDER_ID,
       modelUri: YANDEX_GPT_MODEL_URI,
       timeoutMs: YANDEX_AI_TIMEOUT_MS,
+      timeweb: getTimewebOptions(),
       openAiApiKey: OPENAI_API_KEY,
       model: OPENAI_MODEL
     })

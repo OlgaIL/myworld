@@ -1,4 +1,12 @@
 import "./load-env.js";
+import { readTimewebConfig } from "./timeweb.js";
+
+const timewebConfig = readTimewebConfig();
+export const TIMEWEB_AI_ENABLED = timewebConfig.enabled;
+export const TIMEWEB_BASE_URL = timewebConfig.baseURL;
+export const TIMEWEB_MODEL = timewebConfig.model;
+export const TIMEWEB_TIMEOUT_MS = timewebConfig.timeoutMs;
+export const TIMEWEB_MAX_TOKENS = timewebConfig.maxTokens;
 
 export const CLIENT_URL = process.env.CLIENT_URL;
 export const SERVER_URL = process.env.SERVER_URL;

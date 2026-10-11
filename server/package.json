@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test:timeweb": "node scripts/runTimewebTests.js",
+    "smoke:timeweb": "node scripts/timewebSyntheticSmoke.js",
     "db:migrate": "node db/migrate.js",
     "db:status": "node db/status.js",
     "test:email-auth": "node tests/emailAuthService.test.js",

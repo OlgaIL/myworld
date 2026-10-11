@@ -24,7 +24,7 @@ function formatPipeline(pipeline) {
     return "fast · OpenAI";
   }
 
-  return `${pipeline.pipeline} · OCR: ${pipeline.ocrProvider} · LLM: ${pipeline.aiProvider}`;
+  return `${pipeline.pipeline} · OCR: ${pipeline.ocrProvider} · LLM: ${pipeline.aiProvider === "timeweb" ? "Timeweb" : pipeline.aiProvider}`;
 }
 
 function AdminSettingsPanel({ settings }) {
@@ -87,6 +87,10 @@ function AdminSettingsPanel({ settings }) {
         <div className="admin-settings__card">
           <h3>Провайдеры</h3>
           <div className="admin-settings__list">
+            <div className="admin-settings__row">
+              <span>Timeweb · {processingProviders.timeweb?.model || "модель не задана"}</span>
+              <ProviderStatus enabled={processingProviders.timeweb?.enabled} configured={processingProviders.timeweb?.configured} />
+            </div>
             <div className="admin-settings__row">
               <span>Google OCR</span>
               <ProviderStatus

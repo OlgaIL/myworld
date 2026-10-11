@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import OpenAI from "openai";
+import { processTimeweb } from "./timewebAiService.js";
 import {
   AI_CATEGORIES,
   AI_SECTIONS,
@@ -40,6 +41,8 @@ export async function process(text, options) {
   if (provider === "openai") {
     return processOpenAI(text, options);
   }
+
+  if (provider === "timeweb") return processTimeweb(text, options);
 
   return errorResult("Unknown AI provider");
 }
@@ -543,7 +546,7 @@ export function parseAIResponse(raw, { sourceText = "", correctionHints = [] } =
   }
 }
 
-function errorResult(message, details = {}) {
+export function errorResult(message, details = {}) {
   return {
     title: "",
     summary: "",

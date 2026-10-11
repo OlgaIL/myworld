@@ -62,7 +62,7 @@ import {
 } from "../repositories/improvementRequestsRepository.js";
 import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
 import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
-import { getProcessingPipelineForUser } from "../services/processingPipelineService.js";
+import { getProcessingPipelineForUser, getTimewebSettings } from "../services/processingPipelineService.js";
 import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
 import { getLlmAttemptSummary, LLM_SUMMARY_HOURS } from "../services/llmAttemptSummaryService.js";
 import { countPaidActiveUsers, getPresenceSnapshot } from "../services/presenceService.js";
@@ -318,6 +318,7 @@ export function getAdminSettings() {
       allowlistEnabled: PROCESSING_ALLOWLIST_EMAILS.length > 0,
       allowlistCount: PROCESSING_ALLOWLIST_EMAILS.length,
       providers: {
+        timeweb: getTimewebSettings(),
         googleOcr: {
           enabled: GOOGLE_OCR_ENABLED,
           configured: Boolean(GOOGLE_APPLICATION_CREDENTIALS)

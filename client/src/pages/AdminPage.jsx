@@ -25,7 +25,7 @@ import { getProcessingUsageText } from "../utils/processingAccessText";
 
 const METRIKA_COUNTER_ID = import.meta.env.VITE_YANDEX_METRIKA_ID || "109386353";
 const LLM_AUDIENCE_LABELS = { guest: "Гости", free: "Бесплатные", paid: "Платные" };
-const LLM_PROVIDER_LABELS = { yandex: "Яндекс", openai: "OpenAI" };
+const LLM_PROVIDER_LABELS = { yandex: "Яндекс", openai: "OpenAI", timeweb: "Timeweb" };
 const LLM_TRIGGER_LABELS = { upload: "загрузка", retry: "повтор", claim: "перенос" };
 
 function formatCompactDateTime(value) {
