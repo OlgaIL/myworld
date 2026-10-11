@@ -17,7 +17,7 @@ import {
 } from "../src/utils/handwritingLandingAnalytics.js";
 
 const landingSource = readFileSync(new URL("../src/pages/HandwritingToTextLanding.jsx", import.meta.url), "utf8");
-const mainSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
+const mainSource = readFileSync(new URL("../src/AppShell.jsx", import.meta.url), "utf8");
 const photoLandingSource = readFileSync(new URL("../src/pages/PhotoToTextLanding.jsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/index.css", import.meta.url), "utf8");
 const compactLandingSource = landingSource.replace(/\s+/g, " ");

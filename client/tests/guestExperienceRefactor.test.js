@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const appUrl = new URL("../src/pages/App.jsx", import.meta.url);
-const mainUrl = new URL("../src/main.jsx", import.meta.url);
+const mainUrl = new URL("../src/AppShell.jsx", import.meta.url);
 const experienceUrl = new URL("../src/components/GuestExperience.jsx", import.meta.url);
 const homeUrl = new URL("../src/components/GuestHome.jsx", import.meta.url);
 const uploadHookUrl = new URL("../src/hooks/useGuestUpload.js", import.meta.url);

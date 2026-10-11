@@ -61,12 +61,6 @@ const realExamples = [
   }
 ];
 
-const SEO = {
-  title: "Распознать рукописный текст с фото онлайн — Word2you",
-  description: "Распознайте рукописный текст, конспект или заметку с фотографии. Проверьте, улучшите и сохраните результат в личном архиве Word2you.",
-  canonical: "https://word2you.ru/handwriting-to-text"
-};
-
 function UploadIcon() {
   return (
     <svg className="handwriting-upload-cta__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -85,79 +79,6 @@ function CarouselArrow({ direction }) {
   );
 }
 
-function updateMetaTag(attribute, key, content) {
-  const selector = `meta[${attribute}="${key}"]`;
-  const existing = document.head.querySelector(selector);
-  const meta = existing || document.createElement("meta");
-  const previousContent = meta.getAttribute("content");
-
-  if (!existing) {
-    meta.setAttribute(attribute, key);
-    document.head.append(meta);
-  }
-
-  meta.setAttribute("content", content);
-
-  return () => {
-    if (!existing) {
-      meta.remove();
-      return;
-    }
-
-    if (previousContent === null) {
-      meta.removeAttribute("content");
-    } else {
-      meta.setAttribute("content", previousContent);
-    }
-  };
-}
-
-function updateCanonical(href) {
-  const existing = document.head.querySelector('link[rel="canonical"]');
-  const canonical = existing || document.createElement("link");
-  const previousHref = canonical.getAttribute("href");
-
-  if (!existing) {
-    canonical.setAttribute("rel", "canonical");
-    document.head.append(canonical);
-  }
-
-  canonical.setAttribute("href", href);
-
-  return () => {
-    if (!existing) {
-      canonical.remove();
-      return;
-    }
-
-    if (previousHref === null) {
-      canonical.removeAttribute("href");
-    } else {
-      canonical.setAttribute("href", previousHref);
-    }
-  };
-}
-
-function useHandwritingSeo() {
-  useEffect(() => {
-    const previousTitle = document.title;
-    const restoreDescription = updateMetaTag("name", "description", SEO.description);
-    const restoreOgTitle = updateMetaTag("property", "og:title", SEO.title);
-    const restoreOgDescription = updateMetaTag("property", "og:description", SEO.description);
-    const restoreCanonical = updateCanonical(SEO.canonical);
-
-    document.title = SEO.title;
-
-    return () => {
-      document.title = previousTitle;
-      restoreDescription();
-      restoreOgTitle();
-      restoreOgDescription();
-      restoreCanonical();
-    };
-  }, []);
-}
-
 function HandwritingToTextLanding() {
   const location = useLocation();
   const trackedSearches = useRef(new Set());
@@ -166,8 +87,6 @@ function HandwritingToTextLanding() {
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
   const [lightbox, setLightbox] = useState(null);
   const activeExample = realExamples[activeExampleIndex];
-
-  useHandwritingSeo();
 
   useEffect(() => {
     if (trackedSearches.current.has(location.search)) {

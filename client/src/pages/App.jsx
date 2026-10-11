@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
 import DocumentPage from "../components/DocumentPage";
@@ -8,6 +8,7 @@ import ImprovementRequestModal from "../components/ImprovementRequestModal";
 import LegalAgreementModal from "../components/LegalAgreementModal";
 import Modal from "../components/Modal";
 import PageFooter from "../components/PageFooter";
+import PublicHomePreview from "../components/PublicHomePreview";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useCabinetFilters } from "../hooks/useCabinetFilters";
 import { useCabinetUpload } from "../hooks/useCabinetUpload";
@@ -48,6 +49,7 @@ function clearPendingImprovementDocument() {
 }
 
 function App() {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const { documentName } = useParams();
   const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuthContext();
@@ -310,6 +312,7 @@ function App() {
   }
 
   if (authLoading) {
+    if (pathname === "/") return <PublicHomePreview />;
     return <div className="page page--centered">Загрузка...</div>;
   }
 

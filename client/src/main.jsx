@@ -1,79 +1,13 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import AnalyticsTracker from "./components/AnalyticsTracker";
-import PresenceTracker from "./components/PresenceTracker";
-import CookieNotice from "./components/CookieNotice";
-import App from "./pages/App";
-import AccountPage from "./pages/AccountPage";
-import AboutPage from "./pages/AboutPage";
-import AdminPage from "./pages/AdminPage";
-import ConsentPage from "./pages/ConsentPage";
-import PackagesPage from "./pages/PackagesPage";
-import HandwritingToTextLanding from "./pages/HandwritingToTextLanding";
-import PhotoToTextLanding from "./pages/PhotoToTextLanding";
-import PrivacyPage from "./pages/PrivacyPage";
-import RequisitesPage from "./pages/RequisitesPage";
-import TermsPage from "./pages/TermsPage";
-import { AuthProvider } from "./contexts/AuthContext";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import AppShell from "./AppShell";
 import "./index.css";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AnalyticsTracker />
-      <PresenceTracker />
-      <CookieNotice />
-      <Routes>
-        <Route path="/admin-control" element={<AdminPage />} />
-        <Route
-          path="/account"
-          element={
-            <AuthProvider>
-              <AccountPage />
-            </AuthProvider>
-          }
-        />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/handwriting-to-text" element={<HandwritingToTextLanding />} />
-        <Route path="/photo-to-text" element={<PhotoToTextLanding />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route
-          path="/packages"
-          element={
-            <AuthProvider>
-              <PackagesPage />
-            </AuthProvider>
-          }
-        />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/consent" element={<ConsentPage />} />
-        <Route path="/requisites" element={<RequisitesPage />} />
-        <Route
-          path="/"
-          element={
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          }
-        />
-        <Route
-          path="/documents/:documentName"
-          element={
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          }
-        />
-        <Route
-          path="/guest-documents/:guestDocumentId"
-          element={
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
-  </React.StrictMode>
-);
+const root = document.getElementById("root");
+const app = <React.StrictMode><BrowserRouter><AppShell /></BrowserRouter></React.StrictMode>;
+if (root.dataset.prerendered === "true") {
+  hydrateRoot(root, app);
+} else {
+  createRoot(root).render(app);
+}

@@ -18,6 +18,7 @@ function GuestHome({
   access,
   loading,
   uploading,
+  uploadDisabled = false,
   uploadMessage,
   error,
   replacingDocumentId,
@@ -77,7 +78,7 @@ function GuestHome({
             footnote={`До ${documentLimit} обработок без регистрации`}
             statusMessage={uploadMessage}
             uploading={uploading}
-            disabled={uploading}
+            disabled={uploading || uploadDisabled}
             onUpload={onUpload}
           />
         )}

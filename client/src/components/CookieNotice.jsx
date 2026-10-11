@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const COOKIE_NOTICE_KEY = "word2you_cookie_notice_accepted";
 
 function CookieNotice() {
-  const [visible, setVisible] = useState(() => localStorage.getItem(COOKIE_NOTICE_KEY) !== "true");
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        setVisible(localStorage.getItem(COOKIE_NOTICE_KEY) !== "true");
+      } catch {
+        setVisible(true);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   function acceptCookies() {
     localStorage.setItem(COOKIE_NOTICE_KEY, "true");

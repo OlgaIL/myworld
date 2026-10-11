@@ -36,7 +36,8 @@ import {
   isFrontendPagePath,
   isPrivatePagePath,
   isPublicPagePath,
-  isServicePath
+  isServicePath,
+  prerenderFileFor
 } from "./seo.js";
 
 const EMPTY_DATABASE_STATUS = {
@@ -168,7 +169,10 @@ export function createApp({
     }
 
     if (isPublicPagePath(req.path) || isPrivatePagePath(req.path)) {
-      const indexHtml = fs.readFileSync(`${clientDistDirectory}/index.html`, "utf8");
+      const prerenderFile = prerenderFileFor(req.path);
+      const indexHtml = fs.readFileSync(prerenderFile
+        ? `${clientDistDirectory}/.prerender/${prerenderFile}`
+        : `${clientDistDirectory}/index.html`, "utf8");
       if (isPrivatePagePath(req.path)) {
         res.set("X-Robots-Tag", "noindex, nofollow");
       }

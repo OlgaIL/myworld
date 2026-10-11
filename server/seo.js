@@ -1,4 +1,12 @@
-const SITE_ORIGIN = "https://word2you.ru";
+import { PUBLIC_PAGE_SEO, SITE_ORIGIN } from "../client/src/publicPageSeo.js";
+
+export function prerenderFileFor(pathname) {
+  return PUBLIC_PAGE_SEO[pathname]?.file || null;
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
 
 export const PUBLIC_PAGE_PATHS = Object.freeze([
   "/",
@@ -74,6 +82,17 @@ export function buildSitemapXml() {
 }
 
 export function injectSeoHead(html, pathname) {
+  const seo = PUBLIC_PAGE_SEO[pathname];
+  // Replace managed tags, including existing defaults, rather than appending duplicates.
+  html = html.replace(/<link\b[^>]*\brel=["']canonical["'][^>]*>/gi, "")
+    .replace(/<meta\b[^>]*\bname=["']robots["'][^>]*>/gi, "");
+  if (seo) {
+    html = html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
+      .replace(/<meta\b[^>]*\b(?:name=["']description["']|property=["']og:(?:title|description|url)["'])[^>]*>/gi, "");
+    const title = escapeHtml(seo.title);
+    const description = escapeHtml(seo.description);
+    html = html.replace("</head>", `<title>${title}</title>\n<meta name="description" content="${description}" />\n<meta property="og:title" content="${title}" />\n<meta property="og:description" content="${description}" />\n<meta property="og:url" content="${canonicalUrlFor(pathname)}" />\n</head>`);
+  }
   const canonicalUrl = canonicalUrlFor(pathname);
   const tags = canonicalUrl
     ? `<link rel="canonical" href="${canonicalUrl}" />`
