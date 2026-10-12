@@ -22,7 +22,7 @@ export async function acquireGuestStorageLock(key, { tryOnly = false, maintenanc
     throw error;
   }
   let released = false;
-  return async () => {
+  const release = async () => {
     if (released) return;
     released = true;
     try {
@@ -32,6 +32,8 @@ export async function acquireGuestStorageLock(key, { tryOnly = false, maintenanc
       client.release(true);
     }
   };
+  release.pid = client.processID;
+  return release;
 }
 
 export async function closeGuestStorageLocks() {

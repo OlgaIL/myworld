@@ -1,0 +1,8 @@
+.admin-llm-summary__subtitle { margin: 0 0 10px; color: #111827; font-size: 14px; line-height: 1.5; }
+.admin-guest-storage { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e4e8f0; min-width: 0; line-height: 1.5; }
+.admin-guest-storage p { margin: 6px 0; color: #475467; font-size: 12px; overflow-wrap: anywhere; }
+.admin-guest-storage__metrics { margin: 10px 0; align-items: baseline; }
+.admin-guest-storage__metrics > span { max-width: 100%; overflow-wrap: anywhere; }
+.admin-guest-storage__metrics strong { display: inline; font-size: inherit; white-space: nowrap; }
+.admin-guest-storage__run { margin-top: 12px; }
+.admin-guest-storage .admin-error { color: #b42318; }

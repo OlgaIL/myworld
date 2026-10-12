@@ -28,6 +28,10 @@ export function getAdminLlmAttempts(hours = 24) {
   return axios.get(`${API_URL}/admin-api/llm-attempts`, { params: { hours } }).then((res) => res.data);
 }
 
+export function getAdminGuestStorage(hours = 24) {
+  return axios.get(`${API_URL}/admin-api/guest-storage`, { params: { hours } }).then((res) => res.data);
+}
+
 export function getAdminAccessRequests() {
   return axios.get(`${API_URL}/admin-api/access-requests`).then((res) => res.data);
 }

@@ -2,6 +2,7 @@ import path from "node:path";
 import { query, withTransaction } from "../db/index.js";
 import { guestUploadsDir, userUploadsDir, ensurePrivateUploadDirectories } from "../config/paths.js";
 import { durableCopy, removeManagedFile } from "./guestStorageFiles.js";
+import { recordGuestFileRemoval } from "./guestStatisticsService.js";
 
 const contentColumns = [
   "mime_type", "size_bytes", "ocr_provider", "ai_provider", "ocr_text", "title",
@@ -43,7 +44,7 @@ export async function transferGuestDocument(id, userId, { copy = durableCopy, tr
         const references = await query("select 1 from photos where storage_path = $1 union all select 1 from guest_documents where storage_path = $1 limit 1", [destination]);
         const owned = await query(`select 1 from guest_file_intents where kind = 'copy' and guest_document_id = $1
           and user_id = $2 and destination_path = $3 limit 1`, [id, userId, destination]);
-        if (!references.rows.length && owned.rows.length) await removeManagedFile(destination, ["users"]);
+        if (!references.rows.length && owned.rows.length) await recordGuestFileRemoval(destination, { allowed: ["users"], category: "artifact" });
       } catch (cleanupError) {
         console.error("Guest prepared copy cleanup:", { id, code: cleanupError.code || "COPY_CLEANUP_ERROR" });
       }
@@ -52,12 +53,12 @@ export async function transferGuestDocument(id, userId, { copy = durableCopy, tr
   }
 }
 
-export async function finishClaimSourceRemoval(claim, { remove = removeManagedFile } = {}) {
+export async function finishClaimSourceRemoval(claim, { remove = removeManagedFile, runId = null } = {}) {
   if (!claim.source_path || path.dirname(claim.source_path) !== guestUploadsDir) return false;
   const references = await query(`select 1 from photos where storage_path = $1
     union all select 1 from guest_documents where storage_path = $1 limit 1`, [claim.source_path]);
   if (references.rows.length) return false;
-  await remove(claim.source_path);
+  await recordGuestFileRemoval(claim.source_path, { remove, runId, category: "source" });
   await query("update guest_document_claims set source_path = null where guest_document_id = $1 and source_path = $2", [claim.guest_document_id, claim.source_path]);
   return true;
 }

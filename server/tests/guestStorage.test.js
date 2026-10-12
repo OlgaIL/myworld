@@ -428,11 +428,13 @@ test("backup tar preserves nested guest/user folders and restore permits expiry 
   const expired = await document({ expired: true }); const personal = await photo();
   const archive = path.join(serverDir, `${prefix}.tar.gz`); files.add(archive);
   // Same recursive tar shape used by backup-production.sh; only synthetic files.
-  execFileSync("tar", ["-czf", archive, "-C", serverDir, `uploads/guests/${expired.filename}`, `uploads/users/${personal.filename}`]);
+  const backupRoot = path.dirname(uploadsDir);
+  const backupFolder = path.basename(uploadsDir);
+  execFileSync("tar", ["-czf", archive, "-C", backupRoot, `${backupFolder}/guests/${expired.filename}`, `${backupFolder}/users/${personal.filename}`]);
   const names = execFileSync("tar", ["-tzf", archive], { encoding: "utf8" });
-  assert.match(names, /uploads\/guests\//); assert.match(names, /uploads\/users\//);
+  assert.ok(names.includes(`${backupFolder}/guests/`)); assert.ok(names.includes(`${backupFolder}/users/`));
   await fs.unlink(expired.storage_path); await fs.unlink(personal.storage_path);
-  execFileSync("tar", ["-xzf", archive, "-C", serverDir]);
+  execFileSync("tar", ["-xzf", archive, "-C", backupRoot]);
   assert.equal((await cleanupGuests({ dryRun: false, log: quiet })).deleted, 1); await fs.stat(personal.storage_path);
 });
 

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AdminAccessRequests from "../components/AdminAccessRequests";
+import AdminGuestStorage from "../components/AdminGuestStorage";
+import { createLatestLoader } from "../utils/latestLoader";
 import AdminImprovementRequests from "../components/AdminImprovementRequests";
 import AdminProcessingCredits from "../components/AdminProcessingCredits";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
@@ -734,19 +736,13 @@ function AdminDashboard({ onLogout }) {
 
   useEffect(() => {
     if (activeTab !== "overview") return undefined;
-    let active = true;
-    async function refreshLlmSummary() {
-      try {
-        const result = await getAdminLlmAttempts(llmHours);
-        if (active) { setLlmSummary(result); setLlmSummaryError(false); }
-      } catch {
-        if (active) { setLlmSummary(null); setLlmSummaryError(true); }
-      }
-    }
+    const loader = createLatestLoader(() => getAdminLlmAttempts(llmHours),
+      (result) => { setLlmSummary(result); setLlmSummaryError(false); },
+      () => { setLlmSummary(null); setLlmSummaryError(true); });
     setLlmSummary(null);
-    refreshLlmSummary();
-    const interval = window.setInterval(refreshLlmSummary, 60000);
-    return () => { active = false; window.clearInterval(interval); };
+    loader.refresh();
+    const interval = window.setInterval(loader.refresh, 60000);
+    return () => { loader.dispose(); window.clearInterval(interval); };
   }, [activeTab, llmHours]);
 
   const usersCount = users.length;
@@ -994,9 +990,9 @@ function AdminDashboard({ onLogout }) {
         <>
           {activeTab === "overview" && (
             <>
-              <section className="admin-llm-summary" aria-label="Работа LLM">
+              <section className="admin-llm-summary" aria-label="Обработка и очистка">
                 <div className="admin-llm-summary__heading">
-                  <h2>Работа LLM</h2>
+                  <h2>Обработка и очистка</h2>
                   <label>Период
                     <select value={llmHours} onChange={(event) => setLlmHours(Number(event.target.value))}>
                       <option value={24}>24 часа</option>
@@ -1006,6 +1002,7 @@ function AdminDashboard({ onLogout }) {
                     </select>
                   </label>
                 </div>
+                <h3 className="admin-llm-summary__subtitle">Вызовы LLM</h3>
                 {llmSummaryError ? <p className="admin-error">Статистика LLM временно недоступна.</p> :
                   !llmSummary ? <p className="admin-muted">Загрузка...</p> : (
                     <>
@@ -1027,6 +1024,7 @@ function AdminDashboard({ onLogout }) {
                       )}
                     </>
                   )}
+                <AdminGuestStorage hours={llmHours} />
               </section>
               <AdminSettingsPanel settings={settings} />
             </>

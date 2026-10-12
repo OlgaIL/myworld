@@ -122,7 +122,7 @@ export async function listActiveGuestDocumentsBySessionId(guestSessionId) {
   return result.rows;
 }
 
-export async function updateGuestDocumentStatus(id, status, errorMessage = null) {
+export async function updateGuestDocumentStatus(id, status, errorMessage = null, expectedStatus = null) {
   const result = await query(
     `
       update guest_documents
@@ -130,10 +130,10 @@ export async function updateGuestDocumentStatus(id, status, errorMessage = null)
         status = $2,
         error_message = $3,
         updated_at = now()
-      where id = $1
+      where id = $1 and ($4::text is null or status = $4)
       returning *
     `,
-    [id, status, errorMessage]
+    [id, status, errorMessage, expectedStatus]
   );
 
   return result.rows[0] || null;
@@ -156,6 +156,7 @@ export async function replaceGuestDocumentUpload(id, {
       update guest_documents
       set
         filename = $2,
+        statistics_upload_id = gen_random_uuid(),
         storage_path = $3,
         mime_type = $4,
         size_bytes = $5,

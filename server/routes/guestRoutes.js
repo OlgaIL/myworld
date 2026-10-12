@@ -36,7 +36,8 @@ import { findPhotoById, updatePhotoCorrectionState } from "../repositories/photo
 import { acquireAccountOperationLock } from "../services/accountOperationLocks.js";
 
 import { acquireGuestStorageLock } from "../services/guestStorageLocks.js";
-import { managedFile, removeManagedFile } from "../services/guestStorageFiles.js";
+import { managedFile } from "../services/guestStorageFiles.js";
+import { recordGuestFileRemoval } from "../services/guestStatisticsService.js";
 import { registerGuestUpload } from "../services/guestFileIntentService.js";
 import { attachUploadIntent, cancelFileIntent } from "../repositories/guestFileIntentsRepository.js";
 
@@ -126,6 +127,10 @@ storage._handleFile = (req, file, cb) => {
     });
     if (req.aborted) abort(); else file.stream.pipe(output);
   });
+};
+
+storage._removeFile = (_req, file, cb) => {
+  recordGuestFileRemoval(file.path, { category: "artifact" }).then(() => cb(null), cb);
 };
 
 async function prepareGuestUpload(req, filename) {
@@ -410,6 +415,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
   const timer = createRequestTimer("guest-retry", { documentId: req.params.id });
 
   let releaseGuestLock;
+  let processingDocumentId;
   try {
     const cookies = parseCookies(req.headers.cookie);
     const guestSession = await findGuestSessionByToken(cookies[GUEST_SESSION_COOKIE_NAME]);
@@ -431,6 +437,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
     }
 
     await updateGuestDocumentStatus(guestDocument.id, "processing", null);
+    processingDocumentId = guestDocument.id;
     const text = guestDocument.ocr_text || "";
     const aiResult = await enrichGuestDocumentWithAi({ text, timer, trigger: "retry" });
 
@@ -474,6 +481,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
   } catch (error) {
     timer.log("response_failed", { error: error.message });
     console.error("Guest retry error:", error);
+    if (processingDocumentId) await updateGuestDocumentStatus(processingDocumentId, "error", "GUEST_RETRY_FAILED", "processing").catch(() => {});
     return res.status(500).json({ error: "GUEST_RETRY_FAILED" });
   } finally { if (releaseGuestLock) await releaseGuestLock(); }
 });
@@ -570,7 +578,7 @@ router.post("/api/guest/upload", (req, res) => {
         const filePath = path.join(guestUploadsDir, req.file.filename);
 
         if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+          await recordGuestFileRemoval(filePath, { category: "artifact" });
         }
 
         timer.log("limit_rejected", {
@@ -605,6 +613,7 @@ router.post("/api/guest/upload", (req, res) => {
         });
 
       documentPersisted = true;
+      req.guestAcceptedDocumentId = guestDocument.id;
       await attachUploadIntent(req.guestFileIntent.id, guestDocument);
       refreshGuestCookie(res, guestSession.session_token, guestDocument.expires_at);
 
@@ -614,7 +623,7 @@ router.post("/api/guest/upload", (req, res) => {
         path.dirname(replacementDocument.storage_path) === guestUploadsDir &&
         fs.existsSync(replacementDocument.storage_path)
       ) {
-        await removeManagedFile(replacementDocument.storage_path);
+        await recordGuestFileRemoval(replacementDocument.storage_path, { category: "source" });
       }
 
       timer.log("document_created", {
@@ -674,7 +683,7 @@ router.post("/api/guest/upload", (req, res) => {
           const filePath = path.join(guestUploadsDir, req.file.filename);
 
           if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+            await recordGuestFileRemoval(filePath, { category: "artifact" });
           }
 
           await updateGuestDocumentStatus(guestDocument.id, "error", "GUEST_LIMIT_REACHED");
@@ -828,13 +837,15 @@ router.post("/api/guest/upload", (req, res) => {
       const filePath = req.file ? path.join(guestUploadsDir, req.file.filename) : null;
 
       if (!documentPersisted && filePath && fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+        try { await recordGuestFileRemoval(filePath, { category: "artifact" }); }
+        catch (cleanupError) { console.error("Guest failed upload file cleanup:", { code: cleanupError.code || "FILE_CLEANUP_ERROR" }); }
       }
 
       timer.log("response_failed", {
         error: error.message
       });
       console.error("Guest upload error:", error);
+      if (req.guestAcceptedDocumentId) await updateGuestDocumentStatus(req.guestAcceptedDocumentId, "error", "GUEST_UPLOAD_FAILED", "processing").catch(() => {});
       return res.status(500).json({ error: "GUEST_UPLOAD_FAILED" });
     } finally {
       try {

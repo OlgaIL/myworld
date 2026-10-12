@@ -65,6 +65,7 @@ import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "..
 import { getProcessingPipelineForUser, getTimewebSettings } from "../services/processingPipelineService.js";
 import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
 import { getLlmAttemptSummary, LLM_SUMMARY_HOURS } from "../services/llmAttemptSummaryService.js";
+import { getGuestStorageSummary } from "../services/guestStatisticsService.js";
 import { countPaidActiveUsers, getPresenceSnapshot } from "../services/presenceService.js";
 import { isAuthProviderConfigured } from "../auth/providers.js";
 import { deleteAccount, getAccountDeletionEligibility } from "../services/accountDeletionService.js";
@@ -421,6 +422,13 @@ router.get("/admin-api/llm-attempts", requireAdmin, async (req, res) => {
     return res.status(400).json({ error: "INVALID_PERIOD" });
   }
   return res.json(await getLlmAttemptSummary(hours));
+});
+
+router.get("/admin-api/guest-storage", requireAdmin, async (req, res) => {
+  const raw = req.query.hours ?? "24";
+  if (typeof raw !== "string" || !["24", "48", "168", "720"].includes(raw)) return res.status(400).json({ error: "INVALID_PERIOD" });
+  try { return res.json(await getGuestStorageSummary(Number(raw))); }
+  catch { return res.status(503).json({ error: "GUEST_STATISTICS_UNAVAILABLE" }); }
 });
 
 router.get("/admin-api/access-requests", requireAdmin, async (req, res) => {

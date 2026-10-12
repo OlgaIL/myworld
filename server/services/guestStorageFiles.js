@@ -5,6 +5,7 @@ import { uploadsDir } from "../config/paths.js";
 import { query } from "../db/index.js";
 import { beginFileIntent, cancelFileIntent } from "../repositories/guestFileIntentsRepository.js";
 import { acquireAccountOperationLock } from "./accountOperationLocks.js";
+import { recordGuestFileRemoval } from "./guestStatisticsService.js";
 
 // Only flat regular files in explicitly allowed managed directories. Never
 // traverse links, arbitrary DB paths, or recursively delete directories.
@@ -32,7 +33,8 @@ export async function managedFile(storagePath, allowed = ["guests"], root = uplo
 
 export async function removeManagedFile(storagePath, allowed = ["guests"], root = uploadsDir) {
   const candidate = await managedFile(storagePath, allowed, root);
-  try { await fs.unlink(candidate); } catch (error) { if (error.code !== "ENOENT") throw error; }
+  try { await fs.unlink(candidate); return { removed: true, missing: false }; }
+  catch (error) { if (error.code !== "ENOENT") throw error; return { removed: false, missing: true }; }
 }
 
 export async function durableCopy(source, destination, root = uploadsDir, context = {}) {
@@ -91,7 +93,9 @@ export async function durableCopy(source, destination, root = uploadsDir, contex
   } finally {
     try {
       if (intent) {
-        await fs.unlink(temporary).catch((error) => { if (error.code !== "ENOENT") throw error; });
+        if (await fs.lstat(temporary).then(() => true).catch((error) => { if (error.code !== "ENOENT") throw error; return false; })) {
+          await recordGuestFileRemoval(temporary, { allowed: ["guests", "users"], category: "artifact" });
+        }
         if (failed) await cancelFileIntent(intent.id);
       }
     } finally {

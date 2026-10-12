@@ -7,6 +7,7 @@ import { managedFile, removeManagedFile } from "./guestStorageFiles.js";
 import { beginFileIntent, acquireFileIntentLock } from "../repositories/guestFileIntentsRepository.js";
 import { acquireAccountOperationLock } from "./accountOperationLocks.js";
 import { acquireGuestStorageLock } from "./guestStorageLocks.js";
+import { recordGuestFileRemoval } from "./guestStatisticsService.js";
 
 export async function registerGuestUpload(sessionId, filename) {
   const destinationPath = await managedFile(path.join(guestUploadsDir, filename));
@@ -19,7 +20,7 @@ const canonical = (file) => process.platform === "win32" ? path.resolve(file).to
 
 // Called with the shared maintenance lock already held. Only registered paths
 // are candidates; no directory/age sweep, including within users/.
-export async function cleanupFileIntents({ dryRun = true, batchSize = 100, remove = removeManagedFile, log = console.log } = {}) {
+export async function cleanupFileIntents({ dryRun = true, batchSize = 100, remove = removeManagedFile, log = console.log, runId = null } = {}) {
   const counts = { intentsFinished: 0, intentFilesRemoved: 0, busy: 0, errors: 0 };
   let lastId = "00000000-0000-0000-0000-000000000000";
   while (true) {
@@ -61,13 +62,12 @@ export async function cleanupFileIntents({ dryRun = true, batchSize = 100, remov
             log(JSON.stringify({ id: item.id, path: path.relative(uploadsDir, file).split(path.sep).join("/"),
               action: referenced ? "preserve-referenced" : dryRun ? "would-remove-registered-file" : "remove-registered-file" }));
             if (!dryRun && !referenced) {
-              const exists = await fs.lstat(file).then(() => true).catch((error) => { if (error.code !== "ENOENT") throw error; return false; });
-              await remove(file, current.kind === "upload" ? ["guests"] : ["guests", "users"]);
+              const outcome = await recordGuestFileRemoval(file, { remove, runId, category: "artifact", allowed: current.kind === "upload" ? ["guests"] : ["guests", "users"] });
               if (process.platform !== "win32") {
                 const directory = await fs.open(path.dirname(file), "r");
                 try { await directory.sync(); } finally { await directory.close(); }
               }
-              if (exists) removed++;
+              if (outcome.result === "removed" && !outcome.repeated) removed++;
             }
           }
           if (!dryRun) await client.query("delete from guest_file_intents where id = $1", [item.id]);
