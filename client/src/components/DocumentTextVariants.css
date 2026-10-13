@@ -1,0 +1,24 @@
+.document-page__table-scroll {
+  max-width: 100%;
+  margin: 0 0 22px;
+  overflow-x: auto;
+}
+
+.document-page__table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.document-page__table-scroll th,
+.document-page__table-scroll td {
+  padding: 7px 9px;
+  border: 1px solid #cfd6e2;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.document-page__table-scroll th {
+  background: #f3f6fa;
+  font-weight: 700;
+}

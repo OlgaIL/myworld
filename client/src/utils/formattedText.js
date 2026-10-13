@@ -60,6 +60,16 @@ function isLikelyManualHeading(line, hasFollowingLine) {
     && /^\p{Lu}/u.test(line);
 }
 
+function parseTableCells(line) {
+  if (!line.startsWith("|") || !line.endsWith("|")) return null;
+  const cells = line.slice(1, -1).split("|").map((cell) => cell.trim());
+  return cells.length >= 2 && cells.every(Boolean) ? cells : null;
+}
+
+function isTableDivider(cells, width) {
+  return cells?.length === width && cells.every((cell) => /^:?-{3,}:?$/u.test(cell));
+}
+
 export function buildManualFormattedContent(value) {
   const lines = String(value || "")
     .replace(/\r\n?/g, "\n")
@@ -84,10 +94,30 @@ export function buildManualFormattedContent(value) {
     }
   }
 
-  lines.forEach((line, index) => {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     if (!line) {
       flushList();
-      return;
+      continue;
+    }
+
+    const headers = parseTableCells(line);
+    if (headers) {
+      const hasDivider = isTableDivider(parseTableCells(lines[index + 1] || ""), headers.length);
+      const rows = [];
+      let rowIndex = index + (hasDivider ? 2 : 1);
+      while (rowIndex < lines.length) {
+        const row = parseTableCells(lines[rowIndex]);
+        if (!row || row.length !== headers.length) break;
+        rows.push(row);
+        rowIndex += 1;
+      }
+      if (rows.length >= (hasDivider ? 1 : 2)) {
+        flushList();
+        blocks.push({ type: "table", headers, rows });
+        index = rowIndex - 1;
+        continue;
+      }
     }
 
     const listMatch = line.match(/^[-•]\s+(.+)$/u);
@@ -96,7 +126,7 @@ export function buildManualFormattedContent(value) {
         flushList();
       }
       listItems.push(listMatch[1]);
-      return;
+      continue;
     }
 
     const numberedListMatch = line.match(/^(\d{1,3})[.)]\s+(.+)$/u);
@@ -109,7 +139,7 @@ export function buildManualFormattedContent(value) {
         listStart = Number(numberedListMatch[1]);
       }
       listItems.push(numberedListMatch[2]);
-      return;
+      continue;
     }
 
     flushList();
@@ -118,7 +148,7 @@ export function buildManualFormattedContent(value) {
       type: isLikelyManualHeading(line, hasFollowingLine) ? "heading" : "paragraph",
       text: line
     });
-  });
+  }
   flushList();
 
   return blocks.length > 0 ? { blocks } : null;

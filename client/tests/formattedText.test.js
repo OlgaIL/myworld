@@ -64,6 +64,38 @@ test("preserves deliberate lines and headings in manually improved text", () => 
   );
 });
 
+test("turns manually entered pipe tables into structured tables without changing year values", () => {
+  const content = buildManualFormattedContent(`Таблица 17 – Вводы мощностей, МВт
+| Наименование | 2026 г. | 2027 г. | 2028 г. | Всего |
+| --- | --- | --- | --- | --- |
+| Всего | – | 216,8 | 221,0 | 437,8 |
+| ТЭС | – | – | – | – |
+
+Пояснение после таблицы.`);
+  assert.deepEqual(content.blocks, [
+    { type: "paragraph", text: "Таблица 17 – Вводы мощностей, МВт" },
+    { type: "table", headers: ["Наименование", "2026 г.", "2027 г.", "2028 г.", "Всего"], rows: [
+      ["Всего", "–", "216,8", "221,0", "437,8"],
+      ["ТЭС", "–", "–", "–", "–"]
+    ] },
+    { type: "paragraph", text: "Пояснение после таблицы." }
+  ]);
+});
+
+test("leaves incomplete pipe text as ordinary text", () => {
+  const content = buildManualFormattedContent("| Слева | Справа |\n| --- | --- |\n| Только одна ячейка |");
+  assert.equal(content.blocks.every((block) => block.type === "paragraph"), true);
+});
+
+test("accepts a readable pipe table without a markdown separator", () => {
+  const content = buildManualFormattedContent("| Год | Всего | ТЭС | СЭС |\n| 2027 | 216,8 | – | 216,8 |\n| 2028 | 221,0 | – | 221,0 |");
+  assert.deepEqual(content.blocks, [{
+    type: "table",
+    headers: ["Год", "Всего", "ТЭС", "СЭС"],
+    rows: [["2027", "216,8", "–", "216,8"], ["2028", "221,0", "–", "221,0"]]
+  }]);
+});
+
 test("keeps short form fields as paragraphs instead of headings", () => {
   assert.deepEqual(
     buildManualFormattedContent("Госпошлина: рублей\nЗаявление\nОсновной текст"),

@@ -7,6 +7,7 @@ import {
   rememberCopyButtonUse
 } from "../utils/copyGuide";
 import AuthProviderButtons from "./AuthProviderButtons";
+import "./DocumentTextVariants.css";
 
 function CopyIcon() {
   return (
@@ -92,6 +93,11 @@ function LockIcon() {
 
 function getFormattedText(content) {
   return (content?.blocks || []).map((block) => {
+    if (block.type === "table") {
+      return [block.headers, ...block.rows]
+        .map((row) => row.map(formatFormattedLine).join("\t"))
+        .join("\n");
+    }
     if (block.type === "list") {
       const list = getFormattedList(block);
       return list.items.map((item, index) => (
@@ -151,6 +157,22 @@ function FormattedContent({ content, highlightedText }) {
   return (
     <div className="document-page__formatted-content">
       {content.blocks.map((block, index) => {
+        if (block.type === "table") {
+          return (
+            <div className="document-page__table-scroll" key={`${block.type}-${index}`}>
+              <table>
+                <thead><tr>{block.headers.map((cell, cellIndex) => (
+                  <th scope="col" key={cellIndex}>{renderHighlightedText(cell, highlightedText)}</th>
+                ))}</tr></thead>
+                <tbody>{block.rows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>{row.map((cell, cellIndex) => (
+                    <td key={cellIndex}>{renderHighlightedText(cell, highlightedText)}</td>
+                  ))}</tr>
+                ))}</tbody>
+              </table>
+            </div>
+          );
+        }
         if (block.type === "heading") {
           return (
             <h3 key={`${block.type}-${index}`}>
@@ -261,13 +283,15 @@ function DocumentTextVariants({
   const improvedText = improvementRequest?.status === "improved"
     ? improvementRequest.improvedText || processedText
     : "";
+  const improvedContent = improvedText.trim() ? buildManualFormattedContent(improvedText) : null;
+  const improvedHasTable = improvedContent?.blocks.some((block) => block.type === "table");
   const storedFormattedContent = Array.isArray(info?.formattedContent?.blocks)
     && info.formattedContent.blocks.length > 0
     ? info.formattedContent
     : null;
   const formattedContent = isAuthenticated && !enrichmentPending
     ? improvedText.trim()
-      ? buildManualFormattedContent(improvedText)
+      ? improvedContent
       : storedFormattedContent || buildFallbackFormattedContent(originalText)
     : null;
   const formattedText = getFormattedText(formattedContent);
@@ -347,11 +371,11 @@ function DocumentTextVariants({
         </div>
       ) : (
         <div className="document-page__text-body">
-          <p>
-            {readableText
+          {activeVariant.id === "improved" && improvedHasTable
+            ? <FormattedContent content={improvedContent} highlightedText={highlightedText} />
+            : <p>{readableText
               ? renderHighlightedText(readableText, highlightedText)
-              : "Текст пока не загружен."}
-          </p>
+              : "Текст пока не загружен."}</p>}
           {readableText && (
             <CopyButton
               label="Скопировать текст"
