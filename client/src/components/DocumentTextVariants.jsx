@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AI_UNAVAILABLE_MESSAGE } from "../constants/documentStatuses";
 import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
+import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
 import {
   COPY_GUIDE_USED_EVENT,
   hasUsedCopyButton,
@@ -89,24 +90,6 @@ function LockIcon() {
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </svg>
   );
-}
-
-function getFormattedText(content) {
-  return (content?.blocks || []).map((block) => {
-    if (block.type === "table") {
-      return [block.headers, ...block.rows]
-        .map((row) => row.map(formatFormattedLine).join("\t"))
-        .join("\n");
-    }
-    if (block.type === "list") {
-      const list = getFormattedList(block);
-      return list.items.map((item, index) => (
-        list.ordered ? `${list.start + index}. ${formatFormattedLine(item)}` : `- ${formatFormattedLine(item)}`
-      )).join("\n");
-    }
-
-    return formatFormattedLine(block.text);
-  }).filter(Boolean).join("\n\n");
 }
 
 function buildFallbackFormattedContent(text) {
@@ -301,13 +284,17 @@ function DocumentTextVariants({
       ? [{ id: "source", label: "Исходный", text: originalOcrText }]
       : []),
     ...(improvedText.trim() && improvedText.trim() !== originalText.trim()
-      ? [{ id: "improved", label: "Улучшенный", text: improvedText }]
+      ? [{ id: "improved", label: "Улучшенный", text: improvedText,
+        html: improvedHasTable ? getFormattedHtml(improvedContent) : undefined }]
       : []),
-    { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated }
+    { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
+      html: formattedContent?.blocks.some((block) => block.type === "table") ? getFormattedHtml(formattedContent) : undefined }
   ];
   const activeTab = tabSelection.documentId === documentId ? tabSelection.tab : "text";
   const activeVariant = variants.find((variant) => variant.id === activeTab) || variants[0];
   const readableText = activeVariant?.text || "";
+  const copyActiveVariant = () => onCopy(`text-${activeVariant.id}`, readableText,
+    activeVariant.html ? { html: activeVariant.html } : undefined);
   const corrections = Array.isArray(info?.corrections) ? info.corrections : [];
   const highlightedCorrection = correctionHighlight.documentId === documentId
     ? corrections.find((correction) => correction.id === correctionHighlight.correctionId)
@@ -355,7 +342,7 @@ function DocumentTextVariants({
                 label="Скопировать оформленный текст"
                 guideLabel="Копировать текст целиком"
                 copied={Boolean(copiedMap?.["text-formatted"])}
-                onClick={() => onCopy("text-formatted", formattedText)}
+                onClick={copyActiveVariant}
               />
             </div>
           ) : enrichmentPending && isAuthenticated ? (
@@ -381,7 +368,7 @@ function DocumentTextVariants({
               label="Скопировать текст"
               guideLabel="Копировать текст целиком"
               copied={Boolean(copiedMap?.[`text-${activeVariant.id}`])}
-              onClick={() => onCopy(`text-${activeVariant.id}`, readableText)}
+              onClick={copyActiveVariant}
             />
           )}
         </div>

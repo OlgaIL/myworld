@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { writeClipboardContent } from "../utils/formattedClipboard.js";
 
 export function useCopyFeedback() {
   const [copiedMap, setCopiedMap] = useState({});
@@ -7,13 +8,13 @@ export function useCopyFeedback() {
     setCopiedMap({});
   }, []);
 
-  const copyText = useCallback(async function copyText(key, text) {
+  const copyText = useCallback(async function copyText(key, text, options) {
     if (!text) {
       return false;
     }
 
     try {
-      await navigator.clipboard.writeText(text);
+      await writeClipboardContent(text, options);
       setCopiedMap((prev) => ({ ...prev, [key]: true }));
       setTimeout(() => {
         setCopiedMap((prev) => ({ ...prev, [key]: false }));
@@ -21,7 +22,9 @@ export function useCopyFeedback() {
       return true;
     } catch (error) {
       console.error("Copy failed:", error);
-      alert("Не удалось скопировать текст");
+      alert(options?.html
+        ? "Не удалось скопировать таблицы с оформлением. Можно выделить текст и таблицы на странице и скопировать их вручную."
+        : "Не удалось скопировать текст");
       return false;
     }
   }, []);
