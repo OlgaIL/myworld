@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AI_UNAVAILABLE_MESSAGE } from "../constants/documentStatuses";
 import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
 import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
+import { getDocumentTables, restoreDocumentTables } from "../services/api.js";
 import {
   COPY_GUIDE_USED_EVENT,
   hasUsedCopyButton,
@@ -255,10 +256,15 @@ function DocumentTextVariants({
   updatingCorrectionId,
   correctionError,
   isAuthenticated,
+  packageRemaining = 0,
   enrichmentPending
 }) {
   const [tabSelection, setTabSelection] = useState({ documentId: null, tab: "text" });
   const [correctionHighlight, setCorrectionHighlight] = useState({ documentId: null, correctionId: "" });
+  const [tableResult, setTableResult] = useState({ documentId: null, info: null });
+  const [tablePendingDocumentId, setTablePendingDocumentId] = useState(null);
+  const [tableLoadingDocumentId, setTableLoadingDocumentId] = useState(null);
+  const [tableRequestError, setTableRequestError] = useState({ documentId: null, message: "" });
   const processedText = info?.cleanText || "";
   const ocrText = info?.text || "";
   const originalText = improvementRequest?.originalCleanText || processedText || ocrText;
@@ -278,6 +284,16 @@ function DocumentTextVariants({
       : storedFormattedContent || buildFallbackFormattedContent(originalText)
     : null;
   const formattedText = getFormattedText(formattedContent);
+  const currentTableInfo = tableResult.documentId === documentId
+    && (tableResult.info?.tableStatus === "ready" || info?.tableStatus !== "ready")
+    ? tableResult.info : info;
+  const visibleTableError = tableRequestError.documentId === documentId ? tableRequestError.message : "";
+  const tableContent = Array.isArray(currentTableInfo?.tableContent?.blocks)
+    ? currentTableInfo.tableContent : null;
+  const tableReady = currentTableInfo?.tableStatus === "ready" && Boolean(tableContent?.blocks.length);
+  const tableLocked = currentTableInfo?.tableStatus !== "ready"
+    && (!isAuthenticated || Number(packageRemaining) <= 0);
+  const tablePending = tablePendingDocumentId === documentId;
   const variants = [
     { id: "text", label: "Текст", text: originalText },
     ...(originalOcrText.trim() && originalOcrText.trim() !== originalText.trim()
@@ -288,10 +304,27 @@ function DocumentTextVariants({
         html: improvedHasTable ? getFormattedHtml(improvedContent) : undefined }]
       : []),
     { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
-      html: formattedContent?.blocks.some((block) => block.type === "table") ? getFormattedHtml(formattedContent) : undefined }
+      html: formattedContent?.blocks.some((block) => block.type === "table") ? getFormattedHtml(formattedContent) : undefined },
+    ...(info?.hasTable && info?.status === "processed" ? [{ id: "tables", label: "Таблицы",
+      text: tableReady ? getFormattedText(tableContent) : "", tables: true, locked: tableLocked,
+      html: tableReady ? getFormattedHtml(tableContent) : undefined }] : [])
   ];
   const activeTab = tabSelection.documentId === documentId ? tabSelection.tab : "text";
   const activeVariant = variants.find((variant) => variant.id === activeTab) || variants[0];
+  useEffect(() => {
+    if (activeTab !== "tables" || !isAuthenticated || info?.tableStatus !== "ready"
+      || (tableResult.documentId === documentId && tableResult.info?.tableContent)) return undefined;
+    let cancelled = false;
+    getDocumentTables(documentId).then((result) => {
+      if (!cancelled) setTableResult({ documentId, info: result });
+    }).catch(() => {
+      if (!cancelled) setTableRequestError({ documentId, message: "Не удалось загрузить сохранённые таблицы." });
+    }).finally(() => {
+      if (!cancelled) setTableLoadingDocumentId(null);
+    });
+    setTableLoadingDocumentId(documentId);
+    return () => { cancelled = true; };
+  }, [activeTab, documentId, info?.tableStatus, isAuthenticated, tableResult.documentId, tableResult.info?.tableContent]);
   const readableText = activeVariant?.text || "";
   const copyActiveVariant = () => onCopy(`text-${activeVariant.id}`, readableText,
     activeVariant.html ? { html: activeVariant.html } : undefined);
@@ -304,7 +337,27 @@ function DocumentTextVariants({
     : "";
   const showCorrections = info?.hasRecognitionErrors === true
     && corrections.length > 0
-    && !["source", "improved"].includes(activeVariant.id);
+    && !["source", "improved", "tables"].includes(activeVariant.id);
+
+  async function handleRestoreTables() {
+    if (tablePending || tableLocked) return;
+    setTableRequestError({ documentId, message: "" });
+    setTablePendingDocumentId(documentId);
+    try {
+      const result = await restoreDocumentTables(documentId);
+      setTableResult({ documentId, info: result });
+    } catch (error) {
+      const code = error.response?.data?.error;
+      const message = code === "TABLE_BUSY"
+        ? "Таблица уже обрабатывается. Повторите через минуту."
+        : code === "TABLE_PACKAGE_REQUIRED"
+          ? "В пакете больше нет доступных обработок."
+          : "Не удалось восстановить таблицу. Попробуйте позже.";
+      setTableRequestError({ documentId, message });
+    } finally {
+      setTablePendingDocumentId(null);
+    }
+  }
 
   function handleCorrectionHighlight(correction) {
     setCorrectionHighlight({
@@ -333,7 +386,52 @@ function DocumentTextVariants({
         </div>
       )}
 
-      {activeVariant.formatted ? (
+      {activeVariant.tables ? (
+        <div className="document-page__table-panel">
+          {tableReady ? (
+            <div className="document-page__text-body">
+              <FormattedContent content={tableContent} highlightedText="" />
+              <CopyButton
+                label="Скопировать таблицы в Word или Excel"
+                guideLabel="Копировать таблицы"
+                copied={Boolean(copiedMap?.["text-tables"])}
+                onClick={copyActiveVariant}
+              />
+            </div>
+          ) : tableLocked ? (
+            <div className="document-page__table-message">
+              <LockIcon />
+              <p>Восстановление таблиц доступно при обработках в пакете, включая подарочные.</p>
+              <a href="/account">Посмотреть пакет</a>
+            </div>
+          ) : currentTableInfo?.tableStatus === "ready" ? (
+            <div className="document-page__table-message">
+              <p>{tableLoadingDocumentId === documentId ? "Загружаем сохранённые таблицы…" :
+                visibleTableError || "Сохранённые таблицы пока недоступны. Откройте вкладку ещё раз."}</p>
+            </div>
+          ) : (
+            <div className="document-page__table-message">
+              {currentTableInfo?.tableStatus === "review" && (
+                <p>Не удалось проверить расположение строк и столбцов. Попробуйте ещё раз или загрузите более чёткое фото.</p>
+              )}
+              {currentTableInfo?.tableStatus === "error" && (
+                <p>Сервис таблиц временно недоступен. Попробуйте позже.</p>
+              )}
+              {currentTableInfo?.tableStatus === "no_tables" && (
+                <p>На фото не удалось найти таблицу. Попробуйте ещё раз с более чётким фото.</p>
+              )}
+              {!currentTableInfo?.tableStatus || currentTableInfo.tableStatus === "not_started" ? (
+                <p>Проверим фото и соберём таблицу с тем же расположением строк и столбцов.</p>
+              ) : null}
+              {visibleTableError && <p role="alert">{visibleTableError}</p>}
+              <button type="button" onClick={handleRestoreTables} disabled={tablePending}>
+                {tablePending ? "Восстанавливаем таблицы…" : "Восстановить таблицы"}
+              </button>
+              <small>Дополнительные обработки не списываются.</small>
+            </div>
+          )}
+        </div>
+      ) : activeVariant.formatted ? (
         <div className="document-page__formatted">
           {formattedContent ? (
             <div className="document-page__text-body">
@@ -374,7 +472,7 @@ function DocumentTextVariants({
         </div>
       )}
 
-      {!activeVariant.formatted && textQualityMeta && (
+      {!activeVariant.formatted && !activeVariant.tables && textQualityMeta && (
         <p className="document-page__quality">
           Пометка: {textQualityMeta.label.toLowerCase()}
         </p>

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getPool, query } from "../db/index.js";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
@@ -13,7 +14,8 @@ import {
   updatePhotoCorrectionState,
   updatePhotoProcessingResult,
   updatePhotoProcessingResultAndRecordSuccess,
-  updatePhotoStatus
+  updatePhotoStatus,
+  updatePhotoTables
 } from "../repositories/photosRepository.js";
 import {
   canProcessImageWithPipeline,
@@ -27,6 +29,8 @@ import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
 import { withAccountOperation } from "../services/accountOperationLocks.js";
+import { extractDocumentTables } from "../services/documentTableService.js";
+import { isTableSuspected } from "../utils/tableDetection.js";
 
 const router = Router();
 
@@ -217,6 +221,64 @@ router.get("/api/photos/:id/info", requireAuthenticatedUser, async (req, res) =>
     res.status(500).json({ error: "PHOTO_INFO_FAILED" });
   }
 });
+
+router.get("/api/photos/:id/tables", requireAuthenticatedUser, async (req, res) => {
+  const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
+  if (!photo) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+  return res.json(mapPhotoInfo(photo, { includeTableContent: true }));
+});
+
+router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
+  const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
+  if (!photo) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+  if (photo.table_status === "ready") return res.json(mapPhotoInfo(photo, { includeTableContent: true }));
+  if (photo.status !== "processed" || !isTableSuspected(photo)) {
+    return res.status(409).json({ error: "TABLE_NOT_DETECTED" });
+  }
+  const userResult = await query(
+    "select processing_quota, processing_used from users where id = $1", [req.user.id]
+  );
+  const user = userResult.rows[0];
+  if (!user || Number(user.processing_quota) <= Number(user.processing_used)) {
+    return res.status(403).json({ error: "TABLE_PACKAGE_REQUIRED" });
+  }
+  const client = await getPool().connect();
+  let locked = false;
+  try {
+    const lock = await client.query(
+      "select pg_try_advisory_lock($1::int, hashtext($2)) as locked", [763654, String(photo.id)]
+    );
+    locked = Boolean(lock.rows[0]?.locked);
+    if (!locked) return res.status(409).json({ error: "TABLE_BUSY" });
+    const current = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
+    if (!current) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+    if (current.table_status === "ready") return res.json(mapPhotoInfo(current, { includeTableContent: true }));
+    const result = await extractDocumentTables(current);
+    if (result.modelStartedAt) {
+      try {
+        await query(
+          `insert into llm_attempt_events
+            (started_at, audience, pipeline, provider, trigger, input_kind, outcome, duration_ms)
+           values ($1, 'paid', 'standard', 'timeweb', 'tables', 'image', $2, $3)`,
+          [result.modelStartedAt, result.status === "ready" || result.status === "no_tables" ? "success" :
+            result.code === "TABLE_TIMEOUT" ? "timeout" : "error", result.modelDurationMs]
+        );
+      } catch (error) {
+        console.error("[table-metrics] write failed", { code: error?.code || "UNKNOWN" });
+      }
+    }
+    const updated = await updatePhotoTables(current.id, req.user.id, result);
+    if (!updated) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+    return res.json(mapPhotoInfo(updated, { includeTableContent: true }));
+  } finally {
+    let discarded = false;
+    if (locked) {
+      try { await client.query("select pg_advisory_unlock($1::int, hashtext($2))", [763654, String(photo.id)]); }
+      catch { client.release(true); discarded = true; }
+    }
+    if (!discarded) client.release();
+  }
+}));
 
 router.patch("/api/photos/:id/corrections/:correctionId", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   try {

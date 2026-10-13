@@ -20,6 +20,8 @@ function getPhotosSnapshot(photos) {
       formattedContent: photo.formattedContent,
       formattedAt: photo.formattedAt,
       hasTable: photo.hasTable,
+      tableStatus: photo.tableStatus,
+      tableErrorCode: photo.tableErrorCode,
       hasFormulas: photo.hasFormulas,
       hasRecognitionErrors: photo.hasRecognitionErrors,
       corrections: photo.corrections,

@@ -84,6 +84,7 @@ function DocumentPage({
   updatingCorrectionId = "",
   correctionError = "",
   isAuthenticated = false,
+  packageRemaining = 0,
   showPostAuthNextStep = false,
   postAuthUserId = "",
   postAuthProcessingOrdinal = 0,
@@ -210,6 +211,7 @@ function DocumentPage({
             updatingCorrectionId={updatingCorrectionId}
             correctionError={correctionError}
             isAuthenticated={isAuthenticated}
+            packageRemaining={packageRemaining}
             enrichmentPending={enrichmentPending}
           />
 

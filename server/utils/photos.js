@@ -11,13 +11,14 @@ import {
 } from "../config/env.js";
 import { DEFAULT_FREE_PROCESSING_LIMIT } from "../config/processingLimits.js";
 import { formatAiNotesForDisplay } from "./aiNotes.js";
+import { isTableSuspected } from "./tableDetection.js";
 import {
   getEffectiveTextContent,
   getStoredTextCorrections,
   toPublicTextCorrections
 } from "./textCorrections.js";
 
-export function mapPhotoInfo(photo) {
+export function mapPhotoInfo(photo, { includeTableContent = false } = {}) {
   const storedContent = photo.formatted_content && Array.isArray(photo.formatted_content.blocks)
     ? photo.formatted_content
     : null;
@@ -40,7 +41,11 @@ export function mapPhotoInfo(photo) {
     notes: formatAiNotesForDisplay(photo.ai_notes),
     formattedContent: effective.formattedContent,
     formattedAt: photo.formatted_at || null,
-    hasTable: Boolean(photo.has_table),
+    hasTable: isTableSuspected(photo),
+    tableStatus: photo.table_status || "not_started",
+    tableContent: includeTableContent ? photo.table_content || null : null,
+    tableErrorCode: photo.table_error_code || null,
+    tableExtractedAt: photo.table_extracted_at || null,
     hasFormulas: Boolean(photo.has_formulas),
     hasRecognitionErrors: Boolean(photo.has_recognition_errors),
     corrections: toPublicTextCorrections(corrections),

@@ -366,6 +366,7 @@ function App() {
               updatingCorrectionId={updatingCorrectionId}
               correctionError={correctionError}
               isAuthenticated
+              packageRemaining={Number(user.packageRemaining || 0)}
               showPostAuthNextStep={showPostAuthNextStep}
               postAuthUserId={user.id}
               postAuthProcessingOrdinal={Number(user.recordsProcessedTotal || user.recordsUsed || 0) + 1}

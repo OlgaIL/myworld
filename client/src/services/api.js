@@ -255,6 +255,16 @@ export function processPhoto(id) {
     });
 }
 
+export function restoreDocumentTables(id) {
+  return axios.post(`${API_URL}/api/photos/${encodeURIComponent(id)}/tables`)
+    .then((res) => res.data);
+}
+
+export function getDocumentTables(id) {
+  return axios.get(`${API_URL}/api/photos/${encodeURIComponent(id)}/tables`)
+    .then((res) => res.data);
+}
+
 export function setPhotoCorrectionApplied(documentId, correctionId, applied) {
   return axios
     .patch(
