@@ -84,7 +84,7 @@ test("adds a self-canonical to every public page source", async () => {
 test("serves unique meaningful React prerenders without JavaScript or bot-specific content", async () => {
   const pages = [
     { path: "/", title: "Фото записи в текст и личный архив — Word2you", h1: "Фото записи — в текст и личный архив", text: "Загрузите фото с телефона" },
-    { path: "/photo-to-text", title: "Фото в текст онлайн и личный архив записей — Word2you", h1: "Фото и записи — в личный цифровой архив", text: "Конспекты и заметки" },
+    { path: "/photo-to-text", title: "Скопировать текст с фото онлайн — Word2you", h1: "Распознайте текст с фото и скопируйте результат", text: "Конспекты и заметки" },
     { path: "/handwriting-to-text", title: "Распознать рукописный текст с фото онлайн — Word2you", h1: "Превратите рукописный текст в понятную цифровую запись", text: "Качество результата зависит от фотографии и разборчивости почерка" }
   ];
   const descriptions = new Set();
@@ -99,6 +99,12 @@ test("serves unique meaningful React prerenders without JavaScript or bot-specif
     assert.equal(h1s.length, 1, page.path);
     assert.equal(h1s[0][1], page.h1);
     assert.ok(body.includes(page.text), page.path);
+    if (page.path === "/photo-to-text") {
+      assert.match(body, /<img\b[^>]*src="\/photo-text-examples\/textbook-source\.png"/);
+      assert.ok(body.includes("Фрагмент результата: задания 1–2, вкладка „Текст“"));
+      assert.match(body, /<p>- 1\. В магазин привезли 3 т 250 кг картофеля,/);
+      assert.match(body, /<p>- 2\. В саду было 28 рядов фруктовых деревьев\./);
+    }
     assert.match(body, /<a\b[^>]*href="\/about"/);
     assert.match(body, /<a\b[^>]*href="\/privacy"/);
     for (const pattern of [/<title\b/g, /name="description"/g, /property="og:title"/g, /property="og:description"/g, /property="og:url"/g, /rel="canonical"/g]) {

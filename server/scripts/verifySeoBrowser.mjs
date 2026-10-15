@@ -53,7 +53,7 @@ try {
   assert.equal(await page.getByRole("dialog").count(), 0);
   await page.getByRole("link", { name: "Фото в текст", exact: true }).click();
   assert.equal(await page.title(), PUBLIC_PAGE_SEO["/photo-to-text"].title);
-  await page.getByRole("link", { name: "Попробовать бесплатно", exact: true }).first().click();
+  await page.getByRole("link", { name: "Перейти к загрузке фото", exact: true }).first().click();
   await page.waitForSelector(".upload-zone:not([disabled])");
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Перетащите сюда фото записи или выберите файл" }).click();
