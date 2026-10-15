@@ -387,9 +387,9 @@ function DocumentTextVariants({
               role="tab"
               aria-selected={activeVariant.id === variant.id}
               aria-label={variant.tables && currentTableInfo?.tableStatus !== "ready"
-                ? "Таблицы — ещё не восстановлены" : undefined}
+                ? "Таблицы не собраны. Собрать?" : undefined}
               title={variant.tables && currentTableInfo?.tableStatus !== "ready"
-                ? "Таблицы ещё не восстановлены" : undefined}
+                ? "Таблицы не собраны. Собрать?" : undefined}
               key={variant.id}
               onClick={() => setTabSelection({ documentId, tab: variant.id })}
             >
@@ -441,11 +441,11 @@ function DocumentTextVariants({
                 <p>На фото не удалось найти таблицу. Попробуйте ещё раз с более чётким фото.</p>
               )}
               {!currentTableInfo?.tableStatus || currentTableInfo.tableStatus === "not_started" ? (
-                <p>Проверим фото и соберём таблицу с тем же расположением строк и столбцов.</p>
+                <p>Похоже, на фото есть таблицы.<br />Попробовать собрать их, сохранив расположение строк и столбцов?</p>
               ) : null}
               {visibleTableError && <p role="alert">{visibleTableError}</p>}
               <button type="button" onClick={handleRestoreTables} disabled={tablePending}>
-                {tablePending ? "Восстанавливаем таблицы…" : "Восстановить таблицы"}
+                {tablePending ? "Собираем таблицы…" : "Собрать таблицы"}
               </button>
               <small>{Number(packageRemaining) > 0
                 ? "Дополнительные обработки не списываются."
