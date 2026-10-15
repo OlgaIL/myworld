@@ -386,10 +386,17 @@ function DocumentTextVariants({
               type="button"
               role="tab"
               aria-selected={activeVariant.id === variant.id}
+              aria-label={variant.tables && currentTableInfo?.tableStatus !== "ready"
+                ? "Таблицы — ещё не восстановлены" : undefined}
+              title={variant.tables && currentTableInfo?.tableStatus !== "ready"
+                ? "Таблицы ещё не восстановлены" : undefined}
               key={variant.id}
               onClick={() => setTabSelection({ documentId, tab: variant.id })}
             >
               {variant.label}
+              {variant.tables && currentTableInfo?.tableStatus !== "ready" && (
+                <span className="document-page__table-cue" aria-hidden="true">?</span>
+              )}
               {variant.locked && <LockIcon />}
             </button>
           ))}
