@@ -502,7 +502,9 @@ function DocumentTextVariants({
           error={correctionError}
         />
       )}
-      {improvementSection && <div className="document-page__improvement-inline">{improvementSection}</div>}
+      {improvementSection && !["source", "tables"].includes(activeVariant.id) && (
+        <div className="document-page__improvement-inline">{improvementSection}</div>
+      )}
     </section>
   );
 }
