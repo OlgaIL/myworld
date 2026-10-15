@@ -55,8 +55,53 @@ test("rejects invented or shifted values and ragged model output", () => {
     rows: [["Всего", "216,8"]] }] }), /TABLE_INVALID_STRUCTURE/);
 });
 
-test("shows the table tab only for model signal or an actual printed caption", () => {
+test("accepts a visually identical Latin OCR label only when row values and coordinates match", () => {
+  const bill = { title: "", headers: ["Вид услуги", "2027 г."],
+    rows: [["ХВС", "255,79"], ["Итого", "3969,25"]] };
+  const annotations = [annotation("page", 0, 0),
+    annotation("Вид", 30, 40), annotation("2027", 140, 40),
+    annotation("XBC", 30, 80), annotation("255,79", 140, 80),
+    annotation("Итого", 30, 110), annotation("3969,25", 140, 110)];
+  assert.equal(validateTableLayout([bill], annotations).valid, true);
+  const wrong = structuredClone(bill);
+  wrong.rows[0][1] = "255,78";
+  assert.equal(validateTableLayout([wrong], annotations).valid, false);
+});
+
+test("detects printed captions and tabular OCR without opening numeric prose", () => {
   assert.equal(isTableSuspected({ has_table: true }), true);
   assert.equal(isTableSuspected({ ocr_text: "Величина представлена в таблице 18." }), false);
   assert.equal(isTableSuspected({ ocr_text: "Таблица 18 – Установленная мощность\nВсего" }), true);
+  assert.equal(isTableSuspected({ ocr_text: `Расчет размера платы за горячую воду
+Вид услуги
+Ед.изм.
+Норматив потребления
+Объем потребления
+Тариф, руб.
+Начислено
+Отопление
+Гкал
+0,018100
+0,964644
+1 766,50
+1 704,04
+ГВС: тепловая энергия
+Гкал
+0,066100
+0,764711
+1 766,50
+1 350,86
+Холодная вода для ГВС
+м3
+3,300000
+11,569000
+26,09
+301,84
+Итого
+3 969,25` }), true);
+  assert.equal(isTableSuspected({ ocr_text: `Счёт за горячую воду
+Тариф пересмотрен в мае.
+Начислено за период 1500 рублей.
+Итого к оплате 1500 рублей.
+Для расчёта использовали показания 11,569 и 0,764711.` }), false);
 });

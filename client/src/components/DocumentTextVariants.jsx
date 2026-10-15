@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AI_UNAVAILABLE_MESSAGE } from "../constants/documentStatuses";
 import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
 import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
+import { mergeFormattedTables, promoteDocumentTitle } from "../utils/mergeFormattedTables.js";
 import { getDocumentTables, restoreDocumentTables } from "../services/api.js";
 import {
   COPY_GUIDE_USED_EVENT,
@@ -257,6 +258,9 @@ function DocumentTextVariants({
   correctionError,
   isAuthenticated,
   packageRemaining = 0,
+  tableTrialAvailable = false,
+  onTableReady,
+  improvementSection,
   enrichmentPending
 }) {
   const [tabSelection, setTabSelection] = useState({ documentId: null, tab: "text" });
@@ -278,12 +282,12 @@ function DocumentTextVariants({
     && info.formattedContent.blocks.length > 0
     ? info.formattedContent
     : null;
-  const formattedContent = isAuthenticated && !enrichmentPending
+  const rawFormattedContent = isAuthenticated && !enrichmentPending
     ? improvedText.trim()
       ? improvedContent
       : storedFormattedContent || buildFallbackFormattedContent(originalText)
     : null;
-  const formattedText = getFormattedText(formattedContent);
+  const baseFormattedContent = promoteDocumentTitle(rawFormattedContent, info?.title);
   const currentTableInfo = tableResult.documentId === documentId
     && (tableResult.info?.tableStatus === "ready" || info?.tableStatus !== "ready")
     ? tableResult.info : info;
@@ -291,8 +295,13 @@ function DocumentTextVariants({
   const tableContent = Array.isArray(currentTableInfo?.tableContent?.blocks)
     ? currentTableInfo.tableContent : null;
   const tableReady = currentTableInfo?.tableStatus === "ready" && Boolean(tableContent?.blocks.length);
+  const formattedMerge = tableReady
+    ? mergeFormattedTables(baseFormattedContent, tableContent)
+    : { content: baseFormattedContent, merged: false };
+  const formattedContent = formattedMerge.content;
+  const formattedText = getFormattedText(formattedContent);
   const tableLocked = currentTableInfo?.tableStatus !== "ready"
-    && (!isAuthenticated || Number(packageRemaining) <= 0);
+    && (!isAuthenticated || (Number(packageRemaining) <= 0 && !tableTrialAvailable));
   const tablePending = tablePendingDocumentId === documentId;
   const variants = [
     { id: "text", label: "Текст", text: originalText },
@@ -305,14 +314,14 @@ function DocumentTextVariants({
       : []),
     { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
       html: formattedContent?.blocks.some((block) => block.type === "table") ? getFormattedHtml(formattedContent) : undefined },
-    ...(info?.hasTable && info?.status === "processed" ? [{ id: "tables", label: "Таблицы",
+    ...(info?.hasTable && ["processed", "recognized"].includes(info?.status) ? [{ id: "tables", label: "Таблицы",
       text: tableReady ? getFormattedText(tableContent) : "", tables: true, locked: tableLocked,
       html: tableReady ? getFormattedHtml(tableContent) : undefined }] : [])
   ];
   const activeTab = tabSelection.documentId === documentId ? tabSelection.tab : "text";
   const activeVariant = variants.find((variant) => variant.id === activeTab) || variants[0];
   useEffect(() => {
-    if (activeTab !== "tables" || !isAuthenticated || info?.tableStatus !== "ready"
+    if (!["tables", "formatted"].includes(activeTab) || !isAuthenticated || info?.tableStatus !== "ready"
       || (tableResult.documentId === documentId && tableResult.info?.tableContent)) return undefined;
     let cancelled = false;
     getDocumentTables(documentId).then((result) => {
@@ -346,6 +355,7 @@ function DocumentTextVariants({
     try {
       const result = await restoreDocumentTables(documentId);
       setTableResult({ documentId, info: result });
+      if (result.tableStatus === "ready") onTableReady?.();
     } catch (error) {
       const code = error.response?.data?.error;
       const message = code === "TABLE_BUSY"
@@ -401,8 +411,11 @@ function DocumentTextVariants({
           ) : tableLocked ? (
             <div className="document-page__table-message">
               <LockIcon />
-              <p>Восстановление таблиц доступно при обработках в пакете, включая подарочные.</p>
-              <a href="/account">Посмотреть пакет</a>
+              <p>{isAuthenticated
+                ? "Бесплатное восстановление уже использовано. Дальше нужен пакет обработок, включая подарочные."
+                : "Войдите, чтобы бесплатно восстановить таблицы в одном документе."}</p>
+              {isAuthenticated ? <a href="/account">Посмотреть пакет</a>
+                : <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} compact />}
             </div>
           ) : currentTableInfo?.tableStatus === "ready" ? (
             <div className="document-page__table-message">
@@ -427,7 +440,9 @@ function DocumentTextVariants({
               <button type="button" onClick={handleRestoreTables} disabled={tablePending}>
                 {tablePending ? "Восстанавливаем таблицы…" : "Восстановить таблицы"}
               </button>
-              <small>Дополнительные обработки не списываются.</small>
+              <small>{Number(packageRemaining) > 0
+                ? "Дополнительные обработки не списываются."
+                : "Одно успешное восстановление бесплатно. Ошибки попытку не расходуют."}</small>
             </div>
           )}
         </div>
@@ -487,6 +502,7 @@ function DocumentTextVariants({
           error={correctionError}
         />
       )}
+      {improvementSection && <div className="document-page__improvement-inline">{improvementSection}</div>}
     </section>
   );
 }

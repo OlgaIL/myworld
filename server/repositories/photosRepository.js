@@ -145,8 +145,8 @@ export async function findPhotoByFilenameAndUser(filename, userId) {
   return result.rows[0] || null;
 }
 
-export async function updatePhotoTables(id, userId, result) {
-  const updated = await query(
+export async function updatePhotoTables(id, userId, result, runQuery = query) {
+  const updated = await runQuery(
     `update photos set table_content = $3::jsonb, table_status = $4,
        table_error_code = $5, table_extracted_at = now(), updated_at = now()
      where id = $1 and user_id = $2 returning *`,

@@ -19,9 +19,15 @@ function compact(value) {
     .replaceAll("ё", "е").replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+function visualKey(value) {
+  const lookalikes = { а: "a", в: "b", с: "c", е: "e", н: "h", к: "k",
+    м: "m", о: "o", р: "p", т: "t", у: "y", х: "x" };
+  return compact(value).replace(/[авсенкомртух]/gu, (letter) => lookalikes[letter]);
+}
+
 function cellKey(value) {
   const first = String(value || "").trim().split(/\s+/u)[0];
-  return compact(first);
+  return visualKey(first);
 }
 
 function isBlank(value) {
@@ -63,7 +69,7 @@ function ocrWords(annotations) {
     const right = Math.max(...xs);
     const top = Math.min(...ys);
     const bottom = Math.max(...ys);
-    const key = compact(entry.description);
+    const key = visualKey(entry.description);
     if (!key || ![left, right, top, bottom].every(Number.isFinite) || bottom <= top) return null;
     return { key, left, right, x: (left + right) / 2, y: (top + bottom) / 2, height: bottom - top };
   }).filter(Boolean).sort((a, b) => a.y - b.y || a.left - b.left);
@@ -113,7 +119,7 @@ function matchRow(line, row) {
       positions.push(null);
       continue;
     }
-    const key = compact(cell);
+    const key = visualKey(cell);
     const position = matchesOnLine(line, key).find((item) => item.x > lastX);
     if (!position) return null;
     positions.push(position.x);

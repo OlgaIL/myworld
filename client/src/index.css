@@ -4348,6 +4348,12 @@ button {
   white-space: pre-wrap;
 }
 
+.document-page__improvement-inline {
+  border-top: 1px solid #dfe4ec;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
 .document-page__text-body {
   display: flex;
   align-items: flex-start;

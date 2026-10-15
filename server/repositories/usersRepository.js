@@ -474,6 +474,7 @@ export function mapUserForSession(user) {
     processingEnabled: Boolean(user.processing_enabled),
     processingQuota: Number(user.processing_quota || 0),
     processingUsed: Number(user.processing_used || 0),
+    tableTrialAvailable: !user.table_trial_used_at,
     freeProcessingLimit: Number(user.free_processing_limit || 0),
     recordsProcessedTotal: Number(user.records_processed_total || 0),
     processingMode: user.processing_mode || null,

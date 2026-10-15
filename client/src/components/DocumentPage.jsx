@@ -85,6 +85,8 @@ function DocumentPage({
   correctionError = "",
   isAuthenticated = false,
   packageRemaining = 0,
+  tableTrialAvailable = false,
+  onTableReady,
   showPostAuthNextStep = false,
   postAuthUserId = "",
   postAuthProcessingOrdinal = 0,
@@ -212,33 +214,31 @@ function DocumentPage({
             correctionError={correctionError}
             isAuthenticated={isAuthenticated}
             packageRemaining={packageRemaining}
+            tableTrialAvailable={tableTrialAvailable}
+            onTableReady={onTableReady}
             enrichmentPending={enrichmentPending}
+            improvementSection={showImprovementSection ? (
+              <section className="document-improvement" aria-label="Улучшение распознавания">
+                {improvementRequestLoading && (
+                  <p className="document-improvement__loading">Проверяем статус запроса...</p>
+                )}
+                {!improvementRequestLoading && showInlineImprovementStatus && (
+                  <div className={`document-improvement__status document-improvement__status--${improvementStatusMeta.tone}`}>
+                    <strong>{improvementStatusMeta.label}</strong>
+                    <span>{improvementStatusMeta.details}</span>
+                  </div>
+                )}
+                {improvementRequestError && (
+                  <p className="document-improvement__error">{improvementRequestError}</p>
+                )}
+                {!improvementRequestLoading && canRequestImprovement && (
+                  <button className="document-improvement__button" type="button" onClick={onRequestImprovement}>
+                    Запросить улучшение результата
+                  </button>
+                )}
+              </section>
+            ) : null}
           />
-
-          {showImprovementSection && (
-            <section className="document-improvement" aria-label="Улучшение распознавания">
-              {improvementRequestLoading && (
-                <p className="document-improvement__loading">Проверяем статус запроса...</p>
-              )}
-
-              {!improvementRequestLoading && showInlineImprovementStatus && (
-                <div className={`document-improvement__status document-improvement__status--${improvementStatusMeta.tone}`}>
-                  <strong>{improvementStatusMeta.label}</strong>
-                  <span>{improvementStatusMeta.details}</span>
-                </div>
-              )}
-
-              {improvementRequestError && (
-                <p className="document-improvement__error">{improvementRequestError}</p>
-              )}
-
-              {!improvementRequestLoading && canRequestImprovement && (
-                <button className="document-improvement__button" type="button" onClick={onRequestImprovement}>
-                  Запросить улучшение результата
-                </button>
-              )}
-            </section>
-          )}
 
           {showGuestSaveCta && (
             <GuestDocumentSaveCta

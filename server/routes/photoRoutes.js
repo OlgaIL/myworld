@@ -232,19 +232,26 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
   if (!photo) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
   if (photo.table_status === "ready") return res.json(mapPhotoInfo(photo, { includeTableContent: true }));
-  if (photo.status !== "processed" || !isTableSuspected(photo)) {
+  if (!["processed", "recognized"].includes(photo.status) || !isTableSuspected(photo)) {
     return res.status(409).json({ error: "TABLE_NOT_DETECTED" });
-  }
-  const userResult = await query(
-    "select processing_quota, processing_used from users where id = $1", [req.user.id]
-  );
-  const user = userResult.rows[0];
-  if (!user || Number(user.processing_quota) <= Number(user.processing_used)) {
-    return res.status(403).json({ error: "TABLE_PACKAGE_REQUIRED" });
   }
   const client = await getPool().connect();
   let locked = false;
+  let userLocked = false;
   try {
+    const userLock = await client.query(
+      "select pg_try_advisory_lock($1::int, hashtext($2)) as locked", [763655, String(req.user.id)]
+    );
+    userLocked = Boolean(userLock.rows[0]?.locked);
+    if (!userLocked) return res.status(409).json({ error: "TABLE_BUSY" });
+    const userResult = await client.query(
+      "select processing_quota, processing_used, table_trial_used_at from users where id = $1", [req.user.id]
+    );
+    const user = userResult.rows[0];
+    const hasPackage = user && Number(user.processing_quota) > Number(user.processing_used);
+    if (!user || (!hasPackage && user.table_trial_used_at)) {
+      return res.status(403).json({ error: "TABLE_PACKAGE_REQUIRED" });
+    }
     const lock = await client.query(
       "select pg_try_advisory_lock($1::int, hashtext($2)) as locked", [763654, String(photo.id)]
     );
@@ -267,13 +274,34 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
         console.error("[table-metrics] write failed", { code: error?.code || "UNKNOWN" });
       }
     }
-    const updated = await updatePhotoTables(current.id, req.user.id, result);
-    if (!updated) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+    await client.query("BEGIN");
+    let updated;
+    try {
+      updated = await updatePhotoTables(current.id, req.user.id, result, client.query.bind(client));
+      if (!updated) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+      }
+      if (!hasPackage && result.status === "ready") {
+        await client.query(
+          "update users set table_trial_used_at = now() where id = $1 and table_trial_used_at is null",
+          [req.user.id]
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
     return res.json(mapPhotoInfo(updated, { includeTableContent: true }));
   } finally {
     let discarded = false;
     if (locked) {
       try { await client.query("select pg_advisory_unlock($1::int, hashtext($2))", [763654, String(photo.id)]); }
+      catch { client.release(true); discarded = true; }
+    }
+    if (userLocked && !discarded) {
+      try { await client.query("select pg_advisory_unlock($1::int, hashtext($2))", [763655, String(req.user.id)]); }
       catch { client.release(true); discarded = true; }
     }
     if (!discarded) client.release();
