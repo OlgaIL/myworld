@@ -55,7 +55,7 @@ function CabinetArchiveNavigation({
   const hasTopicContext = Boolean(activeSection || activeTopic || activeTag);
 
   return (
-    <div className="cabinet-navigation">
+    <div data-clarity-mask="true" className="cabinet-navigation">
       <div className="cabinet-navigation__modes" aria-label="Способ навигации по архиву">
         <button
           className={`cabinet-navigation__mode ${browseMode === "topics" ? "cabinet-navigation__mode--active" : ""}`}

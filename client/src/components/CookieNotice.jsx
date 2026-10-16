@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { CLARITY_CONSENT_KEY, clarityController } from "../services/clarity";
 
 const COOKIE_NOTICE_KEY = "word2you_cookie_notice_accepted";
 
@@ -9,7 +10,7 @@ function CookieNotice() {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       try {
-        setVisible(localStorage.getItem(COOKIE_NOTICE_KEY) !== "true");
+        setVisible(!localStorage.getItem(CLARITY_CONSENT_KEY));
       } catch {
         setVisible(true);
       }
@@ -17,8 +18,9 @@ function CookieNotice() {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  function acceptCookies() {
-    localStorage.setItem(COOKIE_NOTICE_KEY, "true");
+  function acceptCookies(granted) {
+    clarityController?.chooseConsent(granted);
+    try { localStorage.setItem(COOKIE_NOTICE_KEY, "true"); } catch { /* Optional storage. */ }
     setVisible(false);
   }
 
@@ -29,16 +31,19 @@ function CookieNotice() {
   return (
     <div className="cookie-notice" role="region" aria-label="Уведомление о cookie">
       <p>
-        Мы используем cookie, чтобы сайт работал корректно, сохранял вашу сессию и помогал нам улучшать сервис
-        с помощью аналитики.
+        Мы используем cookie для работы сайта и Яндекс Метрику для аналитики.
+        Разрешить Microsoft Clarity записывать действия на сайте для улучшения сервиса?
+        Документы, фото и личные данные скрываются в записи.
       </p>
       <div className="cookie-notice__actions">
         <Link className="cookie-notice__link" to="/privacy">
           Подробнее
         </Link>
-        <button className="cookie-notice__button" type="button" onClick={acceptCookies}>
-          <span aria-hidden="true">✓</span>
-          Понятно
+        <button className="cookie-notice__button" type="button" onClick={() => acceptCookies(false)}>
+          Без записи визитов
+        </button>
+        <button className="cookie-notice__button" type="button" onClick={() => acceptCookies(true)}>
+          Разрешить запись
         </button>
       </div>
     </div>

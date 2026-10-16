@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
+import { clarityController } from "../services/clarity";
 
 function PrivacyPage() {
   return (
@@ -201,6 +202,20 @@ function PrivacyPage() {
             Для получения обезличенной статистики использования сайта и улучшения его работы используется Яндекс
             Метрика.
           </p>
+          <p>
+            С отдельного согласия используется Microsoft Clarity (Microsoft): запись действий на страницах,
+            нажатий, прокрутки и ожидания для ручного анализа удобства сайта. Clarity получает технические
+            данные браузера и посещения, использует аналитические cookie; обработка может происходить за пределами РФ.
+            Пользовательские фотографии, распознанные тексты, названия документов, содержимое архива,
+            почта и коды входа маскируются до передачи. Административные страницы не записываются.
+            Дополнительные события и идентификаторы пользователей в Clarity не передаются.
+            Отказ от записи не ограничивает работу сервиса.
+          </p>
+          <p>
+            <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noreferrer">Политика Microsoft</a>.
+          </p>
+          <button type="button" onClick={() => clarityController?.chooseConsent(true)}>Разрешить запись Clarity</button>{" "}
+          <button type="button" onClick={() => clarityController?.chooseConsent(false)}>Отключить запись Clarity</button>
           <p>
             Пользователь может изменить настройки использования файлов cookie в своем браузере. При этом отдельные
             функции сервиса могут работать некорректно.

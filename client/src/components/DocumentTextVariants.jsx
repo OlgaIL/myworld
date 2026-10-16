@@ -140,7 +140,7 @@ function renderHighlightedText(value, highlight) {
 
 function FormattedContent({ content, highlightedText }) {
   return (
-    <div className="document-page__formatted-content">
+    <div data-clarity-mask="true" className="document-page__formatted-content">
       {content.blocks.map((block, index) => {
         if (block.type === "table") {
           return (
@@ -197,12 +197,10 @@ function TextCorrections({ corrections, onToggle, onHighlight, updatingId, error
   return (
     <div className="document-page__corrections">
       <p className="document-page__corrections-title">Сделаны замены:</p>
-      <div className="document-page__corrections-list" role="list">
+      <div data-clarity-mask="true" className="document-page__corrections-list" role="list">
         {corrections.map((correction) => {
           const updating = updatingId === correction.id;
-          const actionLabel = correction.applied
-            ? `Отменить замену «${correction.original}» на «${correction.replacement}»`
-            : `Вернуть замену «${correction.original}» на «${correction.replacement}»`;
+          const actionLabel = correction.applied ? "Отменить замену" : "Вернуть замену";
 
           return (
             <span
@@ -480,7 +478,7 @@ function DocumentTextVariants({
         <div className="document-page__text-body">
           {activeVariant.id === "improved" && improvedHasTable
             ? <FormattedContent content={improvedContent} highlightedText={highlightedText} />
-            : <p>{readableText
+            : <p data-clarity-mask="true">{readableText
               ? renderHighlightedText(readableText, highlightedText)
               : "Текст пока не загружен."}</p>}
           {readableText && (

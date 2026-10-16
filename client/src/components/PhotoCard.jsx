@@ -130,14 +130,14 @@ function PhotoCard({
 
           {info?.status === "processed" && (
             <>
-              <h4>{info.title}</h4>
+              <h4 data-clarity-mask="true">{info.title}</h4>
 
               <div className="gallery__summary-row">
-                <p>{info.summary}</p>
+                <p data-clarity-mask="true">{info.summary}</p>
               </div>
 
               {info.category && (
-                <div className="gallery__ai-meta">
+                <div data-clarity-mask="true" className="gallery__ai-meta">
                   <button
                     className="gallery__ai-meta-button"
                     type="button"
@@ -151,9 +151,9 @@ function PhotoCard({
                 </div>
               )}
 
-              {info.notes && <p className="gallery__ai-note">{info.notes}</p>}
+              {info.notes && <p data-clarity-mask="true" className="gallery__ai-note">{info.notes}</p>}
 
-              <div className="gallery__tags">
+              <div data-clarity-mask="true" className="gallery__tags">
                 {info.tags.map((tag) => (
                   <button
                     className="gallery__tag-button"
@@ -174,7 +174,7 @@ function PhotoCard({
 
           {!isPendingUpload && info?.status === "recognized" && (
             <>
-              <h4>{info.title || "Запись"}</h4>
+              <h4 data-clarity-mask="true">{info.title || "Запись"}</h4>
               <p>{AI_UNAVAILABLE_MESSAGE}</p>
             </>
           )}
@@ -196,7 +196,7 @@ function PhotoCard({
                 <br />
                 Можно удалить и загрузить другую запись.
               </p>
-              {info.error && <p>{info.error}</p>}
+              {info.error && <p data-clarity-mask="true">{info.error}</p>}
             </>
           )}
 
@@ -233,7 +233,7 @@ function PhotoCard({
         </div>
 
         <div className="gallery__preview">
-          <img
+          <img data-clarity-mask="true"
             src={photo.url}
             className="gallery__image"
             alt=""

@@ -155,7 +155,7 @@ function DocumentPage({
       <div className="document-page__layout">
         <section className="document-page__content">
           <div className="document-page__field">
-            <h2>{info?.title || "Запись"}</h2>
+            <h2 data-clarity-mask="true">{info?.title || "Запись"}</h2>
             {info?.title && (
               <CopyButton
                 label="Скопировать название"
@@ -169,7 +169,7 @@ function DocumentPage({
 
           {info?.summary && (
             <div className="document-page__field">
-              <p className="document-page__summary">{info.summary}</p>
+              <p data-clarity-mask="true" className="document-page__summary">{info.summary}</p>
               <CopyButton
                 label="Скопировать краткое описание"
                 guideLabel={"Копировать\nописание"}
@@ -181,7 +181,7 @@ function DocumentPage({
           )}
 
           {(info?.notes || info?.status === "recognized") && (
-            <p className="gallery__ai-note">
+            <p data-clarity-mask={info?.status === "recognized" ? undefined : "true"} className="gallery__ai-note">
               {info?.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : info.notes}
             </p>
           )}
@@ -265,14 +265,14 @@ function DocumentPage({
             type="button"
             onClick={() => onOpenImage(photo.name)}
           >
-            <img src={photo.url} alt="" />
+            <img data-clarity-mask="true" src={photo.url} alt="" />
             <span className="document-page__preview-zoom" aria-hidden="true">
               <ZoomIcon />
             </span>
           </button>
 
           {hasSideMeta && (
-            <div className="document-page__side-meta">
+            <div data-clarity-mask="true" className="document-page__side-meta">
               {info?.category && (
                 <div className="gallery__ai-meta">
                   <button

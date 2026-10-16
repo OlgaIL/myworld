@@ -71,30 +71,30 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
         <div className="gallery__content">
           {["processed", "recognized", "claimed"].includes(document.status) && (
             <>
-              <h4>{document.title || "Запись"}</h4>
+              <h4 data-clarity-mask="true">{document.title || "Запись"}</h4>
 
               {document.summary ? (
                 <div className="gallery__summary-row">
-                  <p>{document.summary}</p>
+                  <p data-clarity-mask="true">{document.summary}</p>
                 </div>
               ) : (
-                <p>{readableText || statusMeta.emptyText}</p>
+                <p data-clarity-mask="true">{readableText || statusMeta.emptyText}</p>
               )}
 
               {document.category && (
-                <div className="gallery__ai-meta">
+                <div data-clarity-mask="true" className="gallery__ai-meta">
                   <span className="gallery__ai-meta-button">{document.category}</span>
                 </div>
               )}
 
               {(document.notes || document.status === "recognized") && (
-                <p className="gallery__ai-note">
+                <p data-clarity-mask={document.status === "recognized" ? undefined : "true"} className="gallery__ai-note">
                   {document.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : document.notes}
                 </p>
               )}
 
               {hasTags && (
-                <div className="gallery__tags">
+                <div data-clarity-mask="true" className="gallery__tags">
                   {document.tags.map((tag) => (
                     <span className="gallery__tag-button" key={tag}>
                       #{tag}
@@ -122,7 +122,7 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
                 <br />
                 Можно загрузить другую запись.
               </p>
-              {document.error && <p>{document.error}</p>}
+              {document.error && <p data-clarity-mask="true">{document.error}</p>}
             </>
           )}
 
@@ -169,7 +169,7 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
         </div>
 
         <div className="gallery__preview">
-          <img
+          <img data-clarity-mask="true"
             src={fileUrl}
             className="gallery__image"
             alt=""

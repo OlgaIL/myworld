@@ -120,7 +120,7 @@ function EmailAuthModal({ onClose, onRequestCode, onVerifyCode }) {
           <form onSubmit={(event) => { event.preventDefault(); requestCode(); }}>
             <label className="email-auth-modal__field">
               <span>Ваш email</span>
-              <input
+              <input data-clarity-mask="true"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -137,13 +137,13 @@ function EmailAuthModal({ onClose, onRequestCode, onVerifyCode }) {
           </form>
         ) : (
           <form onSubmit={verifyCode}>
-            <p className="email-auth-modal__sent">Отправили код на <strong>{email}</strong></p>
+            <p className="email-auth-modal__sent">Отправили код на <strong data-clarity-mask="true">{email}</strong></p>
             <button className="email-auth-modal__change" type="button" onClick={changeEmail} disabled={loading}>
               Изменить email
             </button>
             <label className="email-auth-modal__field">
               <span>Код из письма</span>
-              <input
+              <input data-clarity-mask="true"
                 ref={codeInputRef}
                 className="email-auth-modal__code"
                 type="text"

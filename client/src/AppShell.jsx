@@ -1,5 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
+import ClarityTracker from "./components/ClarityTracker";
+import ClarityRouteBoundary from "./components/ClarityRouteBoundary";
 import PresenceTracker from "./components/PresenceTracker";
 import CookieNotice from "./components/CookieNotice";
 import App from "./pages/App";
@@ -21,9 +23,10 @@ export default function AppShell() {
     <>
       <PageSeo />
       <AnalyticsTracker />
+      <ClarityTracker />
       <PresenceTracker />
       <CookieNotice />
-      <Routes>
+      <ClarityRouteBoundary><Routes>
         <Route path="/admin-control" element={<AdminPage />} />
         <Route
           path="/account"
@@ -72,7 +75,7 @@ export default function AppShell() {
             </AuthProvider>
           }
         />
-      </Routes>
+      </Routes></ClarityRouteBoundary>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
 
@@ -32,6 +33,24 @@ const saveItems = [
 ];
 
 function PhotoToTextLanding() {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const lightboxRef = useRef(null);
+  const photoButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!lightboxOpen) return undefined;
+    const dialog = lightboxRef.current;
+    const photoButton = photoButtonRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      photoButton?.focus({ preventScroll: true });
+    };
+  }, [lightboxOpen]);
+
   return (
     <main className="landing-page">
       <header className="landing-header">
@@ -104,26 +123,34 @@ function PhotoToTextLanding() {
       <section className="landing-section photo-text-example" aria-labelledby="photo-text-example-heading">
         <div className="landing-section__heading">
           <p className="landing-eyebrow">Реальный пример</p>
-          <h2 id="photo-text-example-heading">Фото учебного задания → текст для копирования и сохранения</h2>
-          <p>Word2you распознаёт условия задания. Этот пример не показывает решение задачи. Результат нужно сверять с оригиналом.</p>
+          <h2 id="photo-text-example-heading">Фото задания — в текст, с которым удобно работать</h2>
+          <p className="photo-text-example__intro">Фрагмент учебной страницы и результат распознавания. Текст можно скопировать и сохранить в личном архиве.</p>
         </div>
-        <div className="photo-text-example__grid">
-          <figure>
-            <figcaption>Фрагмент исходной страницы: задания 1–2</figcaption>
-            <div className="photo-text-example__source">
-              <a href="/photo-text-examples/textbook-source.png" target="_blank" rel="noopener noreferrer" aria-label="Открыть полную исходную страницу">
-                <img src="/photo-text-examples/textbook-source.png" alt="Печатные задания 1–2: о картофеле и капусте и о фруктовых деревьях в саду" loading="lazy" width="1102" height="635" />
-              </a>
+        <article className="handwriting-showcase photo-text-example__showcase">
+          <h3 className="handwriting-showcase__title">Учебное задание</h3>
+          <p className="handwriting-showcase__hint">Нажмите на фото, чтобы рассмотреть страницу крупнее</p>
+          <div className="handwriting-showcase__comparison">
+            <figure className="handwriting-showcase__stage">
+              <figcaption><span>1</span> Исходное фото</figcaption>
+              <button ref={photoButtonRef} type="button" className="handwriting-showcase__media photo-text-example__source" onClick={() => setLightboxOpen(true)} aria-label="Увеличить фото учебного задания">
+                <img src="/photo-text-examples/textbook-source.png" alt="Страница учебника с печатными заданиями" loading="lazy" width="1102" height="635" />
+                <span className="handwriting-showcase__zoom">Увеличить</span>
+              </button>
+            </figure>
+            <div className="handwriting-showcase__connector" aria-hidden="true">
+              <svg viewBox="0 0 72 32" focusable="false"><path d="M2 16h62m-9-9 10 9-10 9" /></svg>
+              <span>Word2you</span>
             </div>
-          </figure>
-          <figure>
-            <figcaption>Фрагмент результата: задания 1–2, вкладка „Текст“</figcaption>
-            <div className="photo-text-example__result">
+            <figure className="handwriting-showcase__stage">
+              <figcaption><span>2</span> Распознанный текст · задания 1–2</figcaption>
+              <div className="photo-text-example__result">
               <p>- 1. В магазин привезли 3 т 250 кг картофеля, а капусты - на 24 ц меньше, чем картофеля. Спустя день в магазине осталось капусты 126 кг, а картофеля - на 6 ц 84 кг больше. Сколько продано за день картофеля и капусты отдельно?</p>
               <p>- 2. В саду было 28 рядов фруктовых деревьев. При расширении сада число рядов было доведено до 30, а число деревьев в каждом ряду увеличили на два. После чего число фруктовых деревьев увеличилось на 108. Сколько фруктовых деревьев стало в саду?</p>
-            </div>
-          </figure>
-        </div>
+              </div>
+            </figure>
+          </div>
+          <p className="handwriting-showcase__note">Сервис распознаёт условие, а не решает задание. Перед использованием сверьте результат с фото.</p>
+        </article>
       </section>
 
       <section className="landing-split" id="cases">
@@ -205,6 +232,23 @@ function PhotoToTextLanding() {
       </section>
 
       <PageFooter />
+      {lightboxOpen && (
+        <dialog
+          ref={lightboxRef}
+          className="handwriting-lightbox photo-text-lightbox"
+          aria-label="Исходное фото учебного задания"
+          onCancel={() => setLightboxOpen(false)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setLightboxOpen(false);
+          }}
+        >
+          <button type="button" className="handwriting-lightbox__close" aria-label="Закрыть увеличенное изображение" autoFocus onClick={() => setLightboxOpen(false)}>×</button>
+          <div className="handwriting-lightbox__content">
+            <img src="/photo-text-examples/textbook-source.png" alt="Полная исходная страница с печатными учебными заданиями" />
+            <p>Исходное фото учебного задания</p>
+          </div>
+        </dialog>
+      )}
     </main>
   );
 }
