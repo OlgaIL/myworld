@@ -80,17 +80,13 @@ function PhotoToTextLanding() {
           </div>
         </div>
 
-        <div className="landing-demo" aria-label="Пример работы Word2you Записи">
-          <video
-            className="landing-demo__video"
-            src="/word2you-recipe-text-demo.mp4"
-            poster="/word2you-recipe-text-demo.jpg"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
-        </div>
+        <figure className="photo-text-hero-example">
+          <img src="/photo-text-examples/textbook-source.png" alt="Пример фото печатной страницы учебника для распознавания" width="1102" height="635" />
+          <figcaption>
+            Фото учебной страницы → текст для копирования
+            <a href="#photo-text-example-heading">Посмотреть результат распознавания</a>
+          </figcaption>
+        </figure>
       </section>
 
       <section className="landing-proof landing-archive-flow" aria-label="Как запись попадает в личный архив">
@@ -170,22 +166,6 @@ function PhotoToTextLanding() {
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="landing-video-band">
-        <div className="landing-video-band__copy">
-          <p className="landing-eyebrow">Пример</p>
-          <h2>Сфотографировали запись. Позже нашли ее в архиве.</h2>
-        </div>
-        <video
-          className="landing-video-band__video"
-          src="/word2you-recipe-reel.mp4"
-          poster="/word2you-recipe-reel.jpg"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
       </section>
 
       <section className="landing-search">

@@ -20,6 +20,10 @@ body {
   color: #14213d;
 }
 
+.landing-page .page-footer {
+  padding-bottom: 24px;
+}
+
 .landing-header,
 .landing-hero,
 .landing-proof,
@@ -172,6 +176,36 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.photo-text-hero-example {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #dfe6ee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.photo-text-hero-example img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.photo-text-hero-example figcaption {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.photo-text-hero-example a {
+  color: #14213d;
+  text-underline-offset: 3px;
 }
 
 .landing-proof {
