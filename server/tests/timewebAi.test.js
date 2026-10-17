@@ -126,7 +126,7 @@ test("guards disabled, key/model, invalid timeout/budget/URL without any HTTP ca
   assert.doesNotMatch(JSON.stringify(safeTimewebSettings({ ...config, baseURL: "https://api.timeweb.ai/v1" })), /synthetic-timeweb-key|apiKey|baseURL/);
 });
 
-for (const [status, code] of [[401, "TIMEWEB_AUTH_ERROR"], [403, "TIMEWEB_AUTH_ERROR"], [429, "TIMEWEB_LIMIT_ERROR"], [500, "TIMEWEB_SERVICE_ERROR"], [503, "TIMEWEB_SERVICE_ERROR"]]) {
+for (const [status, code] of [[400, "TIMEWEB_REQUEST_ERROR"], [401, "TIMEWEB_AUTH_ERROR"], [403, "TIMEWEB_AUTH_ERROR"], [422, "TIMEWEB_REQUEST_ERROR"], [429, "TIMEWEB_LIMIT_ERROR"], [500, "TIMEWEB_SERVICE_ERROR"], [503, "TIMEWEB_SERVICE_ERROR"]]) {
   test(`${status}: one SDK request, safe error and no fallback`, async () => {
     const logs = [];
     await withGateway((_req, res) => { res.writeHead(status, { "Content-Type": "application/json", "Retry-After": "0" }); res.end(JSON.stringify({ error: { message: "synthetic-timeweb-key private OCR" } })); }, async (baseURL, calls) => {
@@ -135,9 +135,59 @@ for (const [status, code] of [[401, "TIMEWEB_AUTH_ERROR"], [403, "TIMEWEB_AUTH_E
       assert.equal(result.attempts, 1);
       assert.equal(calls.length, 1);
       assert.doesNotMatch(JSON.stringify(logs), /synthetic-timeweb-key|private OCR/);
+      assert.equal(logs[0][0], "TIMEWEB LLM ERROR:");
+      assert.doesNotMatch(logs[0][1], /[\r\n]/);
+      const diagnostic = JSON.parse(logs[0][1]);
+      assert.equal(diagnostic.httpStatus, status);
+      assert.equal(diagnostic.code, code);
+      assert.ok(Number.isFinite(Date.parse(diagnostic.timestamp)));
+      assert.ok(diagnostic.durationMs >= 0);
     });
   });
 }
+test("logs precise validation reasons without response values or parser messages", async () => {
+  const privateValue = "private-document-secret";
+  const body = (overrides) => JSON.stringify({ ...validResponse, ...overrides });
+  const cases = [
+    [`{\"${privateValue}\":`, "JSON_SYNTAX", "$"],
+    ["[]", "INVALID_TYPE", "$"],
+    [body({ title: undefined }), "MISSING_FIELD", "title"],
+    [body({ notes: { [privateValue]: privateValue } }), "INVALID_TYPE", "notes"],
+    [body({ title: " " }), "EMPTY_VALUE", "title"],
+    [body({ category: privateValue }), "INVALID_VALUE", "category"],
+    [body({ section: privateValue }), "INVALID_VALUE", "section"],
+    [body({ textQuality: privateValue }), "INVALID_VALUE", "textQuality"],
+    [body({ tags: undefined }), "MISSING_FIELD", "tags"],
+    [body({ tags: privateValue }), "INVALID_TYPE", "tags"],
+    [body({ tags: [{}] }), "INVALID_TYPE", "tags[]"],
+    [body({ hasTable: undefined }), "MISSING_FIELD", "hasTable"],
+    [body({ hasFormulas: privateValue }), "INVALID_TYPE", "hasFormulas"],
+    [body({ formattedContent: {} }), "MISSING_FIELD", "formattedContent.blocks"],
+    [body({ formattedContent: { blocks: privateValue } }), "INVALID_TYPE", "formattedContent.blocks"],
+    [body({ formattedContent: { blocks: [{ type: privateValue }] } }), "INVALID_BLOCK_TYPE", "formattedContent.blocks[0].type"],
+    [body({ formattedContent: { blocks: [{ type: "paragraph" }] } }), "INVALID_TYPE", "formattedContent.blocks[0].text"],
+    [body({ formattedContent: { blocks: [{ type: "heading", text: " " }] } }), "EMPTY_VALUE", "formattedContent.blocks[0].text"],
+    [body({ formattedContent: { blocks: [{ type: "list", items: privateValue }] } }), "INVALID_TYPE", "formattedContent.blocks[0].items"],
+    [body({ formattedContent: { blocks: [{ type: "list", items: [] }] } }), "EMPTY_VALUE", "formattedContent.blocks[0].items"],
+    [body({ formattedContent: { blocks: [{ type: "list", items: [null] }] } }), "INVALID_TYPE", "formattedContent.blocks[0].items[0]"],
+    [body({ formattedContent: { blocks: [{ type: "list", items: [" "] }] } }), "EMPTY_VALUE", "formattedContent.blocks[0].items[0]"],
+    [body({ formattedContent: { blocks: [] }, textQuality: "low_confidence" }), "EMPTY_RESULT", "formattedContent.blocks"]
+  ];
+  for (const [content, reason, field] of cases) {
+    await withGateway((_req, res) => completion(res, content), async (baseURL, calls) => {
+      const logs = [];
+      const result = await request(baseURL, {}, { info() {}, error: (...args) => logs.push(args) });
+      assert.equal(result.errorCode, "TIMEWEB_INVALID_JSON");
+      assert.equal(calls.length, 1);
+      assert.equal(logs.length, 1);
+      const diagnostic = JSON.parse(logs[0][1]);
+      assert.equal(diagnostic.validationReason, reason);
+      assert.equal(diagnostic.field, field);
+      assert.deepEqual(diagnostic.usage, { prompt_tokens: 100, completion_tokens: 200, total_tokens: 300, cost: 0.05, reasoning_tokens: 20 });
+      assert.doesNotMatch(JSON.stringify(logs), /private-document-secret|Synthetic OCR input|synthetic-timeweb-key|must not escape|Unexpected token/);
+    });
+  }
+});
 test("timeout is finite, classified, and not retried", async () => {
   await withGateway(() => {}, async (baseURL, calls) => {
     const result = await request(baseURL, { timeoutMs: 80 });
