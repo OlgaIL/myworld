@@ -9,7 +9,7 @@ import {
 test("formats only safe event details and reminds about the receipt", () => {
   assert.equal(
     formatEventNotification({ event_type: "user_registered", entity_id: 41 }, { email: "new@example.test" }),
-    "Новая регистрация\nПользователь: new@example.test"
+    "Новая регистрация\nПользователь: ID 41\nEmail: new@example.test"
   );
   assert.match(
     formatEventNotification({ event_type: "payment_succeeded", entity_id: 9 }, {
@@ -23,8 +23,17 @@ test("formats only safe event details and reminds about the receipt", () => {
   );
   assert.equal(
     formatEventNotification({ event_type: "user_registered", entity_id: 41 }, { email: "new@example.test\nСбой сайта" }),
-    "Новая регистрация\nПользователь: new@example.test Сбой сайта"
+    "Новая регистрация\nПользователь: ID 41\nEmail: new@example.test Сбой сайта"
   );
+});
+
+test("registration always includes user ID with and without email", () => {
+  const event = { event_type: "user_registered", entity_id: 41 };
+  assert.equal(formatEventNotification(event), "Новая регистрация\nПользователь: ID 41");
+  assert.equal(formatEventNotification(event, { userId: "41", email: null }),
+    "Новая регистрация\nПользователь: ID 41");
+  assert.equal(formatEventNotification(event, { userId: "41", email: "person@example.test" }),
+    "Новая регистрация\nПользователь: ID 41\nEmail: person@example.test");
 });
 
 test("event messages are sent silently to the configured chat", async () => {

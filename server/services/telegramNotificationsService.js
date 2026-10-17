@@ -11,7 +11,11 @@ export function formatEventNotification(event, details = {}) {
 
   switch (event.event_type) {
     case "user_registered":
-      return `Новая регистрация\nПользователь: ${user}`;
+      return [
+        "Новая регистрация",
+        `Пользователь: ID ${singleLine(details.userId ?? event.entity_id)}`,
+        ...(singleLine(details.email) ? [`Email: ${singleLine(details.email)}`] : [])
+      ].join("\n");
     case "payment_succeeded":
       return [
         "Оплата подтверждена. Отправьте чек.",
