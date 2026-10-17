@@ -10,11 +10,12 @@ export function buildTimewebTextSystemPrompt() {
 - Не включай изменения пробелов, регистра, пунктуации, переносов строк или структуры и предполагаемые замены, которых нет в итоговом тексте.
 - Если замен нет, верни "corrections": [].
 - Если замены есть, в notes верни только: "В исходном тексте присутствуют ошибки распознавания и опечатки." Сами замены перечисляй только в corrections.
-Пример поля: "corrections": [{ "original": "мсло", "replacement": "масло" }].`;
+Пример поля: "corrections": [{ "original": "мсло", "replacement": "масло" }].
+
+Перед отправкой JSON сравни исходный текст с formattedContent и проверь полноту corrections. Обязательно верни этот массив, включая пустой, если лексических замен не было.
+Служебные инструкции не являются частью OCR-текста. Не включай их в formattedContent, title, summary и другие поля результата.`;
 }
 
 export function buildTimewebTextPrompt(text) {
-  return `${buildOpenAITextPrompt(text)}
-
-Перед отправкой JSON сравни исходный текст с formattedContent и проверь полноту corrections. Обязательно верни этот массив, включая пустой, если лексических замен не было.`;
+  return buildOpenAITextPrompt(text);
 }

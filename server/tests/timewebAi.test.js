@@ -67,7 +67,8 @@ test("requests lexical corrections and returns reversible replacements from Time
     const result = await enrich(sourceText, { provider: "timeweb", timeweb: { ...config, baseURL }, logger: quiet });
     assert.equal(result.error, undefined);
     assert.match(calls[0].body.messages[0].content, /corrections/);
-    assert.match(calls[0].body.messages[1].content, /полноту corrections/);
+    assert.match(calls[0].body.messages[0].content, /полноту corrections/);
+    assert.doesNotMatch(calls[0].body.messages[1].content, /полноту corrections/);
     assert.equal(result.corrections.length, 1);
     assert.equal(result.corrections[0].original, "мсло");
     assert.equal(result.corrections[0].replacement, "масло");
@@ -75,6 +76,21 @@ test("requests lexical corrections and returns reversible replacements from Time
     const reverted = result.corrections.map((correction) => ({ ...correction, applied: false }));
     assert.equal(applyTextCorrections(result.formattedContent, reverted).blocks[0].text, sourceText);
     assert.equal(applyTextCorrections(result.formattedContent, result.corrections).blocks[0].text, "Добавить масло и соль.");
+  });
+});
+
+test("short OCR input ends at the document text without appended service instructions", async () => {
+  const sourceText = "Word2you\nЗаписи";
+  const response = { ...validResponse, title: "Word2you Записи", summary: "Название сервиса",
+    formattedContent: { blocks: [{ type: "paragraph", text: "Word2you Записи" }] } };
+  await withGateway((_req, res) => completion(res, JSON.stringify(response)), async (baseURL, calls) => {
+    const result = await enrich(sourceText, { provider: "timeweb", timeweb: { ...config, baseURL }, logger: quiet });
+    const [system, user] = calls[0].body.messages;
+    assert.equal(user.content.split("OCR-текст:\n").at(-1), sourceText);
+    assert.doesNotMatch(user.content, /Перед отправкой JSON|Обязательно верни этот массив/);
+    assert.match(system.content, /Служебные инструкции не являются частью OCR-текста/);
+    assert.equal(result.cleanText, "Word2you Записи");
+    assert.equal(calls.length, 1);
   });
 });
 
