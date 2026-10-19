@@ -51,6 +51,8 @@ test("uses dedicated endpoint/key/model, text prompts and full JSON", async () =
     assert.equal(calls[0].body.max_tokens, 6000);
     assert.deepEqual(calls[0].body.response_format, { type: "json_object" });
     assert.deepEqual(calls[0].body.messages.map((m) => m.role), ["system", "user"]);
+    assert.match(calls[0].body.messages[0].content, /"type":"list","items":\["Первый пункт","Второй пункт"\]/);
+    assert.match(calls[0].body.messages[0].content, /category выбирай ТОЧНО из списка/);
     assert.match(calls[0].body.messages[1].content, /Synthetic OCR input/);
     assert.equal(result.usage.reasoning_tokens, 20);
     assert.doesNotMatch(JSON.stringify(logs), /synthetic-timeweb-key|Synthetic OCR input|must not escape/);
@@ -105,6 +107,118 @@ test("preserves valid document text when correction metadata is absent or unusab
   }
 });
 
+test("classification mistakes do not discard valid document text or leak model values", async () => {
+  for (const [category, section, expectedCategory, expectedSection] of [
+    [" ДОКУМЕНТ ", "УЧЁБА", "документ", "учеба"],
+    ["private-model-value", "private-model-value", "другое", "другое"],
+    [null, undefined, "другое", "другое"],
+    [{ secret: "private-model-value" }, ["private-model-value"], "другое", "другое"]
+  ]) {
+    const logs = [];
+    await withGateway((_req, res) => completion(res, JSON.stringify({ ...validResponse, category, section })), async (baseURL, calls) => {
+      const result = await request(baseURL, {}, { info() {}, error: (...args) => logs.push(args), warn: (...args) => logs.push(args) });
+      assert.equal(result.error, undefined);
+      assert.equal(result.category, expectedCategory);
+      assert.equal(result.section, expectedSection);
+      assert.equal(result.cleanText, validResponse.formattedContent.blocks[0].text);
+      assert.equal(calls.length, 1);
+      assert.equal(logs[0][0], "TIMEWEB LLM NORMALIZED:");
+      assert.deepEqual(JSON.parse(logs[0][1]).normalizations.map((entry) => entry.field), ["category", "section"]);
+      assert.doesNotMatch(JSON.stringify(logs), /private-model-value|Synthetic OCR input|synthetic-timeweb-key/);
+    });
+  }
+});
+
+test("preserves complete lists, surrounding paragraphs, numbering and corrections in one request", async () => {
+  const sourceText = "Покупки\n3. Купить мсло\n4. Купить соль\nСохранить чек";
+  const response = { ...validResponse, category: " ЧЕК ",
+    formattedContent: { blocks: [
+      { type: "heading", text: "Покупки" },
+      { type: "list", items: ["3. Купить масло", "4. Купить соль"] },
+      { type: "paragraph", text: "Сохранить чек" }
+    ] }, corrections: [{ original: "мсло", replacement: "масло" }] };
+  await withGateway((_req, res) => completion(res, JSON.stringify(response)), async (baseURL, calls) => {
+    const result = await enrich(sourceText, { provider: "timeweb", timeweb: { ...config, baseURL }, logger: quiet });
+    assert.equal(result.error, undefined);
+    assert.equal(result.category, "чек");
+    assert.deepEqual(result.formattedContent.blocks, [
+      { type: "heading", text: "Покупки" },
+      { type: "list", items: ["Купить масло", "Купить соль"], ordered: true, start: 3 },
+      { type: "paragraph", text: "Сохранить чек" }
+    ]);
+    assert.equal(result.cleanText, "Покупки\n\n3. Купить масло\n4. Купить соль\n\nСохранить чек");
+    assert.equal(result.corrections.length, 1);
+    assert.equal(result.corrections[0].replacement, "масло");
+    assert.equal(calls.length, 1);
+  });
+});
+
+test("normalizes only lossless alternative list shapes without inventing item boundaries", async () => {
+  for (const [block, expected, warning] of [
+    [{ type: "list", items: [{ text: "3. Первый пункт" }, { text: "4. Второй пункт" }], ordered: true, start: 3 },
+      { type: "list", items: ["Первый пункт", "Второй пункт"], ordered: true, start: 3 }, "LIST_TEXT_OBJECTS"],
+    [{ type: "list", text: "Первый пункт и его\nпродолжение. Второй пункт." },
+      { type: "paragraph", text: "Первый пункт и его продолжение. Второй пункт." }, "LIST_TEXT_AS_PARAGRAPH"],
+    [{ type: "list", items: "Первый пункт.\nВторой пункт." },
+      { type: "paragraph", text: "Первый пункт. Второй пункт." }, "LIST_TEXT_AS_PARAGRAPH"]
+  ]) {
+    const logs = [];
+    const blocks = [{ type: "heading", text: "Начало" }, block, { type: "paragraph", text: "Конец" }];
+    await withGateway((_req, res) => completion(res, JSON.stringify({ ...validResponse, formattedContent: { blocks } })), async (baseURL, calls) => {
+      const result = await request(baseURL, {}, { info() {}, error() {}, warn: (...args) => logs.push(args) });
+      assert.equal(result.error, undefined);
+      assert.deepEqual(result.formattedContent.blocks, [blocks[0], expected, blocks[2]]);
+      assert.equal(JSON.parse(logs[0][1]).normalizations[0].code, warning);
+      assert.doesNotMatch(JSON.stringify(logs), /Первый пункт|Второй пункт|Начало|Конец/);
+      assert.equal(calls.length, 1);
+    });
+  }
+});
+
+test("rejects ambiguous list shapes instead of silently dropping any item or extra content", async () => {
+  for (const block of [
+    { type: "list", items: ["Первый", { text: "Второй" }] },
+    { type: "list", items: [{ text: "Первый", children: ["Второй"] }] },
+    { type: "list", items: [{ text: "Первый" }], text: "Второй" },
+    { type: "list", items: ["Первый"], text: "Второй" },
+    { type: "list", items: [{ text: " " }] },
+    { type: "list", items: { first: "Первый", second: "Второй" } },
+    { type: "list", items: ["Первый", null, "Третий"] },
+    { type: "list", items: ["Первый", 2, "Третий"] },
+    { type: "list", items: "Первый", text: "Другой текст" },
+    { type: "list", text: "Первый", children: ["Второй"] }
+  ]) {
+    await withGateway((_req, res) => completion(res, JSON.stringify({ ...validResponse, formattedContent: { blocks: [block] } })), async (baseURL, calls) => {
+      const result = await request(baseURL);
+      assert.equal(result.errorCode, "TIMEWEB_INVALID_JSON");
+      assert.equal(result.sourceText, "Synthetic OCR input");
+      assert.equal(calls.length, 1);
+    });
+  }
+});
+
+test("refuses content exceeding shared parser limits instead of reporting truncated text as success", async () => {
+  for (const blocks of [
+    Array.from({ length: 101 }, (_, index) => ({ type: "paragraph", text: `Абзац ${index}` })),
+    [{ type: "list", items: Array.from({ length: 101 }, (_, index) => `Пункт ${index}`) }],
+    [{ type: "paragraph", text: Array.from({ length: 101 }, (_, index) => `Абзац ${index}`).join("\n\n") }]
+  ]) {
+    await withGateway((_req, res) => completion(res, JSON.stringify({ ...validResponse, formattedContent: { blocks } })), async (baseURL) => {
+      assert.equal((await request(baseURL)).errorCode, "TIMEWEB_INVALID_JSON");
+    });
+  }
+});
+
+test("validated document blocks cannot be replaced by unvalidated text aliases", async () => {
+  const response = { ...validResponse, formattedText: "P|Unvalidated replacement", cleanText: "Another replacement" };
+  await withGateway((_req, res) => completion(res, JSON.stringify(response)), async (baseURL) => {
+    const result = await request(baseURL);
+    assert.equal(result.error, undefined);
+    assert.equal(result.cleanText, validResponse.formattedContent.blocks[0].text);
+    assert.doesNotMatch(result.cleanText, /replacement/);
+  });
+});
+
 test("guards disabled, key/model, invalid timeout/budget/URL without any HTTP call", async () => {
   await withGateway((_req, res) => completion(res), async (baseURL, calls) => {
     for (const [options, code] of [
@@ -154,8 +268,6 @@ test("logs precise validation reasons without response values or parser messages
     [body({ title: undefined }), "MISSING_FIELD", "title"],
     [body({ notes: { [privateValue]: privateValue } }), "INVALID_TYPE", "notes"],
     [body({ title: " " }), "EMPTY_VALUE", "title"],
-    [body({ category: privateValue }), "INVALID_VALUE", "category"],
-    [body({ section: privateValue }), "INVALID_VALUE", "section"],
     [body({ textQuality: privateValue }), "INVALID_VALUE", "textQuality"],
     [body({ tags: undefined }), "MISSING_FIELD", "tags"],
     [body({ tags: privateValue }), "INVALID_TYPE", "tags"],
@@ -167,7 +279,7 @@ test("logs precise validation reasons without response values or parser messages
     [body({ formattedContent: { blocks: [{ type: privateValue }] } }), "INVALID_BLOCK_TYPE", "formattedContent.blocks[0].type"],
     [body({ formattedContent: { blocks: [{ type: "paragraph" }] } }), "INVALID_TYPE", "formattedContent.blocks[0].text"],
     [body({ formattedContent: { blocks: [{ type: "heading", text: " " }] } }), "EMPTY_VALUE", "formattedContent.blocks[0].text"],
-    [body({ formattedContent: { blocks: [{ type: "list", items: privateValue }] } }), "INVALID_TYPE", "formattedContent.blocks[0].items"],
+    [body({ formattedContent: { blocks: [{ type: "list", items: { secret: privateValue } }] } }), "INVALID_TYPE", "formattedContent.blocks[0].items"],
     [body({ formattedContent: { blocks: [{ type: "list", items: [] }] } }), "EMPTY_VALUE", "formattedContent.blocks[0].items"],
     [body({ formattedContent: { blocks: [{ type: "list", items: [null] }] } }), "INVALID_TYPE", "formattedContent.blocks[0].items[0]"],
     [body({ formattedContent: { blocks: [{ type: "list", items: [" "] }] } }), "EMPTY_VALUE", "formattedContent.blocks[0].items[0]"],

@@ -16,19 +16,48 @@ function invalid(reason, field) {
   throw new TimewebValidationError(reason, field);
 }
 
-// Check the full prompt contract before the existing tolerant normalizing parser.
-export function validateTimewebJson(raw) {
+function normalizeClassification(value, allowed, field, normalizations) {
+  const candidate = typeof value === "string" ? value.trim().toLowerCase().replaceAll("ё", "е") : "";
+  const normalized = allowed.includes(candidate) ? candidate : "другое";
+  if (value !== normalized) normalizations.push({ code: allowed.includes(candidate)
+    ? "CLASSIFICATION_NORMALIZED" : "CLASSIFICATION_DEFAULTED", field });
+  return normalized;
+}
+
+// Accept only lossless alternative list shapes; never filter out bad items.
+function normalizeListShape(block, field, normalizations) {
+  if (Object.keys(block).some((key) => !["type", "items", "text", "ordered", "start"].includes(key))) return block;
+  if (Array.isArray(block.items) && block.items.length
+    && block.items.every((item) => item && typeof item === "object" && !Array.isArray(item)
+      && Object.keys(item).length === 1 && typeof item.text === "string")) {
+    normalizations.push({ code: "LIST_TEXT_OBJECTS", field: `${field}.items` });
+    return { ...block, items: block.items.map((item) => item.text) };
+  }
+  // Without explicit item boundaries, keep all text as a paragraph rather than
+  // inventing list items from wrapped lines or discarding the whole document.
+  const text = block.items === undefined && typeof block.text === "string" ? block.text
+    : typeof block.items === "string" && (block.text === undefined || block.text === block.items) ? block.items : null;
+  if (text !== null && text.trim()) {
+    normalizations.push({ code: "LIST_TEXT_AS_PARAGRAPH", field });
+    return { type: "paragraph", text };
+  }
+  return block;
+}
+
+// Validate document structure before the shared parser; classification may fall
+// back to "other", but malformed or ambiguous document content must still fail.
+export function validateTimewebJson(raw, normalizations = []) {
   let value;
   try { value = JSON.parse(raw); }
   catch { invalid("JSON_SYNTAX", "$"); }
   if (!value || Array.isArray(value) || typeof value !== "object") invalid("INVALID_TYPE", "$");
-  for (const field of ["title", "summary", "category", "section", "topic", "textQuality", "notes"]) {
+  for (const field of ["title", "summary", "topic", "textQuality", "notes"]) {
     if (typeof value[field] !== "string") invalid(value[field] === undefined ? "MISSING_FIELD" : "INVALID_TYPE", field);
   }
   if (!value.title.trim()) invalid("EMPTY_VALUE", "title");
-  for (const [field, allowed] of [["category", AI_CATEGORIES], ["section", AI_SECTIONS], ["textQuality", AI_TEXT_QUALITY_VALUES]]) {
-    if (!allowed.includes(value[field])) invalid("INVALID_VALUE", field);
-  }
+  value.category = normalizeClassification(value.category, AI_CATEGORIES, "category", normalizations);
+  value.section = normalizeClassification(value.section, AI_SECTIONS, "section", normalizations);
+  if (!AI_TEXT_QUALITY_VALUES.includes(value.textQuality)) invalid("INVALID_VALUE", "textQuality");
   if (!Array.isArray(value.tags)) invalid(value.tags === undefined ? "MISSING_FIELD" : "INVALID_TYPE", "tags");
   if (value.tags.some((tag) => typeof tag !== "string")) invalid("INVALID_TYPE", "tags[]");
   for (const field of ["hasTable", "hasFormulas", "hasRecognitionErrors"]) {
@@ -37,14 +66,20 @@ export function validateTimewebJson(raw) {
   if (!Array.isArray(value.formattedContent?.blocks)) {
     invalid(value.formattedContent?.blocks === undefined ? "MISSING_FIELD" : "INVALID_TYPE", "formattedContent.blocks");
   }
+  if (value.formattedContent.blocks.length > 100) invalid("TOO_MANY_BLOCKS", "formattedContent.blocks");
   // Correction metadata is normalized separately: a bad item must not discard
   // otherwise valid document text. Unusable/ambiguous replacements are hidden.
-  for (const [index, block] of value.formattedContent.blocks.entries()) {
+  let expandedBlockCount = 0;
+  for (const [index, originalBlock] of value.formattedContent.blocks.entries()) {
     const field = `formattedContent.blocks[${index}]`;
+    const block = originalBlock?.type === "list" ? normalizeListShape(originalBlock, field, normalizations) : originalBlock;
+    value.formattedContent.blocks[index] = block;
     if (!block || !["heading", "paragraph", "list"].includes(block.type)) invalid("INVALID_BLOCK_TYPE", `${field}.type`);
     if (block.type === "list") {
+      if (block.text !== undefined && block.text !== "") invalid("AMBIGUOUS_LIST_CONTENT", `${field}.text`);
       if (!Array.isArray(block.items)) invalid("INVALID_TYPE", `${field}.items`);
       if (!block.items.length) invalid("EMPTY_VALUE", `${field}.items`);
+      if (block.items.length > 100) invalid("TOO_MANY_ITEMS", `${field}.items`);
       for (const [itemIndex, item] of block.items.entries()) {
         if (typeof item !== "string") invalid("INVALID_TYPE", `${field}.items[${itemIndex}]`);
         if (!item.trim()) invalid("EMPTY_VALUE", `${field}.items[${itemIndex}]`);
@@ -53,7 +88,10 @@ export function validateTimewebJson(raw) {
       if (typeof block.text !== "string") invalid("INVALID_TYPE", `${field}.text`);
       if (!block.text.trim()) invalid("EMPTY_VALUE", `${field}.text`);
     }
+    expandedBlockCount += block.type === "paragraph"
+      ? block.text.split(/\n\s*\n/).filter((text) => text.trim()).length : 1;
   }
+  if (expandedBlockCount > 100) invalid("TOO_MANY_BLOCKS", "formattedContent.blocks");
   if (!value.formattedContent.blocks.length && value.textQuality !== "no_meaningful_text") invalid("EMPTY_RESULT", "formattedContent.blocks");
   return value;
 }
@@ -100,15 +138,24 @@ export async function processTimeweb(text, { timeweb = {}, logger = console, onR
     if (choice?.finish_reason === "length") return fail("TIMEWEB_RESPONSE_TRUNCATED", { usage });
     if (typeof raw !== "string" || !raw.trim()) return fail("TIMEWEB_RESPONSE_EMPTY", { usage });
     if (choice?.finish_reason !== "stop") return fail("TIMEWEB_RESPONSE_INCOMPLETE", { usage });
-    try { validateTimewebJson(raw); } catch (error) {
+    const normalizations = [];
+    let validated;
+    try { validated = validateTimewebJson(raw, normalizations); } catch (error) {
       const diagnostics = error instanceof TimewebValidationError
         ? { validationReason: error.reason, field: error.field }
         : { validationReason: "VALIDATION_FAILED" };
       return fail("TIMEWEB_INVALID_JSON", { usage }, diagnostics);
     }
-    const result = parseAIResponse(raw, { sourceText: text });
+    // Only consume the validated blocks, never an unvalidated formattedText or
+    // cleanText alias that could override them in the shared parser.
+    const document = { ...validated };
+    delete document.formattedText;
+    delete document.cleanText;
+    const result = parseAIResponse(JSON.stringify(document), { sourceText: text });
     if (result.error) return fail("TIMEWEB_INVALID_JSON", { usage }, { validationReason: "NORMALIZATION_FAILED" });
     if (typeof onRawResponse === "function") onRawResponse(raw);
+    if (normalizations.length) logger.warn?.("TIMEWEB LLM NORMALIZED:", JSON.stringify({ provider: "timeweb",
+      timestamp: new Date().toISOString(), normalizations }));
     logger.info?.("TIMEWEB LLM SUCCESS:", { provider: "timeweb", model: timeweb.model, durationMs: Date.now() - startedAt, usage });
     return { ...result, sourceText: text, usage };
   } catch (error) {
