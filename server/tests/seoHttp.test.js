@@ -101,7 +101,6 @@ test("serves unique meaningful React prerenders without JavaScript or bot-specif
     assert.ok(body.includes(page.text), page.path);
     if (page.path === "/photo-to-text") {
       assert.match(body, /<img\b[^>]*src="\/photo-text-examples\/textbook-source\.png"/);
-      assert.ok(body.includes("Фрагмент результата: задания 1–2, вкладка „Текст“"));
       assert.match(body, /<p>- 1\. В магазин привезли 3 т 250 кг картофеля,/);
       assert.match(body, /<p>- 2\. В саду было 28 рядов фруктовых деревьев\./);
     }

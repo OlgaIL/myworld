@@ -394,6 +394,49 @@ function HandwritingToTextLanding() {
         </div>
       </section>
 
+      <section className="landing-split" id="batch" aria-labelledby="handwriting-batch-heading">
+        <div>
+          <p className="landing-eyebrow">Несколько страниц тетради</p>
+          <h2 id="handwriting-batch-heading">Загрузите несколько фото конспекта за один раз</h2>
+          <p>После входа выберите несколько фотографий в личном кабинете. Пакетная загрузка удобна, когда нужно перенести в текст несколько рукописных страниц.</p>
+        </div>
+        <div className="landing-usecases">
+          <article className="landing-usecase">
+            <h3>Для каждой фотографии — отдельная запись</h3>
+            <p>Изображения обрабатываются по очереди в пределах доступного остатка обработок. Проверьте результат каждой страницы по оригиналу, прежде чем копировать текст в свой документ.</p>
+          </article>
+          <article className="landing-usecase">
+            <h3>Печатные страницы и таблицы</h3>
+            <p>Для фото учебника, документа или скриншота смотрите <Link to="/photo-to-text">распознавание печатного текста</Link>. На той же странице описано <a href="/photo-to-text#tables">восстановление таблиц с фотографии</a> и условия доступа.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="landing-section" id="faq" aria-labelledby="handwriting-faq-heading">
+        <div className="landing-section__heading">
+          <p className="landing-eyebrow">Вопросы и ответы</p>
+          <h2 id="handwriting-faq-heading">Как перевести рукописный текст в печатный</h2>
+        </div>
+        <div className="landing-usecases">
+          <article className="landing-usecase">
+            <h3>Как получить текст из фотографии тетради?</h3>
+            <p>Перейдите к загрузке и выберите изображение JPEG, PNG или WebP. Дождитесь распознавания и сверьте слова с фотографией: неразборчивый почерк может распознаться с ошибками.</p>
+          </article>
+          <article className="landing-usecase">
+            <h3>Можно ли скопировать распознанный конспект?</h3>
+            <p>Да, рядом с текстом есть кнопка копирования. После проверки вставьте результат в свой документ. После входа можно сохранить запись с исходным фото и вернуться к ней с телефона или компьютера.</p>
+          </article>
+          <article className="landing-usecase">
+            <h3>Как сфотографировать рукопись для распознавания?</h3>
+            <p>Снимайте страницу ровно сверху при хорошем освещении, без бликов и теней. Убедитесь, что края страницы не обрезаны, а буквы в фокусе. Если запись длинная, сфотографируйте страницы отдельно и воспользуйтесь <a href="#batch">пакетной загрузкой после входа</a>.</p>
+          </article>
+          <article className="landing-usecase">
+            <h3>Что делать, если слово распознано неправильно?</h3>
+            <p>Сравните его с оригиналом и исправьте перед использованием. Если часть записи не читается на самом снимке, сделайте более чёткую фотографию. Для <Link to="/photo-to-text">печатного текста и скриншотов</Link> есть отдельная страница с примером.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="landing-split handwriting-quality">
         <div>
           <p className="landing-eyebrow">Честно о качестве</p>
