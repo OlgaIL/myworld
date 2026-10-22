@@ -31,8 +31,12 @@ export function logoutAdmin() {
   return axios.post(`${API_URL}/admin-api/logout`).then((res) => res.data);
 }
 
-export function getAdminUsers() {
-  return axios.get(`${API_URL}/admin-api/users`).then((res) => res.data);
+export function getAdminUsers(filters = {}) {
+  return axios.get(`${API_URL}/admin-api/users`, { params: filters }).then((res) => res.data);
+}
+
+export function getAdminUsersSummary() {
+  return axios.get(`${API_URL}/admin-api/users-summary`).then((res) => res.data);
 }
 
 export function getAdminPresence() {

@@ -107,7 +107,7 @@ test("maps compact and detailed user analytics without personal Metrika paramete
   ]);
   const users = await listResponse.json();
   const detail = await detailResponse.json();
-  const listed = users.find((user) => String(user.id) === String(userId));
+  const listed = users.users.find((user) => String(user.id) === String(userId));
 
   assert.equal(listResponse.status, 200);
   assert.equal(detailResponse.status, 200);

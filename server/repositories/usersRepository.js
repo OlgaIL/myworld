@@ -278,6 +278,7 @@ export async function findUserForAdmin(userId) {
     `
       select
         users.id,
+        exists (select 1 from payments where payments.user_id = users.id and payments.status = 'succeeded') as has_successful_purchase,
         users.email,
         users.email_verified_at,
         users.display_name,

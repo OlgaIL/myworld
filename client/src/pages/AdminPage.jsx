@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminAccessRequests from "../components/AdminAccessRequests";
 import AdminGuestStorage from "../components/AdminGuestStorage";
 import { createLatestLoader } from "../utils/latestLoader";
 import AdminImprovementRequests from "../components/AdminImprovementRequests";
 import AdminProcessingCredits from "../components/AdminProcessingCredits";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
+import AdminUsersTable from "../components/AdminUsersTable";
+import { DEFAULT_USER_FILTERS } from "../utils/adminUsers.js";
+import AdminUserDrawer from "../components/AdminUserDrawer";
 import AdminDeleteAccount, { AdminAccountDeletionNotice } from "../components/AdminDeleteAccount";
 import {
   createAdminManualProcessingCredit,
@@ -17,6 +20,7 @@ import {
   getAdminSettings,
   getAdminUser,
   getAdminUsers,
+  getAdminUsersSummary,
   loginAdmin,
   logoutAdmin,
   updateAdminAccessRequestStatus,
@@ -36,6 +40,7 @@ function formatCompactDateTime(value) {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Istanbul",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -54,27 +59,6 @@ function getDeviceLabel(user) {
   return [user.firstDeviceType, user.firstDeviceOs, user.firstDeviceBrowser]
     .filter(Boolean)
     .join(" · ") || "—";
-}
-
-function getCompactProcessingUsage(user) {
-  if (user.processingEnabled) {
-    return "безлимит";
-  }
-
-  const processedTotal = Math.max(Number(user.recordsProcessedTotal || 0), 0);
-  const freeLimit = Math.max(Number(user.recordLimit || 0), 0);
-  const paidQuota = Math.max(Number(user.processingQuota || 0), 0);
-  const paidUsed = Math.min(Math.max(Number(user.processingUsed || 0), 0), paidQuota);
-  const parts = [];
-
-  if (freeLimit > 0) {
-    parts.push(`бесплатно ${Math.min(processedTotal, freeLimit)} из ${freeLimit}`);
-  }
-  if (paidQuota > 0) {
-    parts.push(`платный пакет ${paidUsed} из ${paidQuota}`);
-  }
-
-  return parts.join(" · ") || "лимит не задан";
 }
 
 function getDocumentStatusSummary(user) {
@@ -121,6 +105,7 @@ function formatAccessDate(value) {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Istanbul",
     day: "numeric",
     month: "numeric",
     year: "numeric"
@@ -242,101 +227,19 @@ function AdminLogin({ onLogin }) {
   );
 }
 
-function AdminUsersList({
-  users,
-  selectedUserId,
-  savedUserId,
-  requestCountsByUser,
-  improvementCountsByUser,
-  onSelectUser,
-  onShowImprovements
-}) {
-  return (
-    <section className="admin-users">
-      <h2>Пользователи</h2>
-
-      {users.length === 0 ? (
-        <p className="admin-muted">Пользователей пока нет.</p>
-      ) : (
-        <div className="admin-users__list">
-          {users.map((user) => {
-            const improvementCount = improvementCountsByUser.get(user.id) || 0;
-            const acquisition = user.acquisitionContext || {};
-
-            return (
-            <article
-              className={`admin-user-row ${selectedUserId === user.id ? "admin-user-row--active" : ""}`}
-              key={user.id}
-            >
-              <button className="admin-user-row__select" type="button" onClick={() => onSelectUser(user.id)}>
-                <span className="admin-user-row__main">
-                <span className="admin-user-row__title">
-                  <strong>{user.email || user.displayName || `Пользователь ${user.id}`}</strong>
-                  {requestCountsByUser.get(user.id) > 0 && (
-                    <span className="admin-user-row__request">
-                      {requestCountsByUser.get(user.id) === 1 ? "заявка" : `${requestCountsByUser.get(user.id)} заявок`}
-                    </span>
-                  )}
-                </span>
-                <span>{user.displayName || "Без имени"}</span>
-                {user.authProviders?.length > 0 && (
-                  <span className="admin-auth-providers" aria-label="Способы входа">
-                    {user.authProviders.map((provider) => (
-                      <span className="admin-auth-provider" key={provider}>{provider}</span>
-                    ))}
-                  </span>
-                )}
-                </span>
-                <span className="admin-user-row__metrics">
-                  <span>Регистрация: {formatCompactDateTime(user.createdAt)}</span>
-                  <span>Последняя обработка: {formatCompactDateTime(user.lastProcessingAt)}</span>
-                  <span>Визиты: {getMetrikaVisitsLabel(user)}</span>
-                  <span>Источник: {getAcquisitionSourceLabel(acquisition)}</span>
-                  <span>Фраза: {acquisition.utm_term || "—"}</span>
-                  <span>Устройство: {user.firstDeviceType || "—"}</span>
-                  <span>Лимит: {getCompactProcessingUsage(user)}</span>
-                  <span>Списано обработок: {Number(user.recordsProcessedTotal || 0)}</span>
-                  <span>Документы: {getDocumentStatusSummary(user)}</span>
-                  <span>История: создано {user.documentsCreatedTotal} · удалено {user.documentsDeletedTotal}</span>
-                </span>
-              </button>
-              <div className="admin-user-row__actions">
-                <button
-                  className="admin-user-row__improvement"
-                  type="button"
-                  onClick={() => onShowImprovements(user.id)}
-                >
-                  Улучшения: {improvementCount}
-                </button>
-                <span className="admin-user-row__client-id">ClientID: {user.metrikaClientId || "—"}</span>
-                {user.metrikaClientId && (
-                  <>
-                    <AdminCopyButton label="Скопировать ClientID" value={user.metrikaClientId} />
-                    <a className="admin-user-row__webvisor" href={getWebvisorUrl()} target="_blank" rel="noreferrer">
-                      Вебвизор
-                    </a>
-                  </>
-                )}
-                {savedUserId === user.id && (
-                  <span className="admin-user-row__saved">✓ изменения сохранены</span>
-                )}
-              </div>
-            </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function AdminUserDetails({ user, onSaved, onDeleted }) {
-  const [processingEnabled, setProcessingEnabled] = useState(false);
-  const [processingQuota, setProcessingQuota] = useState(0);
-  const [processingUsed, setProcessingUsed] = useState(0);
-  const [accessExpiresAt, setAccessExpiresAt] = useState("");
+function AdminUserDetails({ user, onSaved, onDeleted, onDirtyChange, onBusyChange }) {
+  const [processingEnabled, setProcessingEnabled] = useState(user.processingEnabled);
+  const [processingQuota, setProcessingQuota] = useState(user.processingQuota);
+  const [processingUsed, setProcessingUsed] = useState(user.processingUsed);
+  const [accessExpiresAt, setAccessExpiresAt] = useState(formatDateInputValue(user.accessExpiresAt));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const dirty = processingEnabled !== user.processingEnabled
+    || Number(processingQuota) !== Number(user.processingQuota)
+    || Number(processingUsed) !== Number(user.processingUsed)
+    || accessExpiresAt !== formatDateInputValue(user.accessExpiresAt);
+  useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { onBusyChange(saving); }, [saving, onBusyChange]);
 
   useEffect(() => {
     if (!user) {
@@ -347,7 +250,6 @@ function AdminUserDetails({ user, onSaved, onDeleted }) {
     setProcessingQuota(user.processingQuota);
     setProcessingUsed(user.processingUsed);
     setAccessExpiresAt(formatDateInputValue(user.accessExpiresAt));
-    setMessage("");
   }, [user]);
 
   if (!user) {
@@ -371,6 +273,7 @@ function AdminUserDetails({ user, onSaved, onDeleted }) {
         accessExpiresAt: accessExpiresAt || null
       });
       onSaved(updatedUser);
+      setMessage("Изменения сохранены.");
     } catch {
       setMessage("Не удалось сохранить изменения.");
     } finally {
@@ -637,6 +540,17 @@ function AdminDashboard({ onLogout }) {
   const [accountDeletion, setAccountDeletion] = useState(null);
   const [deletionRefreshError, setDeletionRefreshError] = useState("");
   const [users, setUsers] = useState([]);
+  const [usersSummary, setUsersSummary] = useState({ usersCount: 0, documentsCount: 0 });
+  const [userFilters, setUserFilters] = useState({ ...DEFAULT_USER_FILTERS });
+  const [userPage, setUserPage] = useState({ total: 0, page: 1, pageSize: 25 });
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState("");
+  const [usersRefresh, setUsersRefresh] = useState(0);
+  const [detailsError, setDetailsError] = useState("");
+  const [detailsDirty, setDetailsDirty] = useState(false);
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const [detailsRefresh, setDetailsRefresh] = useState(0);
+  const [improvementFilterLabel, setImprovementFilterLabel] = useState(null);
   const [accessRequests, setAccessRequests] = useState([]);
   const [processingCredits, setProcessingCredits] = useState([]);
   const [improvementRequests, setImprovementRequests] = useState([]);
@@ -646,7 +560,7 @@ function AdminDashboard({ onLogout }) {
   const [llmHours, setLlmHours] = useState(24);
   const [llmSummary, setLlmSummary] = useState(null);
   const [llmSummaryError, setLlmSummaryError] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTabState] = useState("overview");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [savedUserId, setSavedUserId] = useState(null);
@@ -655,7 +569,6 @@ function AdminDashboard({ onLogout }) {
   const [improvementsLoading, setImprovementsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const userDetailsRef = useRef(null);
 
   const selectedId = selectedUserId;
 
@@ -668,18 +581,17 @@ function AdminDashboard({ onLogout }) {
         setImprovementsLoading(true);
         setError("");
         const [loadedUsers, loadedRequests, loadedSettings, loadedCredits, loadedImprovements] = await Promise.all([
-          getAdminUsers(),
+          getAdminUsersSummary(),
           getAdminAccessRequests(),
           getAdminSettings(),
           getAdminProcessingCredits(),
           getAdminImprovementRequests()
         ]);
-        setUsers(loadedUsers);
+        setUsersSummary(loadedUsers);
         setAccessRequests(Array.isArray(loadedRequests) ? loadedRequests : []);
         setSettings(loadedSettings);
         setProcessingCredits(Array.isArray(loadedCredits) ? loadedCredits : []);
         setImprovementRequests(Array.isArray(loadedImprovements) ? loadedImprovements : []);
-        setSelectedUserId((current) => current || loadedUsers[0]?.id || null);
       } catch {
         setError("Не удалось загрузить данные админки.");
       } finally {
@@ -694,6 +606,44 @@ function AdminDashboard({ onLogout }) {
   }, []);
 
   useEffect(() => {
+    if (activeTab !== "users") return undefined;
+    let active = true;
+    setUsersLoading(true);
+    setUsersError("");
+    const timer = window.setTimeout(async () => {
+      if (userFilters.registered === "custom" && (!userFilters.from || !userFilters.to || userFilters.from > userFilters.to)) {
+        if (active) { setUsersError("Выберите корректный диапазон дат."); setUsersLoading(false); }
+        return;
+      }
+      try {
+        const result = await getAdminUsers(userFilters);
+        if (!active) return;
+        setUsers(result.users);
+        setUserPage({ total: result.total, page: result.page, pageSize: result.pageSize });
+        if (result.page !== userFilters.page) setUserFilters(current => ({ ...current, page: result.page }));
+      } catch {
+        if (active) setUsersError("Не удалось загрузить пользователей.");
+      } finally { if (active) setUsersLoading(false); }
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [activeTab, userFilters, usersRefresh]);
+
+  useEffect(() => {
+    if (!usersRefresh) return undefined;
+    let active = true;
+    getAdminUsersSummary().then(result => { if (active) setUsersSummary(result); })
+      .catch(() => { if (active) setDeletionRefreshError("Не удалось обновить общие показатели. Обновите страницу."); });
+    return () => { active = false; };
+  }, [usersRefresh]);
+
+  useEffect(() => {
+    if (!detailsDirty) return undefined;
+    const warn = event => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [detailsDirty]);
+
+  useEffect(() => {
     let cancelled = false;
 
     if (!selectedId) {
@@ -704,11 +654,15 @@ function AdminDashboard({ onLogout }) {
     }
 
     async function loadUser() {
-      const user = await getAdminUser(selectedId);
-      if (cancelled) {
-        return;
+      setSelectedUser(null);
+      setDetailsError("");
+      try {
+        const user = await getAdminUser(selectedId);
+        if (!cancelled) setSelectedUser(user);
+      } catch (failure) {
+        if (!cancelled) setDetailsError(failure.response?.status === 404
+          ? "Пользователь больше не существует." : "Не удалось загрузить карточку пользователя.");
       }
-      setSelectedUser(user);
     }
 
     loadUser();
@@ -716,7 +670,7 @@ function AdminDashboard({ onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, [selectedId]);
+  }, [selectedId, detailsRefresh]);
 
   useEffect(() => {
     if (activeTab !== "users") return undefined;
@@ -745,8 +699,8 @@ function AdminDashboard({ onLogout }) {
     return () => { loader.dispose(); window.clearInterval(interval); };
   }, [activeTab, llmHours]);
 
-  const usersCount = users.length;
-  const documentsCount = useMemo(() => users.reduce((sum, user) => sum + user.documentsCount, 0), [users]);
+  const usersCount = usersSummary.usersCount;
+  const documentsCount = usersSummary.documentsCount;
   const safeAccessRequests = useMemo(() => (Array.isArray(accessRequests) ? accessRequests : []), [accessRequests]);
   const newAccessRequestsCount = useMemo(
     () => safeAccessRequests.filter((request) => request.status === "new").length,
@@ -760,19 +714,6 @@ function AdminDashboard({ onLogout }) {
     () => improvementRequests.filter((request) => request.status === "submitted").length,
     [improvementRequests]
   );
-  const requestCountsByUser = useMemo(() => {
-    const counts = new Map();
-
-    safeAccessRequests.forEach((request) => {
-      if (!request.userId || request.status !== "new") {
-        return;
-      }
-
-      counts.set(request.userId, (counts.get(request.userId) || 0) + 1);
-    });
-
-    return counts;
-  }, [safeAccessRequests]);
   const improvementCountsByUser = useMemo(() => {
     const counts = new Map();
 
@@ -786,6 +727,14 @@ function AdminDashboard({ onLogout }) {
 
     return counts;
   }, [improvementRequests]);
+
+  const requestCountsByUser = useMemo(() => {
+    const counts = new Map();
+    for (const request of safeAccessRequests) {
+      if (request.userId && request.status === "new") counts.set(request.userId, (counts.get(request.userId) || 0) + 1);
+    }
+    return counts;
+  }, [safeAccessRequests]);
   const filteredImprovementRequests = useMemo(
     () => improvementUserFilterId
       ? improvementRequests.filter((request) => String(request.userId) === String(improvementUserFilterId))
@@ -793,13 +742,13 @@ function AdminDashboard({ onLogout }) {
     [improvementRequests, improvementUserFilterId]
   );
   const improvementFilterUser = useMemo(
-    () => users.find((user) => String(user.id) === String(improvementUserFilterId)) || null,
-    [improvementUserFilterId, users]
+    () => users.find((user) => String(user.id) === String(improvementUserFilterId)) || improvementFilterLabel,
+    [improvementUserFilterId, users, improvementFilterLabel]
   );
 
   function handleSaved(updatedUser) {
-    setSelectedUser(null);
-    setSelectedUserId(null);
+    setSelectedUser(updatedUser);
+    setDetailsDirty(false);
     setSavedUserId(updatedUser.id);
     setUsers((currentUsers) => currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)));
 
@@ -811,6 +760,7 @@ function AdminDashboard({ onLogout }) {
   function handleDeleted(userId, result) {
     setSelectedUserId(null);
     setSelectedUser(null);
+    setDetailsDirty(false);
     setSavedUserId(null);
     setActiveTab("users");
     setUsers((current) => current.filter((user) => String(user.id) !== String(userId)));
@@ -820,23 +770,36 @@ function AdminDashboard({ onLogout }) {
     setImprovementUserFilterId(null);
     setAccountDeletion(result);
     setDeletionRefreshError("");
-    Promise.all([getAdminUsers(), getAdminAccessRequests(), getAdminProcessingCredits(), getAdminImprovementRequests()])
-      .then(([loadedUsers, requests, credits, improvements]) => {
-        setUsers(loadedUsers); setAccessRequests(requests); setProcessingCredits(credits); setImprovementRequests(improvements);
+    setUsersRefresh(current => current + 1);
+    Promise.all([getAdminAccessRequests(), getAdminProcessingCredits(), getAdminImprovementRequests()])
+      .then(([requests, credits, improvements]) => {
+        setAccessRequests(requests); setProcessingCredits(credits); setImprovementRequests(improvements);
       }).catch(() => setDeletionRefreshError("Аккаунт удалён. Не удалось обновить список; обновите страницу."));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeUser() {
+    if (detailsBusy) return false;
+    if (detailsDirty && !window.confirm("Изменения не сохранены. Закрыть карточку без сохранения?")) return false;
+    setSelectedUserId(null);
+    setSelectedUser(null);
+    setDetailsDirty(false);
+    return true;
+  }
+
+  function setActiveTab(tab) {
+    if (tab !== "users" && selectedId && !closeUser()) return;
+    setActiveTabState(tab);
   }
 
   function handleSelectUser(userId) {
+    if (selectedId && String(selectedId) !== String(userId) && !closeUser()) return;
     setSavedUserId(null);
     setSelectedUserId(userId);
     setActiveTab("users");
-    window.setTimeout(() => {
-      userDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
   }
 
   function handleShowUserImprovements(userId) {
+    setImprovementFilterLabel(users.find(user => String(user.id) === String(userId)) || { id: userId });
     setImprovementUserFilterId(userId);
     setActiveTab("improvements");
   }
@@ -870,6 +833,7 @@ function AdminDashboard({ onLogout }) {
     setSelectedUserId(userId);
     setSavedUserId(userId);
     setUsers((currentUsers) => currentUsers.map((item) => (item.id === userId ? updatedUser : item)));
+    setUsersRefresh(current => current + 1);
     setProcessingCredits(Array.isArray(creditResult?.credits) ? creditResult.credits : []);
     await handleMarkRequestReviewed(requestIds);
 
@@ -895,6 +859,7 @@ function AdminDashboard({ onLogout }) {
   }
 
   async function handleLogout() {
+    if (!closeUser()) return;
     await logoutAdmin();
     onLogout();
   }
@@ -1069,17 +1034,26 @@ function AdminDashboard({ onLogout }) {
                 <span>с оплатой и остатком: <strong>{presence ? presence.paid : "—"}</strong></span>
               </div>
               <p className="admin-muted admin-presence__hint">Активны за последние 2 минуты. Оплаченный статус — оценка по общей квоте.</p>
-              <div className="admin-layout" ref={userDetailsRef}>
-                <AdminUsersList
+              <div>
+                <AdminUsersTable
                   users={users}
-                  selectedUserId={selectedId}
                   savedUserId={savedUserId}
-                  requestCountsByUser={requestCountsByUser}
                   improvementCountsByUser={improvementCountsByUser}
+                  requestCountsByUser={requestCountsByUser} webvisorUrl={getWebvisorUrl()}
                   onSelectUser={handleSelectUser}
                   onShowImprovements={handleShowUserImprovements}
+                  total={userPage.total} page={userPage.page} pageSize={userPage.pageSize}
+                  filters={userFilters} onFilters={setUserFilters} loading={usersLoading} error={usersError}
+                  onRetry={() => setUsersRefresh(current => current + 1)}
                 />
-                <AdminUserDetails user={selectedUser} onSaved={handleSaved} onDeleted={handleDeleted} />
+                {selectedId && <AdminUserDrawer key={selectedId} userId={selectedId} onClose={closeUser}>
+                  {detailsError ? <p role="alert" className="admin-error">{detailsError}
+                    <button type="button" className="admin-button" onClick={() => setDetailsRefresh(current => current + 1)}>Повторить</button></p>
+                    : selectedUser && String(selectedUser.id) === String(selectedId)
+                      ? <AdminUserDetails key={selectedId} user={selectedUser} onSaved={handleSaved} onDeleted={handleDeleted}
+                          onDirtyChange={setDetailsDirty} onBusyChange={setDetailsBusy} />
+                      : <p role="status">Загрузка карточки…</p>}
+                </AdminUserDrawer>}
               </div>
             </>
           )}

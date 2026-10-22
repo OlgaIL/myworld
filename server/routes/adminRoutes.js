@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { createOcrReviewRouter } from "./ocrReviewRoutes.js";
+import { createAdminUsersRouter } from "./adminUsersRoutes.js";
 import { randomBytes, timingSafeEqual } from "crypto";
 import fs from "fs";
 import path from "path";
@@ -62,7 +63,7 @@ import {
   updateImprovementRequestStatusForAdmin
 } from "../repositories/improvementRequestsRepository.js";
 import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
-import { findUserForAdmin, listUsersForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
+import { findUserForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser, getTimewebSettings } from "../services/processingPipelineService.js";
 import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
 import { getLlmAttemptSummary, LLM_SUMMARY_HOURS } from "../services/llmAttemptSummaryService.js";
@@ -185,7 +186,8 @@ function mapAdminUser(user, { metrikaVisits = null } = {}) {
     documentsTransferredFromGuest: Number(user.documents_transferred_from_guest || 0),
     createdAt: user.created_at,
     updatedAt: user.updated_at,
-    lastDocumentAt: user.last_document_at || null
+    lastDocumentAt: user.last_document_at || null,
+    hasSuccessfulPurchase: Boolean(user.has_successful_purchase)
   };
 }
 
@@ -406,11 +408,7 @@ router.get("/admin-api/me", (req, res) => {
   return res.json({ authenticated: Boolean(req.session?.adminAuthenticated) });
 });
 
-router.get("/admin-api/users", requireAdmin, async (req, res) => {
-  const users = await listUsersForAdmin();
-  const metrikaVisits = await loadMetrikaVisitsForUsers(users);
-  return res.json(users.map((user) => mapAdminUser(user, { metrikaVisits })));
-});
+router.use(createAdminUsersRouter({ requireAdmin, mapUser: mapAdminUser, loadVisits: loadMetrikaVisitsForUsers }));
 
 router.get("/admin-api/presence", requireAdmin, async (req, res) => {
   const snapshot = getPresenceSnapshot();
