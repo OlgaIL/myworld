@@ -342,18 +342,20 @@ function normalizeListBlock(block) {
     && numberedItems.every((match, index) => (
       index === 0 || Number(match[1]) === Number(numberedItems[index - 1][1]) + 1
     ));
-  const ordered = block.ordered === true || hasSequentialMarkers;
+  const ordered = block.ordered === true || (block.ordered !== false && hasSequentialMarkers);
   const inferredStart = hasSequentialMarkers ? Number(numberedItems[0][1]) : 1;
-  const explicitStart = Number.isInteger(block.start) && block.start > 0 ? block.start : 1;
+  const explicitStart = Number.isInteger(block.start) && block.start > 0 ? block.start : inferredStart;
   const start = block.ordered === true ? explicitStart : inferredStart;
 
   return {
     type: "list",
-    items: ordered
+    items: ordered && hasSequentialMarkers
       ? items.map((item, index) => numberedItems[index]?.[2] || item)
       : items.map((item) => item.replace(/^[-•]\s*/u, "")),
     ...(ordered ? { ordered: true } : {}),
-    ...(ordered && start !== 1 ? { start } : {})
+    ...(!ordered && hasSequentialMarkers ? { ordered: false } : {}),
+    ...(ordered && start !== 1 ? { start } : {}),
+    ...(Number.isInteger(block.level) && block.level > 0 && block.level <= 2 ? { level: block.level } : {})
   };
 }
 
@@ -447,7 +449,7 @@ export function formattedContentToText(content) {
   return (content?.blocks || []).map((block) => {
     if (block.type === "list") {
       return block.items.map((item, index) => (
-        block.ordered ? `${Number(block.start || 1) + index}. ${item}` : `- ${item}`
+        `${"  ".repeat(block.level || 0)}${block.ordered ? `${Number(block.start || 1) + index}.` : "-"} ${item}`
       )).join("\n");
     }
 

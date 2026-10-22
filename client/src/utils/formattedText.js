@@ -14,17 +14,39 @@ export function getFormattedList(block) {
     && numberedItems.every((match, index) => (
       index === 0 || Number(match[1]) === Number(numberedItems[index - 1][1]) + 1
     ));
-  const ordered = block?.ordered === true || hasSequentialMarkers;
+  const ordered = block?.ordered === true || (block?.ordered !== false && hasSequentialMarkers);
   const inferredStart = hasSequentialMarkers ? Number(numberedItems[0][1]) : 1;
-  const explicitStart = Number.isInteger(block?.start) && block.start > 0 ? block.start : 1;
+  const explicitStart = Number.isInteger(block?.start) && block.start > 0 ? block.start : inferredStart;
 
   return {
     ordered,
     start: block?.ordered === true ? explicitStart : inferredStart,
-    items: hasSequentialMarkers
+    items: ordered && hasSequentialMarkers
       ? items.map((item, index) => numberedItems[index]?.[2] || item)
       : items
   };
+}
+
+// Stored lists remain flat blocks with string items. A level attaches a list
+// to the last item of the preceding parent; old documents have level zero.
+export function nestFormattedLists(blocks = []) {
+  const result = [];
+  const parents = [];
+  for (const block of blocks) {
+    if (block.type !== "list") {
+      result.push(block);
+      parents.length = 0;
+      continue;
+    }
+    const requestedLevel = Number.isInteger(block.level) && block.level > 0 && block.level <= 2 ? block.level : 0;
+    const level = requestedLevel && parents[requestedLevel - 1] ? requestedLevel : 0;
+    const list = { ...block, nestedLists: [] };
+    if (level) parents[level - 1].nestedLists.push(list);
+    else result.push(list);
+    parents[level] = list;
+    parents.length = level + 1;
+  }
+  return result;
 }
 
 export function normalizeFormattedTypography(value) {
@@ -74,11 +96,12 @@ export function buildManualFormattedContent(value) {
   const lines = String(value || "")
     .replace(/\r\n?/g, "\n")
     .split("\n")
-    .map((line) => line.trim());
+    .map((line) => line.trimEnd());
   const blocks = [];
   let listItems = [];
   let listOrdered = false;
   let listStart = 1;
+  let listLevel = 0;
 
   function flushList() {
     if (listItems.length > 0) {
@@ -86,16 +109,18 @@ export function buildManualFormattedContent(value) {
         type: "list",
         items: listItems,
         ...(listOrdered ? { ordered: true } : {}),
-        ...(listOrdered && listStart !== 1 ? { start: listStart } : {})
+        ...(listOrdered && listStart !== 1 ? { start: listStart } : {}),
+        ...(listLevel ? { level: listLevel } : {})
       });
       listItems = [];
       listOrdered = false;
       listStart = 1;
+      listLevel = 0;
     }
   }
 
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
+    const line = lines[index].trim();
     if (!line) {
       flushList();
       continue;
@@ -121,19 +146,26 @@ export function buildManualFormattedContent(value) {
     }
 
     const listMatch = line.match(/^[-•]\s+(.+)$/u);
+    const numberedListMatch = line.match(/^(\d{1,3})[.)]\s+(.+)$/u);
+    const indent = lines[index].match(/^\s*/u)[0].replace(/\t/g, "  ").length;
+    const requestedLevel = Math.min(2, Math.floor(indent / 2));
+    const previousLevel = listItems.length ? listLevel
+      : blocks.at(-1)?.type === "list" ? blocks.at(-1).level || 0 : -1;
+    const level = requestedLevel <= previousLevel + 1 ? requestedLevel : 0;
     if (listMatch) {
-      if (listItems.length > 0 && listOrdered) {
+      if (listItems.length > 0 && (listOrdered || listLevel !== level)) {
         flushList();
       }
+      listLevel = level;
       listItems.push(listMatch[1]);
       continue;
     }
 
-    const numberedListMatch = line.match(/^(\d{1,3})[.)]\s+(.+)$/u);
     if (numberedListMatch) {
-      if (listItems.length > 0 && !listOrdered) {
+      if (listItems.length > 0 && (!listOrdered || listLevel !== level)) {
         flushList();
       }
+      listLevel = level;
       listOrdered = true;
       if (listItems.length === 0) {
         listStart = Number(numberedListMatch[1]);

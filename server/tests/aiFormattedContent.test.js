@@ -169,6 +169,31 @@ test("preserves the starting number of an ordered list", () => {
     blocks: [{ type: "list", ordered: true, start: 5, items: ["Пятый шаг", "Шестой шаг"] }]
   });
   assert.equal(formattedContentToText(content), "5. Пятый шаг\n6. Шестой шаг");
+  const explicit = normalizeFormattedContent({
+    blocks: [{ type: "list", ordered: true, items: ["5) Пятый шаг", "6) Шестой шаг"] }]
+  });
+  assert.equal(formattedContentToText(explicit), "5. Пятый шаг\n6. Шестой шаг");
+});
+
+test("preserves nested markers, continuation and resumed parent numbering", () => {
+  const content = normalizeFormattedContent({ blocks: [
+    { type: "list", ordered: true, items: ["Первый", "Второй", "Третий"] },
+    { type: "list", level: 1, items: ["Первый подпункт", "Второй подпункт\nи его продолжение"] },
+    { type: "list", level: 2, ordered: true, start: 2, items: ["Деталь"] },
+    { type: "list", ordered: true, start: 4, items: ["Четвёртый"] }
+  ] });
+  assert.equal(content.blocks[1].level, 1);
+  assert.equal(content.blocks[2].level, 2);
+  assert.equal(formattedContentToText(content), "1. Первый\n2. Второй\n3. Третий\n\n  - Первый подпункт\n  - Второй подпункт и его продолжение\n\n    2. Деталь\n\n4. Четвёртый");
+});
+
+test("does not strip quantities from ordered or explicitly bulleted items", () => {
+  for (const ordered of [true, false]) {
+    const items = ["Купить продукты", "2 луковицы", "3 морковки"];
+    assert.deepEqual(normalizeFormattedContent({ blocks: [{ type: "list", ordered, items }] }).blocks[0].items, items);
+  }
+  const content = normalizeFormattedContent({ blocks: [{ type: "list", ordered: false, items: ["2 луковицы", "3 морковки"] }] });
+  assert.equal(formattedContentToText(content), "- 2 луковицы\n- 3 морковки");
 });
 
 test("stores verified replacements separately and keeps recognition note generic", () => {

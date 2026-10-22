@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AI_UNAVAILABLE_MESSAGE } from "../constants/documentStatuses";
-import { buildManualFormattedContent, formatFormattedLine, getFormattedList } from "../utils/formattedText";
+import { buildManualFormattedContent, formatFormattedLine, nestFormattedLists } from "../utils/formattedText";
+import { FormattedList } from "./FormattedList.js";
 import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
 import { mergeFormattedTables, promoteDocumentTitle } from "../utils/mergeFormattedTables.js";
 import { getDocumentTables, restoreDocumentTables } from "../services/api.js";
@@ -141,7 +142,7 @@ function renderHighlightedText(value, highlight) {
 function FormattedContent({ content, highlightedText }) {
   return (
     <div data-clarity-mask="true" className="document-page__formatted-content">
-      {content.blocks.map((block, index) => {
+      {nestFormattedLists(content.blocks).map((block, index) => {
         if (block.type === "table") {
           return (
             <div className="document-page__table-scroll" key={`${block.type}-${index}`}>
@@ -167,19 +168,9 @@ function FormattedContent({ content, highlightedText }) {
         }
 
         if (block.type === "list") {
-          const list = getFormattedList(block);
-          const ListTag = list.ordered ? "ol" : "ul";
           return (
-            <ListTag
-              key={`${block.type}-${index}`}
-              {...(list.ordered && list.start !== 1 ? { start: list.start } : {})}
-            >
-              {list.items.map((item, itemIndex) => (
-                <li key={`${item}-${itemIndex}`}>
-                  {renderHighlightedText(formatFormattedLine(item), highlightedText)}
-                </li>
-              ))}
-            </ListTag>
+            <FormattedList key={`${block.type}-${index}`} block={block}
+              renderText={(text) => renderHighlightedText(text, highlightedText)} />
           );
         }
 
@@ -275,7 +266,7 @@ function DocumentTextVariants({
     ? improvementRequest.improvedText || processedText
     : "";
   const improvedContent = improvedText.trim() ? buildManualFormattedContent(improvedText) : null;
-  const improvedHasTable = improvedContent?.blocks.some((block) => block.type === "table");
+  const improvedHasRichContent = improvedContent?.blocks.some((block) => ["table", "list"].includes(block.type));
   const storedFormattedContent = Array.isArray(info?.formattedContent?.blocks)
     && info.formattedContent.blocks.length > 0
     ? info.formattedContent
@@ -308,10 +299,10 @@ function DocumentTextVariants({
       : []),
     ...(improvedText.trim() && improvedText.trim() !== originalText.trim()
       ? [{ id: "improved", label: "Улучшенный", text: improvedText,
-        html: improvedHasTable ? getFormattedHtml(improvedContent) : undefined }]
+        html: improvedHasRichContent ? getFormattedHtml(improvedContent) : undefined }]
       : []),
     { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
-      html: formattedContent?.blocks.some((block) => block.type === "table") ? getFormattedHtml(formattedContent) : undefined },
+      html: formattedContent?.blocks.some((block) => ["table", "list"].includes(block.type)) ? getFormattedHtml(formattedContent) : undefined },
     ...(info?.hasTable && ["processed", "recognized"].includes(info?.status) ? [{ id: "tables", label: "Таблицы",
       text: tableReady ? getFormattedText(tableContent) : "", tables: true, locked: tableLocked,
       html: tableReady ? getFormattedHtml(tableContent) : undefined }] : [])
@@ -476,7 +467,7 @@ function DocumentTextVariants({
         </div>
       ) : (
         <div className="document-page__text-body">
-          {activeVariant.id === "improved" && improvedHasTable
+          {activeVariant.id === "improved" && improvedHasRichContent
             ? <FormattedContent content={improvedContent} highlightedText={highlightedText} />
             : <p data-clarity-mask="true">{readableText
               ? renderHighlightedText(readableText, highlightedText)

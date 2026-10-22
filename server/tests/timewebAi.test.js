@@ -219,6 +219,36 @@ test("validated document blocks cannot be replaced by unvalidated text aliases",
   });
 });
 
+test("mixed list structure survives one gateway request; doubtful flattening gets a safe visible warning", async () => {
+  const source = "1 Первый шаг\n2 Второй шаг\n3 Третий шаг\n• Первая деталь\n• Вторая деталь\nпродолжение без маркера";
+  const proper = [
+    { type: "list", ordered: true, items: ["Первый шаг", "Второй шаг", "Третий шаг"] },
+    { type: "list", level: 1, items: ["Первая деталь", "Вторая деталь продолжение без маркера"] }
+  ];
+  const flattened = [{ type: "list", ordered: true, items: [
+    ...proper[0].items, "Первая деталь", "Вторая деталь", "продолжение без маркера"
+  ] }];
+  for (const [blocks, warning] of [[proper, false], [flattened, true]]) {
+    await withGateway((_req, res) => completion(res, JSON.stringify({ ...validResponse, formattedContent: { blocks } })), async (baseURL, calls) => {
+      const logs = [];
+      const result = await enrich(source, { provider: "timeweb", timeweb: { ...config, baseURL },
+        logger: { info() {}, error() {}, warn: (...args) => logs.push(args) } });
+      assert.equal(result.error, undefined);
+      assert.equal(calls.length, 1);
+      assert.equal(result.hasRecognitionErrors, warning);
+      if (warning) {
+        assert.match(result.notes, /Проверьте список по фото/u);
+        assert.equal(JSON.parse(logs[0][1]).normalizations[0].code, "LIST_STRUCTURE_REQUIRES_REVIEW");
+        assert.doesNotMatch(JSON.stringify(logs), /Первый шаг|Вторая деталь|продолжение без маркера|synthetic-timeweb-key/u);
+      } else {
+        assert.equal(result.formattedContent.blocks[1].level, 1);
+        assert.match(result.cleanText, /\n  - Вторая деталь продолжение без маркера/u);
+        assert.match(calls[0].body.messages[0].content, /Не превращай их в пункты 4 и 5/u);
+      }
+    });
+  }
+});
+
 test("guards disabled, key/model, invalid timeout/budget/URL without any HTTP call", async () => {
   await withGateway((_req, res) => completion(res), async (baseURL, calls) => {
     for (const [options, code] of [
@@ -307,6 +337,26 @@ test("timeout is finite, classified, and not retried", async () => {
     assert.equal(result.failureKind, "timeout");
     assert.equal(calls.length, 1);
   });
+});
+
+test("connect timeout preserves only an allowlisted transport code, never the private error message", async () => {
+  const { processTimeweb } = await import("../services/timewebAiService.js");
+  const logs = [];
+  let calls = 0;
+  const result = await processTimeweb("private OCR", {
+    timeweb: { ...config, baseURL: "https://example.test/v1" },
+    logger: { error: (...args) => logs.push(args) },
+    fetchImplementation: async () => {
+      calls++;
+      throw new TypeError("private OCR fetch failed", { cause: Object.assign(new Error("Connect Timeout Error private-key"), { code: "UND_ERR_CONNECT_TIMEOUT" }) });
+    }
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.errorCode, "TIMEWEB_TIMEOUT");
+  const diagnostic = JSON.parse(logs[0][1]);
+  assert.equal(diagnostic.transportCode, "UND_ERR_CONNECT_TIMEOUT");
+  assert.equal(diagnostic.timeoutStage, "connect");
+  assert.doesNotMatch(JSON.stringify(logs), /private OCR|private-key|example\.test/u);
 });
 test("network failure has no fallback/retry", async () => {
   await withGateway((req) => req.socket.destroy(), async (baseURL, calls) => {
