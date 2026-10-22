@@ -21,7 +21,7 @@ export const PUBLIC_PAGE_PATHS = Object.freeze([
 ]);
 
 const publicPagePaths = new Set(PUBLIC_PAGE_PATHS);
-const privatePagePaths = new Set(["/account", "/admin-control"]);
+const privatePagePaths = new Set(["/account", "/admin-control", "/admin-control/ocr-check"]);
 
 export function isPublicPagePath(pathname) {
   return publicPagePaths.has(pathname);

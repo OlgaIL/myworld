@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import ClarityTracker from "./components/ClarityTracker";
 import ClarityRouteBoundary from "./components/ClarityRouteBoundary";
@@ -8,6 +8,7 @@ import App from "./pages/App";
 import AccountPage from "./pages/AccountPage";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
+import OcrReviewPage from "./pages/OcrReviewPage";
 import ConsentPage from "./pages/ConsentPage";
 import PackagesPage from "./pages/PackagesPage";
 import HandwritingToTextLanding from "./pages/HandwritingToTextLanding";
@@ -19,15 +20,14 @@ import { AuthProvider } from "./contexts/AuthContext";
 import PageSeo from "./components/PageSeo";
 
 export default function AppShell() {
+  const isOcrReview = useLocation().pathname === "/admin-control/ocr-check";
   return (
     <>
       <PageSeo />
-      <AnalyticsTracker />
-      <ClarityTracker />
-      <PresenceTracker />
-      <CookieNotice />
+      {!isOcrReview && <><AnalyticsTracker /><ClarityTracker /><PresenceTracker /><CookieNotice /></>}
       <ClarityRouteBoundary><Routes>
         <Route path="/admin-control" element={<AdminPage />} />
+        <Route path="/admin-control/ocr-check" element={<OcrReviewPage />} />
         <Route
           path="/account"
           element={

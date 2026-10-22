@@ -7,7 +7,7 @@ function PresenceTracker() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (pathname === "/admin-control") return undefined;
+    if (pathname === "/admin-control" || pathname.startsWith("/admin-control/")) return undefined;
 
     function sendPresence() {
       if (document.visibilityState !== "visible") return;

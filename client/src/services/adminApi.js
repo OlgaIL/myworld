@@ -4,6 +4,21 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 axios.defaults.withCredentials = true;
 
+export function getOcrReviewCases() {
+  return axios.get(`${API_URL}/admin-api/ocr-review/cases`).then((res) => res.data);
+}
+export function getOcrReviewImageUrl(id) {
+  return `${API_URL}/admin-api/ocr-review/cases/${encodeURIComponent(id)}/file`;
+}
+export function processOcrReviewCase(id, { token, runId, audience }) {
+  return axios.post(`${API_URL}/admin-api/ocr-review/cases/${encodeURIComponent(id)}/process`,
+    { runId, audience }, { headers: { "X-Ocr-Review-Token": token } }).then((res) => res.data);
+}
+export function restoreOcrReviewTables(id, { token, runId }) {
+  return axios.post(`${API_URL}/admin-api/ocr-review/cases/${encodeURIComponent(id)}/tables`,
+    { runId }, { headers: { "X-Ocr-Review-Token": token } }).then((res) => res.data.info);
+}
+
 export function getAdminSession() {
   return axios.get(`${API_URL}/admin-api/me`).then((res) => res.data);
 }

@@ -11,6 +11,7 @@
     "db:status": "node db/status.js",
     "test:email-auth": "node tests/emailAuthService.test.js",
     "test:seo": "node --test tests/seoHttp.test.js",
+    "test:ocr-review": "node --import ./tests/timewebSyntheticEnv.js --test tests/ocrReviewRoutes.test.js tests/ocrReviewService.test.js tests/documentTableService.test.js tests/llmAttemptMetrics.test.js",
     "test:improvement-requests": "node --test tests/improvementRequestService.test.js tests/improvementRequestsRepository.test.js tests/improvementRequestRoutes.test.js tests/guestDocumentImprovementStatus.test.js tests/adminImprovementRequestsRoutes.test.js",
     "test:upload-diagnostics": "node --test tests/clientDiagnosticsRoutes.test.js tests/guestUploadDiagnostics.test.js tests/corsPreflight.test.js"
   },

@@ -165,11 +165,12 @@ export function canProcessImageWithPipeline(pipeline) {
   return pipeline.pipeline === PROCESSING_PIPELINES.FAST && pipeline.aiProvider === "openai";
 }
 
-export async function processImageWithPipeline(imagePath, pipeline, { trigger = "upload" } = {}) {
+export async function processImageWithPipeline(imagePath, pipeline, { trigger = "upload", persistMetrics } = {}) {
   return runMeasuredLlmAttempt({
     pipeline,
     trigger,
     inputKind: "image",
+    persist: persistMetrics,
     execute: () => aiService.processImage(imagePath, {
       provider: pipeline.aiProvider,
       openAiApiKey: OPENAI_API_KEY,
@@ -188,11 +189,12 @@ export async function recognizeWithPipeline(imagePath, pipeline) {
   });
 }
 
-export async function enrichWithPipeline(text, pipeline, { trigger = "upload" } = {}) {
+export async function enrichWithPipeline(text, pipeline, { trigger = "upload", persistMetrics } = {}) {
   return runMeasuredLlmAttempt({
     pipeline,
     trigger,
     inputKind: "text",
+    persist: persistMetrics,
     execute: () => aiService.process(text, {
       provider: pipeline.aiProvider,
       apiKey: YANDEX_API_KEY,

@@ -12,6 +12,7 @@ import {
 } from "../utils/copyGuide";
 import AuthProviderButtons from "./AuthProviderButtons";
 import "./DocumentTextVariants.css";
+const defaultTableApi = { get: getDocumentTables, restore: restoreDocumentTables };
 
 function CopyIcon() {
   return (
@@ -250,7 +251,8 @@ function DocumentTextVariants({
   tableTrialAvailable = false,
   onTableReady,
   improvementSection,
-  enrichmentPending
+  enrichmentPending,
+  tableApi = defaultTableApi
 }) {
   const [tabSelection, setTabSelection] = useState({ documentId: null, tab: "text" });
   const [correctionHighlight, setCorrectionHighlight] = useState({ documentId: null, correctionId: "" });
@@ -311,9 +313,10 @@ function DocumentTextVariants({
   const activeVariant = variants.find((variant) => variant.id === activeTab) || variants[0];
   useEffect(() => {
     if (!["tables", "formatted"].includes(activeTab) || !isAuthenticated || info?.tableStatus !== "ready"
+      || info?.tableContent?.blocks?.length
       || (tableResult.documentId === documentId && tableResult.info?.tableContent)) return undefined;
     let cancelled = false;
-    getDocumentTables(documentId).then((result) => {
+    tableApi.get(documentId).then((result) => {
       if (!cancelled) setTableResult({ documentId, info: result });
     }).catch(() => {
       if (!cancelled) setTableRequestError({ documentId, message: "Не удалось загрузить сохранённые таблицы." });
@@ -322,7 +325,7 @@ function DocumentTextVariants({
     });
     setTableLoadingDocumentId(documentId);
     return () => { cancelled = true; };
-  }, [activeTab, documentId, info?.tableStatus, isAuthenticated, tableResult.documentId, tableResult.info?.tableContent]);
+  }, [activeTab, documentId, info?.tableStatus, info?.tableContent, isAuthenticated, tableApi, tableResult.documentId, tableResult.info?.tableContent]);
   const readableText = activeVariant?.text || "";
   const copyActiveVariant = () => onCopy(`text-${activeVariant.id}`, readableText,
     activeVariant.html ? { html: activeVariant.html } : undefined);
@@ -342,7 +345,7 @@ function DocumentTextVariants({
     setTableRequestError({ documentId, message: "" });
     setTablePendingDocumentId(documentId);
     try {
-      const result = await restoreDocumentTables(documentId);
+      const result = await tableApi.restore(documentId);
       setTableResult({ documentId, info: result });
       if (result.tableStatus === "ready") onTableReady?.();
     } catch (error) {

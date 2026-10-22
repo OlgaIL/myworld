@@ -193,11 +193,12 @@ export function tableCaptionNumbers(sourceText) {
 }
 
 export async function extractDocumentTables(photo, { config = getTimewebOptions(),
-  ocrClient = new vision.ImageAnnotatorClient(), client = null } = {}) {
+  ocrClient = new vision.ImageAnnotatorClient(), client = null,
+  resolveImage = (storagePath) => managedFile(storagePath, ["legacy", "users"]) } = {}) {
   const configError = timewebConfigurationError(config);
   if (configError) return { status: "error", code: configError };
   let imagePath;
-  try { imagePath = await managedFile(photo.storage_path, ["legacy", "users"]); }
+  try { imagePath = await resolveImage(photo.storage_path); }
   catch { return { status: "error", code: "TABLE_IMAGE_MISSING" }; }
   const imageBuffer = await fs.readFile(imagePath);
   if (!imageBuffer.length || imageBuffer.length > MAX_IMAGE_BYTES) {

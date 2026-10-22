@@ -907,6 +907,7 @@ function AdminDashboard({ onLogout }) {
             Word2you
           </a>
           <h1>Панель управления</h1>
+          <a className="admin-site-link" href="/admin-control/ocr-check">Проверка контрольных фотографий</a>
         </div>
         <button className="admin-button" type="button" onClick={handleLogout}>
           Выйти

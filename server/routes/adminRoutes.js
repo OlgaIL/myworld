@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createOcrReviewRouter } from "./ocrReviewRoutes.js";
 import { randomBytes, timingSafeEqual } from "crypto";
 import fs from "fs";
 import path from "path";
@@ -73,6 +74,7 @@ import { cleanupAccountDeletion, getAccountDeletionJob } from "../services/accou
 import { AccountDeletionError, deletionMessages, validUserId } from "../services/accountDeletionPolicy.js";
 
 const router = Router();
+router.use("/admin-api/ocr-review", createOcrReviewRouter({ requireAdmin }));
 
 function isAdminConfigured() {
   return ADMIN_ENABLED && ADMIN_LOGIN && ADMIN_PASSWORD;
