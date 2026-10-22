@@ -115,6 +115,11 @@ export function createAdminManualProcessingCredit(id, credit) {
   return axios.post(`${API_URL}/admin-api/users/${id}/processing-credits`, credit).then((res) => res.data);
 }
 
+export function createAdminGift(id, gift, csrfToken) {
+  return axios.post(`${API_URL}/admin-api/users/${id}/gifts`, gift,
+    { headers: { "X-Admin-Gift-CSRF": csrfToken } }).then(res => res.data);
+}
+
 export function updateAdminAccessRequestStatus(id, status) {
   return axios.patch(`${API_URL}/admin-api/access-requests/${id}/status`, { status }).then((res) => res.data);
 }

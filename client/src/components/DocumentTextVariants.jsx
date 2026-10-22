@@ -248,6 +248,7 @@ function DocumentTextVariants({
   correctionError,
   isAuthenticated,
   packageRemaining = 0,
+  giftRemaining = 0,
   tableTrialAvailable = false,
   onTableReady,
   improvementSection,
@@ -292,7 +293,7 @@ function DocumentTextVariants({
   const formattedContent = formattedMerge.content;
   const formattedText = getFormattedText(formattedContent);
   const tableLocked = currentTableInfo?.tableStatus !== "ready"
-    && (!isAuthenticated || (Number(packageRemaining) <= 0 && !tableTrialAvailable));
+    && (!isAuthenticated || (Number(packageRemaining) + Number(giftRemaining) <= 0 && !tableTrialAvailable));
   const tablePending = tablePendingDocumentId === documentId;
   const variants = [
     { id: "text", label: "Текст", text: originalText },
@@ -439,7 +440,7 @@ function DocumentTextVariants({
               <button type="button" onClick={handleRestoreTables} disabled={tablePending}>
                 {tablePending ? "Собираем таблицы…" : "Собрать таблицы"}
               </button>
-              <small>{Number(packageRemaining) > 0
+              <small>{Number(packageRemaining) + Number(giftRemaining) > 0
                 ? "Дополнительные обработки не списываются."
                 : "Одно успешное восстановление бесплатно. Ошибки попытку не расходуют."}</small>
             </div>

@@ -3,6 +3,7 @@ export const DEFAULT_USER_FILTERS = { search: "", payment: "all", registered: "a
 export function userRemaining(user) {
   if (user.processingEnabled || (user.accessExpiresAt && new Date(user.accessExpiresAt) > new Date())) return "Без ограничений";
   return Math.max(0, Number(user.recordLimit || 0) - Number(user.recordsProcessedTotal || 0))
+    + Math.max(0, Number(user.giftProcessingQuota || 0) - Number(user.giftProcessingUsed || 0))
     + Math.max(0, Number(user.processingQuota || 0) - Number(user.processingUsed || 0));
 }
 
@@ -17,6 +18,7 @@ export function userProcessingUsage(user) {
   const quota = Math.max(Number(user.processingQuota || 0), 0);
   const parts = [];
   if (free > 0) parts.push(`бесплатно ${Math.min(Math.max(Number(user.recordsProcessedTotal || 0), 0), free)} из ${free}`);
+  if (Number(user.giftProcessingQuota || 0) > 0) parts.push(`подарок ${Number(user.giftProcessingUsed || 0)} из ${Number(user.giftProcessingQuota)}`);
   if (quota > 0) parts.push(`платный пакет ${Math.min(Math.max(Number(user.processingUsed || 0), 0), quota)} из ${quota}`);
   return parts.join(" · ") || "лимит не задан";
 }

@@ -1,4 +1,5 @@
 import { query, withTransaction } from "../db/index.js";
+import { listGiftCreditEvents } from "./giftProcessingRepository.js";
 
 export async function createPayment({
   userId,
@@ -261,7 +262,8 @@ export async function listProcessingCreditEventsForAdmin() {
     limit 200
   `);
 
-  return result.rows;
+  const gifts = await listGiftCreditEvents();
+  return [...result.rows, ...gifts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 200);
 }
 
 export async function listProcessingCreditEventsForUser(userId) {
@@ -281,5 +283,6 @@ export async function listProcessingCreditEventsForUser(userId) {
     [userId]
   );
 
-  return result.rows;
+  const gifts = await listGiftCreditEvents(userId);
+  return [...result.rows, ...gifts].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 }

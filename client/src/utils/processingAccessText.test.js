@@ -34,3 +34,10 @@ test("builds balance progress for free and paid access", () => {
   );
   assert.equal(getProcessingBalanceProgress({ unlimitedAccess: true, recordLimit: 30 }), null);
 });
+
+test("gift usage is correct for both admin and public account representations", () => {
+  const user = { recordsProcessedTotal: 25, recordLimit: 3, giftProcessingQuota: 10, giftProcessingUsed: 2, processingQuota: 40, processingUsed: 22 };
+  assert.equal(getProcessingUsageText(user), "Бесплатные: 5 из 13 · Пакеты: 22 из 40");
+  assert.equal(getProcessingUsageText({ ...user, recordLimit: 13, freeLimit: 13, freeUsed: 5 }), "Бесплатные: 5 из 13 · Пакеты: 22 из 40");
+  assert.equal(getProcessingUsageText({ ...user, processingEnabled: true }), "Обработок: 25 всего");
+});

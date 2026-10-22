@@ -1,0 +1,20 @@
+.admin-gift-processing { display:grid; gap:20px; margin:24px 0; min-width:0; }
+.admin-gift-processing__form-panel,
+.admin-gift-processing__history { padding:20px; border:1px solid #d4dce6; border-radius:12px; min-width:0; }
+.admin-gift-processing__form-panel { border-color:#b8d5c5; background:#f7fbf8; }
+.admin-gift-processing h3 { margin:0 0 16px; font-size:18px; }
+.admin-gift-processing .admin-gift-processing__description { line-height:1.6; margin:0 0 24px; }
+.admin-gift-processing__fields { display:flex; flex-direction:column; align-items:stretch; gap:20px; border:0; padding:0; margin:0; min-width:0; }
+.admin-gift-processing__fields .admin-field { display:flex; flex-direction:column; gap:8px; margin:0; }
+.admin-gift-processing__fields input,
+.admin-gift-processing__fields textarea { width:100%; box-sizing:border-box; padding:11px 12px; border:1px solid #ccd4df; border-radius:8px; background:#fff; color:#172033; font:inherit; }
+.admin-gift-processing__fields textarea { min-height:112px; resize:vertical; line-height:1.5; }
+.admin-gift-processing__fields button { align-self:flex-start; }
+.admin-gift-processing__history ol { display:grid; gap:16px; margin:0; padding-left:26px; }
+.admin-gift-processing__history li { padding-left:4px; overflow-wrap:anywhere; }
+.admin-gift-processing__history li p { margin:6px 0 0; white-space:pre-wrap; }
+.admin-gift-processing__history > p { margin:0; }
+@media(max-width:720px) {
+  .admin-gift-processing__form-panel,
+  .admin-gift-processing__history { padding:16px; }
+}

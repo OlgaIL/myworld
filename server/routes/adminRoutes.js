@@ -63,6 +63,7 @@ import {
   updateImprovementRequestStatusForAdmin
 } from "../repositories/improvementRequestsRepository.js";
 import { grantManualProcessingCredit, listProcessingCreditEventsForAdmin } from "../repositories/paymentsRepository.js";
+import { grantGiftProcessing, listGiftProcessing } from "../repositories/giftProcessingRepository.js";
 import { findUserForAdmin, updateUserProductAccess } from "../repositories/usersRepository.js";
 import { getProcessingPipelineForUser, getTimewebSettings } from "../services/processingPipelineService.js";
 import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
@@ -173,6 +174,8 @@ function mapAdminUser(user, { metrikaVisits = null } = {}) {
     documentsDeletedTotal: Number(user.documents_deleted_total || 0),
     documentsHistoryComplete: Boolean(user.documents_history_complete),
     recordLimit: Number(user.free_processing_limit || 0),
+    giftProcessingQuota: Number(user.gift_processing_quota || 0),
+    giftProcessingUsed: Number(user.gift_processing_used || 0),
     processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,
     acquisitionContext: user.acquisition_context || null,
@@ -553,7 +556,31 @@ router.get("/admin-api/users/:id", requireAdmin, async (req, res) => {
   const metrikaVisits = await loadMetrikaVisitsForUsers([user]);
   const deletion = await getAccountDeletionEligibility(req.params.id, req.user?.id);
   res.set("Cache-Control", "private, no-store");
-  return res.json({ ...mapAdminUser(user, { metrikaVisits }), deletion: { ...deletion, csrfToken: deletionCsrfToken(req) } });
+  return res.json({ ...mapAdminUser(user, { metrikaVisits }), gifts: await listGiftProcessing(req.params.id),
+    deletion: { ...deletion, csrfToken: deletionCsrfToken(req) } });
+});
+
+router.post("/admin-api/users/:id/gifts", requireAdmin, async (req, res, next) => {
+  if (!validUserId(req.params.id)) return res.status(400).json({ error: "INVALID_USER_ID" });
+  const origin = req.get("origin");
+  const allowedOrigins = [CLIENT_URL, SERVER_URL].filter(Boolean).map(url => new URL(url).origin);
+  if ((origin && !allowedOrigins.includes(origin)) || req.get("sec-fetch-site") === "cross-site"
+    || !req.session.accountDeletionCsrf || !safeCompare(req.get("x-admin-gift-csrf"), req.session.accountDeletionCsrf)) {
+    return res.status(403).json({ error: "GIFT_CSRF", message: "Обновите карточку пользователя и повторите." });
+  }
+  try {
+    await grantGiftProcessing(req.params.id, req.body, ADMIN_LOGIN || "admin");
+    const user = await findUserForAdmin(req.params.id);
+    if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
+    const deletion = await getAccountDeletionEligibility(req.params.id, req.user?.id);
+    return res.set("Cache-Control", "private, no-store").json({ user: {
+      ...mapAdminUser(user), gifts: await listGiftProcessing(req.params.id),
+      deletion: { ...deletion, csrfToken: deletionCsrfToken(req) }
+    } });
+  } catch (error) {
+    if ([400, 404, 409].includes(error.status)) return res.status(error.status).json({ error: error.message });
+    next(error);
+  }
 });
 
 router.delete("/admin-api/users/:id", requireAdmin, requireDeletionCsrf, async (req, res) => {

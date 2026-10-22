@@ -30,7 +30,8 @@ try {
     "YOOKASSA_SECRET_KEY", "SMTP_PASSWORD", "TELEGRAM_BOT_TOKEN", "YANDEX_METRIKA_API_TOKEN"]) env[key] = "";
   const code = await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ["--import=data:text/javascript,globalThis.__myworldEnvLoaded=true", "--test", "--test-concurrency=1",
-      "tests/adminUsersDirectory.test.js", "tests/adminUserAnalyticsRoutes.test.js", "tests/adminAccountDeletion.test.js"], {
+      "tests/adminUsersDirectory.test.js", "tests/adminUserAnalyticsRoutes.test.js", "tests/adminAccountDeletion.test.js",
+      "tests/processingAccess.test.js", "tests/giftProcessing.test.js"], {
       cwd: serverDir, env, windowsHide: true, stdio: "inherit"
     });
     child.on("error", reject);

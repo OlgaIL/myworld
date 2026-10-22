@@ -38,9 +38,14 @@ export function getProcessingUsageText(user) {
   const quota = Math.max(Number(user?.processingQuota || 0), 0);
   const used = Math.max(Number(user?.processingUsed || 0), 0);
   const freeLimit = Math.max(Number(user?.recordLimit || 0), 0);
-
   if (user?.processingEnabled || (user?.accessExpiresAt && new Date(user.accessExpiresAt).getTime() > Date.now())) {
     return `Обработок: ${processedTotal} всего`;
+  }
+
+  if (Number(user?.giftProcessingQuota || 0) > 0) {
+    const freeUsed = user.freeUsed ?? Math.min(processedTotal, freeLimit) + Number(user.giftProcessingUsed || 0);
+    const freeTotal = user.freeLimit ?? freeLimit + Number(user.giftProcessingQuota);
+    return `Бесплатные: ${freeUsed} из ${freeTotal}${quota > 0 ? ` · Пакеты: ${Math.min(used, quota)} из ${quota}` : ""}`;
   }
 
   if (quota > 0) {

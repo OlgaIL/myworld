@@ -4,6 +4,7 @@ function formatDateTime(value) {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Istanbul",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -13,6 +14,7 @@ function formatDateTime(value) {
 }
 
 function getCreditSourceLabel(source) {
+  if (source === "gift") return "Подарок";
   if (source === "yookassa") {
     return "Оплата ЮKassa";
   }
@@ -46,7 +48,7 @@ function AdminProcessingCredits({ credits = [], loading, onSelectUser }) {
                 <strong>{credit.email || credit.displayName || `Пользователь ${credit.userId}`}</strong>
                 <span>{credit.displayName || "Без имени"}</span>
                 <span className="admin-access-request__package">
-                  {getCreditSourceLabel(credit.source)} · пакет «{credit.packageTitle}» · +{credit.amount}
+                  {getCreditSourceLabel(credit.source)} · {credit.source === "gift" ? "бесплатные обработки" : `пакет «${credit.packageTitle}»`} · +{credit.amount}
                 </span>
                 {credit.note && <p>{credit.note}</p>}
                 {credit.amountValue !== null && credit.amountValue !== undefined && (

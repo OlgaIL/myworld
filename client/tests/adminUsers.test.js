@@ -23,3 +23,9 @@ test("today follows Istanbul midnight and purchase highlighting excludes manual 
 test("compact usage preserves separate free and package figures", () => {
   assert.equal(userProcessingUsage({ recordLimit: 5, recordsProcessedTotal: 8, processingQuota: 10, processingUsed: 3 }), "бесплатно 5 из 5 · платный пакет 3 из 10");
 });
+
+test("gift balance is independent of historic package consumption", () => {
+  const user = { recordLimit: 3, recordsProcessedTotal: 25, processingQuota: 40, processingUsed: 22, giftProcessingQuota: 10, giftProcessingUsed: 2 };
+  assert.equal(userRemaining(user), 26);
+  assert.equal(userProcessingUsage(user), "бесплатно 3 из 3 · подарок 2 из 10 · платный пакет 22 из 40");
+});

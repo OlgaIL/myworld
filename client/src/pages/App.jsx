@@ -367,6 +367,7 @@ function App() {
               correctionError={correctionError}
               isAuthenticated
               packageRemaining={Number(user.packageRemaining || 0)}
+              giftRemaining={Number(user.giftRemaining || 0)}
               tableTrialAvailable={Boolean(user.tableTrialAvailable)}
               onTableReady={() => Promise.all([reloadPhotos(), reloadUser()])}
               showPostAuthNextStep={showPostAuthNextStep}

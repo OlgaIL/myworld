@@ -245,11 +245,12 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
     userLocked = Boolean(userLock.rows[0]?.locked);
     if (!userLocked) return res.status(409).json({ error: "TABLE_BUSY" });
     const userResult = await client.query(
-      "select processing_quota, processing_used, table_trial_used_at from users where id = $1", [req.user.id]
+      "select processing_quota, processing_used, gift_processing_quota, gift_processing_used, table_trial_used_at from users where id = $1", [req.user.id]
     );
     const user = userResult.rows[0];
-    const hasPackage = user && Number(user.processing_quota) > Number(user.processing_used);
-    if (!user || (!hasPackage && user.table_trial_used_at)) {
+    const hasBalance = user && (Number(user.processing_quota) > Number(user.processing_used)
+      || Number(user.gift_processing_quota) > Number(user.gift_processing_used));
+    if (!user || (!hasBalance && user.table_trial_used_at)) {
       return res.status(403).json({ error: "TABLE_PACKAGE_REQUIRED" });
     }
     const lock = await client.query(
@@ -282,7 +283,7 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
       }
-      if (!hasPackage && result.status === "ready") {
+      if (!hasBalance && result.status === "ready") {
         await client.query(
           "update users set table_trial_used_at = now() where id = $1 and table_trial_used_at is null",
           [req.user.id]

@@ -232,6 +232,8 @@ export async function listUsersForAdmin() {
         users.processing_quota,
         users.processing_used,
         users.free_processing_limit,
+        users.gift_processing_quota,
+        users.gift_processing_used,
         users.records_processed_total,
         users.last_processing_at,
         users.first_device_type,
@@ -292,6 +294,8 @@ export async function findUserForAdmin(userId) {
         users.processing_quota,
         users.processing_used,
         users.free_processing_limit,
+        users.gift_processing_quota,
+        users.gift_processing_used,
         users.records_processed_total,
         users.last_processing_at,
         users.first_device_type,
@@ -415,11 +419,18 @@ export async function incrementUserRecordsProcessedTotalWithClient(client, userI
       set
         records_processed_total = records_processed_total + 1,
         last_processing_at = now(),
+        gift_processing_used = case
+          when processing_enabled = false
+            and (access_expires_at is null or access_expires_at <= now())
+            and records_processed_total >= free_processing_limit
+            and gift_processing_used < gift_processing_quota
+          then gift_processing_used + 1 else gift_processing_used end,
         processing_used = case
           when
             processing_enabled = false
             and (access_expires_at is null or access_expires_at <= now())
             and records_processed_total >= free_processing_limit
+            and gift_processing_used >= gift_processing_quota
             and processing_used < processing_quota
           then processing_used + 1
           else processing_used
@@ -477,6 +488,8 @@ export function mapUserForSession(user) {
     processingUsed: Number(user.processing_used || 0),
     tableTrialAvailable: !user.table_trial_used_at,
     freeProcessingLimit: Number(user.free_processing_limit || 0),
+    giftProcessingQuota: Number(user.gift_processing_quota || 0),
+    giftProcessingUsed: Number(user.gift_processing_used || 0),
     recordsProcessedTotal: Number(user.records_processed_total || 0),
     processingMode: user.processing_mode || null,
     accessExpiresAt: user.access_expires_at || null,

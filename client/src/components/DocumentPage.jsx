@@ -85,6 +85,7 @@ function DocumentPage({
   correctionError = "",
   isAuthenticated = false,
   packageRemaining = 0,
+  giftRemaining = 0,
   tableTrialAvailable = false,
   onTableReady,
   showPostAuthNextStep = false,
@@ -214,6 +215,7 @@ function DocumentPage({
             correctionError={correctionError}
             isAuthenticated={isAuthenticated}
             packageRemaining={packageRemaining}
+            giftRemaining={giftRemaining}
             tableTrialAvailable={tableTrialAvailable}
             onTableReady={onTableReady}
             enrichmentPending={enrichmentPending}

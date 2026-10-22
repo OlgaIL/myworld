@@ -6,8 +6,9 @@ import AdminImprovementRequests from "../components/AdminImprovementRequests";
 import AdminProcessingCredits from "../components/AdminProcessingCredits";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import AdminUsersTable from "../components/AdminUsersTable";
-import { DEFAULT_USER_FILTERS } from "../utils/adminUsers.js";
+import { DEFAULT_USER_FILTERS, userRemaining } from "../utils/adminUsers.js";
 import AdminUserDrawer from "../components/AdminUserDrawer";
+import AdminGiftProcessing from "../components/AdminGiftProcessing";
 import AdminDeleteAccount, { AdminAccountDeletionNotice } from "../components/AdminDeleteAccount";
 import {
   createAdminManualProcessingCredit,
@@ -136,6 +137,10 @@ function getProductAccessLabel(user) {
   }
 
   const remaining = Math.max(Number(user.processingQuota || 0) - Number(user.processingUsed || 0), 0);
+  if (Number(user.giftProcessingQuota || 0) > 0) {
+    const gifts = Math.max(Number(user.giftProcessingQuota) - Number(user.giftProcessingUsed || 0), 0);
+    return `Доступно обработок: ${userRemaining(user)} · из них подарочных: ${gifts}`;
+  }
 
   if (remaining > 0) {
     return `Пакет обработок: осталось ${remaining} из ${user.processingQuota}`;
@@ -227,19 +232,21 @@ function AdminLogin({ onLogin }) {
   );
 }
 
-function AdminUserDetails({ user, onSaved, onDeleted, onDirtyChange, onBusyChange }) {
+function AdminUserDetails({ user, onSaved, onDeleted, onDirtyChange, onBusyChange, onGifted }) {
   const [processingEnabled, setProcessingEnabled] = useState(user.processingEnabled);
   const [processingQuota, setProcessingQuota] = useState(user.processingQuota);
   const [processingUsed, setProcessingUsed] = useState(user.processingUsed);
   const [accessExpiresAt, setAccessExpiresAt] = useState(formatDateInputValue(user.accessExpiresAt));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [giftDirty, setGiftDirty] = useState(false);
+  const [giftBusy, setGiftBusy] = useState(false);
   const dirty = processingEnabled !== user.processingEnabled
     || Number(processingQuota) !== Number(user.processingQuota)
     || Number(processingUsed) !== Number(user.processingUsed)
     || accessExpiresAt !== formatDateInputValue(user.accessExpiresAt);
-  useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
-  useEffect(() => { onBusyChange(saving); }, [saving, onBusyChange]);
+  useEffect(() => { onDirtyChange(dirty || giftDirty); }, [dirty, giftDirty, onDirtyChange]);
+  useEffect(() => { onBusyChange(saving || giftBusy); }, [saving, giftBusy, onBusyChange]);
 
   useEffect(() => {
     if (!user) {
@@ -442,6 +449,7 @@ function AdminUserDetails({ user, onSaved, onDeleted, onDirtyChange, onBusyChang
       </div>
 
       <form className="admin-access-form" onSubmit={handleSave}>
+        <fieldset disabled={giftBusy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <label className="admin-checkbox">
           <input
             type="checkbox"
@@ -530,8 +538,14 @@ function AdminUserDetails({ user, onSaved, onDeleted, onDirtyChange, onBusyChang
             </p>
           )}
         </div>
+        </fieldset>
       </form>
-      <AdminDeleteAccount key={user.id} user={user} onDeleted={onDeleted} />
+
+      <AdminGiftProcessing user={user} disabled={dirty || saving} onGifted={onGifted}
+        onDirtyChange={setGiftDirty} onBusyChange={setGiftBusy} />
+      <fieldset disabled={giftBusy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <AdminDeleteAccount key={user.id} user={user} onDeleted={onDeleted} />
+      </fieldset>
     </section>
   );
 }
@@ -747,14 +761,20 @@ function AdminDashboard({ onLogout }) {
   );
 
   function handleSaved(updatedUser) {
-    setSelectedUser(updatedUser);
-    setDetailsDirty(false);
+    setSelectedUser(current => ({ ...current, ...updatedUser }));
     setSavedUserId(updatedUser.id);
     setUsers((currentUsers) => currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)));
 
     window.setTimeout(() => {
       setSavedUserId((currentSavedUserId) => (currentSavedUserId === updatedUser.id ? null : currentSavedUserId));
     }, 3500);
+  }
+
+  function handleGifted(updatedUser) {
+    handleSaved(updatedUser);
+    getAdminProcessingCredits().then(setProcessingCredits).catch(() => {
+      setDeletionRefreshError("Подарок начислен. Обновите страницу для обновления общей истории начислений.");
+    });
   }
 
   function handleDeleted(userId, result) {
@@ -1051,7 +1071,7 @@ function AdminDashboard({ onLogout }) {
                     <button type="button" className="admin-button" onClick={() => setDetailsRefresh(current => current + 1)}>Повторить</button></p>
                     : selectedUser && String(selectedUser.id) === String(selectedId)
                       ? <AdminUserDetails key={selectedId} user={selectedUser} onSaved={handleSaved} onDeleted={handleDeleted}
-                          onDirtyChange={setDetailsDirty} onBusyChange={setDetailsBusy} />
+                          onDirtyChange={setDetailsDirty} onBusyChange={setDetailsBusy} onGifted={handleGifted} />
                       : <p role="status">Загрузка карточки…</p>}
                 </AdminUserDrawer>}
               </div>

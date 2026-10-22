@@ -74,14 +74,20 @@ export function getUserRecordAccess(user, recordsUsed) {
     user?.freeProcessingLimit ?? user?.free_processing_limit ?? DEFAULT_FREE_PROCESSING_LIMIT
   ), 0);
   const used = Number(recordsUsed || 0);
-  const freeUsed = Math.min(Math.max(used, 0), limit);
-  const remaining = Math.max(limit - freeUsed, 0);
+  const giftQuota = Math.max(Number(user?.giftProcessingQuota ?? user?.gift_processing_quota ?? 0), 0);
+  const giftUsed = Math.max(Number(user?.giftProcessingUsed ?? user?.gift_processing_used ?? 0), 0);
+  const giftRemaining = Math.max(giftQuota - giftUsed, 0);
+  const freeUsed = Math.min(Math.max(used, 0), limit) + giftUsed;
+  const remaining = Math.max(limit - Math.min(Math.max(used, 0), limit), 0) + giftRemaining;
 
   return {
-    recordLimit: limit,
+    recordLimit: limit + giftQuota,
+    giftQuota,
+    giftUsed,
+    giftRemaining,
     recordsUsed: used,
     recordsRemaining: remaining,
-    freeLimit: limit,
+    freeLimit: limit + giftQuota,
     freeUsed,
     freeRemaining: remaining,
     recordUploadAllowed: remaining > 0

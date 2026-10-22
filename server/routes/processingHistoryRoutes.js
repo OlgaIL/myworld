@@ -5,6 +5,7 @@ import { listProcessingCreditEventsForUser } from "../repositories/paymentsRepos
 const router = Router();
 
 function getSourceLabel(source) {
+  if (source === "gift") return "Подарочные обработки";
   if (source === "yookassa") {
     return "Оплачен пакет";
   }
@@ -45,9 +46,10 @@ router.get("/api/processing-history", requireAuthenticatedUser, async (req, res)
     const freeAmount = Number(req.user.freeProcessingLimit || 0);
     const freeUsed = Math.min(recordsProcessedTotal, freeAmount);
     const creditEvents = await listProcessingCreditEventsForUser(req.user.id);
-    const creditedAmount = creditEvents.reduce((sum, event) => sum + Number(event.amount || 0), 0);
+    const creditedAmount = creditEvents.filter(event => event.source !== "gift").reduce((sum, event) => sum + Number(event.amount || 0), 0);
     const legacyAmount = Math.max(processingQuota - creditedAmount, 0);
     const paidUsedRemaining = { value: processingUsed };
+    const giftUsedRemaining = { value: Number(req.user.giftProcessingUsed || 0) };
     const history = [
       {
         id: "free",
@@ -74,7 +76,8 @@ router.get("/api/processing-history", requireAuthenticatedUser, async (req, res)
       });
     }
 
-    history.push(...creditEvents.map((event) => mapCreditEvent(event, paidUsedRemaining, req.user.createdAt)));
+    history.push(...creditEvents.map((event) => mapCreditEvent(event,
+      event.source === "gift" ? giftUsedRemaining : paidUsedRemaining, req.user.createdAt)));
 
     return res.json(history.reverse());
   } catch (error) {
