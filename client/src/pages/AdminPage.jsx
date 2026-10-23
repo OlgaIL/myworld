@@ -33,7 +33,7 @@ import { getProcessingUsageText } from "../utils/processingAccessText";
 const METRIKA_COUNTER_ID = import.meta.env.VITE_YANDEX_METRIKA_ID || "109386353";
 const LLM_AUDIENCE_LABELS = { guest: "Гости", free: "Бесплатные", paid: "Платные" };
 const LLM_PROVIDER_LABELS = { yandex: "Яндекс", openai: "OpenAI", timeweb: "Timeweb" };
-const LLM_TRIGGER_LABELS = { upload: "загрузка", retry: "повтор", claim: "перенос" };
+const LLM_TRIGGER_LABELS = { upload: "загрузка", retry: "повтор", claim: "перенос", tables: "таблицы" };
 
 function formatCompactDateTime(value) {
   if (!value) {
@@ -994,6 +994,7 @@ function AdminDashboard({ onLogout }) {
                     <>
                       <div className="admin-llm-summary__metrics">
                         <span>Вызовы <strong>{llmSummary.totals.attempts}</strong></span>
+                        <span title="Входит в общее число вызовов LLM; учитываются успешные и неудачные попытки обработки таблиц">Таблицы <strong>{llmSummary.groups.reduce((count, group) => count + (group.trigger === "tables" ? group.attempts : 0), 0)}</strong></span>
                         <span>Успешно <strong>{llmSummary.totals.successes}</strong></span>
                         <span>Таймауты <strong>{llmSummary.totals.timeouts}</strong></span>
                         <span>Другие ошибки <strong>{llmSummary.totals.otherErrors}</strong></span>

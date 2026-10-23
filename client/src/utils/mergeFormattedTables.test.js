@@ -107,3 +107,37 @@ test("splits a title from the following paragraph without losing text", () => {
     { type: "paragraph", text: "в результате смерти наследодателя." }
   ]);
 });
+
+test("merges a bill represented by header and row lists, preserving calculations", () => {
+  const title = "Расчет размера платы за горячую воду";
+  const formatted = { blocks: [
+    { type: "heading", text: title },
+    { type: "list", ordered: true, items: ["Вид услуги", "Норматив", "Ед.изм.", "потребления", "Объем потребления", "Тариф, коммун. руб.", "Начислено"] },
+    { type: "list", items: ["Отопление, Гкал, 0,018100, 0,964644", "ХВС, м³, 4,260000, 9,804000, 26,09, 255,79"] },
+    { type: "paragraph", text: "Итого 3 969,25 руб." },
+    { type: "paragraph", text: "Расход тепловой энергии: 11,569 * 0,661 = 0,764711 Гкал." },
+    { type: "paragraph", text: "Стоимость подогрева: 0,764711 * 1766,5 = 1350,86 руб." }
+  ] };
+  const extracted = { blocks: [
+    { type: "heading", text: title },
+    { type: "table", headers: ["Вид услуги", "Ед.изм.", "Норматив потребления", "Объем потребления коммун. услуги", "Тариф, руб.", "Начислено"],
+      rows: [["Отопление", "Гкал", "0,018100", "0,964644", "1 766,50", "1 704,04"],
+        ["ХВС", "м3", "4,260000", "9,804000", "26,09", "255,79"], ["Итого", "", "", "", "", "3 969,25"]] }
+  ] };
+  const original = structuredClone(formatted);
+  const result = mergeFormattedTables(formatted, extracted);
+  assert.equal(result.merged, true);
+  assert.deepEqual(result.content.blocks, [...extracted.blocks, ...formatted.blocks.slice(4)]);
+  assert.deepEqual(formatted, original);
+
+  const withExtraText = structuredClone(formatted);
+  withExtraText.blocks[2].items.push("Комментарий, который нельзя потерять");
+  assert.equal(mergeFormattedTables(withExtraText, extracted).merged, false);
+
+  const wrongValue = structuredClone(formatted);
+  wrongValue.blocks[2].items[1] = "ХВС, м³, 1,23";
+  assert.equal(mergeFormattedTables(wrongValue, extracted).merged, false);
+
+  const ambiguous = { blocks: [...formatted.blocks, ...formatted.blocks] };
+  assert.equal(mergeFormattedTables(ambiguous, extracted).merged, false);
+});

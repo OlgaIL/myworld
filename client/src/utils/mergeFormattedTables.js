@@ -40,6 +40,34 @@ function tableLikeRow(block) {
     || (text.length <= 120 && (text.match(/\d+(?:[,.]\d+)?/gu) || []).length >= 2);
 }
 
+function findListTableRange(blocks, heading, table) {
+  const keys = table.headers.map(normalized).filter((key) => key.length >= 4);
+  const ranges = [];
+  for (let index = 0; index < blocks.length; index++) {
+    const header = blocks[index];
+    if (header.type !== "list" || !Array.isArray(header.items)) continue;
+    const source = normalized(header.items.join(" "));
+    if (source.length > 500 || keys.filter((key) => source.includes(key)).length < 2) continue;
+    let rowIndex = 0;
+    let end = index + 1;
+    while (end < blocks.length && rowIndex < table.rows.length) {
+      const block = blocks[end];
+      const lines = block.type === "list" && Array.isArray(block.items)
+        ? block.items : block.type === "paragraph" ? [block.text] : [];
+      if (!lines.length || lines.length > table.rows.length - rowIndex
+        || !lines.every((text, offset) => matchesSourceRow({ type: "paragraph", text }, table.rows[rowIndex + offset]))) break;
+      rowIndex += lines.length;
+      end++;
+    }
+    if (rowIndex === table.rows.length) {
+      const start = heading && normalized(blocks[index - 1]?.text) === normalized(heading.text)
+        ? index - 1 : index;
+      ranges.push({ start, end });
+    }
+  }
+  return ranges.length === 1 ? ranges[0] : null;
+}
+
 function findTableRange(blocks, heading, table) {
   const number = captionNumber(heading?.text);
   if (number) {
@@ -65,7 +93,7 @@ function findTableRange(blocks, heading, table) {
       && table.rows.every((row, rowIndex) => matchesSourceRow(blocks[index + rowIndex + 1], row))
       ? index : -1;
   }).filter((index) => index >= 0);
-  if (starts.length !== 1) return null;
+  if (starts.length !== 1) return starts.length === 0 ? findListTableRange(blocks, heading, table) : null;
   const headerIndex = starts[0];
   const start = heading && normalized(blocks[headerIndex - 1]?.text) === normalized(heading.text)
     ? headerIndex - 1 : headerIndex;
