@@ -75,6 +75,32 @@ function findTableRange(blocks, heading, table) {
       .filter((index) => index >= 0);
     if (starts.length !== 1) return null;
     const start = starts[0];
+    const header = blocks[start + 1];
+    if (header?.type === "list" && Array.isArray(header.items)) {
+      const labels = [...table.headers, ...table.rows.map((row) => row[0])].map(normalized);
+      if (header.items.length < 2 || !header.items.every((item) => labels.includes(normalized(item)))) return null;
+      const numericKey = (value) => String(value || "").replace(/\s/gu, "").replaceAll(".", ",");
+      const available = new Map();
+      for (const cell of table.rows.flatMap((row) => row.slice(1))) {
+        const key = numericKey(cell);
+        if (/^\d+(?:,\d+)?$/u.test(key)) available.set(key, (available.get(key) || 0) + 1);
+      }
+      let end = start + 2;
+      let matched = 0;
+      while (blocks[end]?.type === "list") {
+        const items = blocks[end].items;
+        if (!Array.isArray(items) || !items.length) return null;
+        for (const item of items) {
+          const key = numericKey(item);
+          if (!key || /^[—–-]$/u.test(key)) continue;
+          if (!available.get(key)) return null;
+          available.set(key, available.get(key) - 1);
+          matched++;
+        }
+        end++;
+      }
+      return matched >= 2 ? { start, end } : null;
+    }
     const headerText = normalized(blocks[start + 1]?.text);
     if (!headerText || headerText.length > 120 || !/(?:^| )(?:наименование|название|всего)(?: |$)/u.test(headerText)) {
       return null;

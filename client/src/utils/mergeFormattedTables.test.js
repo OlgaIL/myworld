@@ -52,6 +52,27 @@ test("leaves uncertain placement unchanged", () => {
   assert.deepEqual(mergeFormattedTables(formatted, extracted), { content: formatted, merged: false });
 });
 
+test("merges two numbered tables split into column lists without removing intervening prose", () => {
+  const heading = (number) => ({ type: "heading", text: `Таблица ${number} – Мощность электростанций` });
+  const header = { type: "list", items: ["Наименование", "Всего", "ТЭС", "2027 г.", "2028 г."] };
+  const prose = { type: "paragraph", text: "Рост мощности к 2028 году составит 221,0 МВт." };
+  const table = { type: "table", headers: ["Наименование", "2027 г.", "2028 г."],
+    rows: [["Всего", "216,8", "221,0"], ["ТЭС", "0", "0"]] };
+  const formatted = { blocks: [heading(17), header,
+    { type: "list", items: ["216,8", "221,0", "", "0", "0"] }, prose,
+    heading(18), header, { type: "list", items: ["216,8", "221,0"] },
+    { type: "list", items: ["0", "0"] }] };
+  const extracted = { blocks: [heading(17), table, heading(18), table] };
+  const result = mergeFormattedTables(formatted, extracted);
+  assert.equal(result.merged, true);
+  assert.deepEqual(result.content.blocks, [heading(17), table, prose, heading(18), table]);
+  for (const extra of ["Комментарий нельзя удалять", "999,9", "216,8"]) {
+    const invalid = structuredClone(formatted);
+    invalid.blocks[2].items.push(extra);
+    assert.deepEqual(mergeFormattedTables(invalid, extracted), { content: invalid, merged: false });
+  }
+});
+
 test("merges a bill formatted with dashes and restores its document heading", () => {
   const title = "Расчет размера платы за горячую воду";
   const formatted = promoteDocumentTitle({ blocks: [
