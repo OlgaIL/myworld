@@ -32,8 +32,9 @@ function CookieNotice() {
     <div className="cookie-notice" role="region" aria-label="Уведомление о cookie">
       <p>
         Мы используем cookie для работы сайта и Яндекс Метрику для аналитики.
-        Разрешить Microsoft Clarity записывать действия на сайте для улучшения сервиса?
-        Документы, фото и личные данные скрываются в записи.
+        Разрешить Microsoft Clarity записывать действия, загруженные фото и распознанные тексты
+        для проверки качества сервиса? Содержимое документов, включая возможные личные данные,
+        будет передаваться Microsoft. Почта учётной записи и коды входа скрыты.
       </p>
       <div className="cookie-notice__actions">
         <Link className="cookie-notice__link" to="/privacy">

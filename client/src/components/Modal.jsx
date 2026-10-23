@@ -104,7 +104,7 @@ function Modal({ src, onClose }) {
         </div>
 
         <div className="modal__image-frame" ref={frameRef}>
-          <img data-clarity-mask="true"
+          <img data-clarity-unmask="true"
             src={src}
             className="modal__image"
             alt=""

@@ -71,30 +71,30 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
         <div className="gallery__content">
           {["processed", "recognized", "claimed"].includes(document.status) && (
             <>
-              <h4 data-clarity-mask="true">{document.title || "Запись"}</h4>
+              <h4 data-clarity-unmask="true">{document.title || "Запись"}</h4>
 
               {document.summary ? (
                 <div className="gallery__summary-row">
-                  <p data-clarity-mask="true">{document.summary}</p>
+                  <p data-clarity-unmask="true">{document.summary}</p>
                 </div>
               ) : (
-                <p data-clarity-mask="true">{readableText || statusMeta.emptyText}</p>
+                <p data-clarity-unmask="true">{readableText || statusMeta.emptyText}</p>
               )}
 
               {document.category && (
-                <div data-clarity-mask="true" className="gallery__ai-meta">
+                <div data-clarity-unmask="true" className="gallery__ai-meta">
                   <span className="gallery__ai-meta-button">{document.category}</span>
                 </div>
               )}
 
               {(document.notes || document.status === "recognized") && (
-                <p data-clarity-mask={document.status === "recognized" ? undefined : "true"} className="gallery__ai-note">
+                <p data-clarity-unmask="true" className="gallery__ai-note">
                   {document.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : document.notes}
                 </p>
               )}
 
               {hasTags && (
-                <div data-clarity-mask="true" className="gallery__tags">
+                <div data-clarity-unmask="true" className="gallery__tags">
                   {document.tags.map((tag) => (
                     <span className="gallery__tag-button" key={tag}>
                       #{tag}
@@ -169,7 +169,7 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
         </div>
 
         <div className="gallery__preview">
-          <img data-clarity-mask="true"
+          <img data-clarity-unmask="true"
             src={fileUrl}
             className="gallery__image"
             alt=""

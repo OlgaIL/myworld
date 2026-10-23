@@ -130,14 +130,14 @@ function PhotoCard({
 
           {info?.status === "processed" && (
             <>
-              <h4 data-clarity-mask="true">{info.title}</h4>
+              <h4 data-clarity-unmask="true">{info.title}</h4>
 
               <div className="gallery__summary-row">
-                <p data-clarity-mask="true">{info.summary}</p>
+                <p data-clarity-unmask="true">{info.summary}</p>
               </div>
 
               {info.category && (
-                <div data-clarity-mask="true" className="gallery__ai-meta">
+                <div data-clarity-unmask="true" className="gallery__ai-meta">
                   <button
                     className="gallery__ai-meta-button"
                     type="button"
@@ -151,9 +151,9 @@ function PhotoCard({
                 </div>
               )}
 
-              {info.notes && <p data-clarity-mask="true" className="gallery__ai-note">{info.notes}</p>}
+              {info.notes && <p data-clarity-unmask="true" className="gallery__ai-note">{info.notes}</p>}
 
-              <div data-clarity-mask="true" className="gallery__tags">
+              <div data-clarity-unmask="true" className="gallery__tags">
                 {info.tags.map((tag) => (
                   <button
                     className="gallery__tag-button"
@@ -174,7 +174,7 @@ function PhotoCard({
 
           {!isPendingUpload && info?.status === "recognized" && (
             <>
-              <h4 data-clarity-mask="true">{info.title || "Запись"}</h4>
+              <h4 data-clarity-unmask="true">{info.title || "Запись"}</h4>
               <p>{AI_UNAVAILABLE_MESSAGE}</p>
             </>
           )}
@@ -233,7 +233,7 @@ function PhotoCard({
         </div>
 
         <div className="gallery__preview">
-          <img data-clarity-mask="true"
+          <img data-clarity-unmask="true"
             src={photo.url}
             className="gallery__image"
             alt=""

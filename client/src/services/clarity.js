@@ -1,5 +1,6 @@
 const env = import.meta.env || {};
-export const CLARITY_CONSENT_KEY = "word2you_clarity_consent_v1";
+// Earlier consent covered masked documents only; ask again for document content.
+export const CLARITY_CONSENT_KEY = "word2you_clarity_consent_v2_documents";
 export const CLARITY_CONSENT_EVENT = "word2you:clarity-consent";
 const PUBLIC_PATHS = new Set(["/", "/about", "/account", "/packages", "/privacy", "/consent", "/terms", "/requisites", "/photo-to-text", "/handwriting-to-text"]);
 
