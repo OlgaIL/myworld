@@ -34,3 +34,37 @@ git pull --ff-only origin main && npm run build --prefix client
 Проверка Ольгой: обновить страницу уже собранного документа, открыть
 «Оформленный», убедиться, что таблица на месте, а расчёты после неё сохранены.
 Повторная обработка и новое списание не требуются.
+
+## Обновление контрольного набора
+
+Локально добавлены «Таблица: расчёт горячей воды» (619) и
+«Таблицы 17–18: мощность электростанций» (620). В наборе 11 фотографий.
+Копии проверены SHA-256, предыдущий manifest сохранён в outputs/ocr-review-dataset-backups/2026-10-23-tables/.
+Приватные изображения и manifest не входят в Git.
+
+Ольга выполняет в локальном PowerShell:
+
+```powershell
+cd C:\Users\olgak\PROJECTS\myworld
+scp outputs/ocr-review-dataset-2026-10-23.tar.gz root@147.45.246.205:/root/myworld/outputs/
+```
+
+На сервере определить активный manifest из конфигурации PM2 и распаковать
+обновление в этот же набор. Команды прекращаются при ошибке:
+
+```bash
+cd /root/myworld
+(
+set -eu
+DATASET_MANIFEST=$(pm2 jlist | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{const p=JSON.parse(s).find(p=>p.name==="myworld-server");if(!p)process.exit(1);console.log(p.pm2_env.OCR_REVIEW_MANIFEST_PATH||"/root/myworld/outputs/ocr-review-dataset/manifest.json")})')
+case "$DATASET_MANIFEST" in /root/myworld/outputs/*/manifest.json) ;; *) echo "Проверьте путь набора: $DATASET_MANIFEST"; exit 1;; esac
+test -f "$DATASET_MANIFEST"
+cp "$DATASET_MANIFEST" "$DATASET_MANIFEST.before-2026-10-23-$(date +%s)"
+tar -xzf outputs/ocr-review-dataset-2026-10-23.tar.gz -C "$(dirname "$DATASET_MANIFEST")" --strip-components=1
+node -e 'const f=require("fs");const m=JSON.parse(f.readFileSync(process.argv[1]));if(m.cases.length!==11)process.exit(1);console.log("Контрольных фотографий:",m.cases.length)' "$DATASET_MANIFEST"
+)
+```
+
+Manifest читается при каждом запросе; перезапуск не требуется.
+Ольга проверяет 11 карточек на /admin-control/ocr-check. Открытие страницы
+запускает реальные обращения к OCR/LLM, как и прежде.
