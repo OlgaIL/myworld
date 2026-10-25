@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
+import { captureAcquisitionContext } from "../services/analytics";
 
 const useCases = [
   {
@@ -36,6 +37,10 @@ function PhotoToTextLanding() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const lightboxRef = useRef(null);
   const photoButtonRef = useRef(null);
+
+  useEffect(() => {
+    captureAcquisitionContext("photo_to_text");
+  }, []);
 
   useEffect(() => {
     if (!lightboxOpen) return undefined;
@@ -151,39 +156,8 @@ function PhotoToTextLanding() {
       </section>
 
       <section className="landing-split" id="batch" aria-labelledby="photo-batch-heading">
-        <div>
-          <p className="landing-eyebrow">Пакетная обработка после входа</p>
-          <h2 id="photo-batch-heading">Распознайте текст с нескольких фото за одну загрузку</h2>
-          <p>Выберите сразу несколько фотографий учебных страниц, документов или заметок. Не нужно добавлять каждую фотографию отдельно.</p>
-        </div>
-        <div className="landing-usecases">
-          <article className="landing-usecase">
-            <h3>Выберите фотографии в личном кабинете</h3>
-            <p>Войдите в аккаунт, откройте загрузку и выделите несколько изображений JPEG, PNG или WebP. Фотографии обрабатываются по очереди в пределах доступного остатка обработок.</p>
-          </article>
-          <article className="landing-usecase">
-            <h3>Проверьте результат каждой страницы</h3>
-            <p>Каждая фотография сохраняется отдельной записью с исходным изображением и распознанным текстом. Откройте нужную запись, сверьте текст и скопируйте его в свой документ.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="landing-split" id="tables" aria-labelledby="photo-tables-heading">
-        <div>
-          <p className="landing-eyebrow">Строки и столбцы</p>
-          <h2 id="photo-tables-heading">Распознайте таблицу с фото и перенесите её в Word</h2>
-          <p>Если на фотографии есть таблица, её можно попробовать восстановить отдельно от обычного текста. Перед копированием проверьте числа и расположение ячеек по исходному фото.</p>
-        </div>
-        <div className="landing-usecases">
-          <article className="landing-usecase">
-            <h3>Откройте вкладку «Таблицы»</h3>
-            <p>Загрузите фотографию и откройте распознанную запись. Если сервис обнаружит признаки таблицы, появится вкладка «Таблицы». Нажмите «Собрать таблицы», затем проверьте результат и скопируйте его. При вставке в Word сохраняйте исходное форматирование.</p>
-          </article>
-          <article className="landing-usecase">
-            <h3>Одно восстановление — бесплатно после входа</h3>
-            <p>Восстановление таблиц в одном документе можно попробовать бесплатно. Для следующих документов нужен пакет с оставшимися обработками, включая подарочные. Чёткое фото помогает различать границы и содержимое ячеек; результат требует проверки.</p>
-          </article>
-        </div>
+        <div><h2 id="photo-batch-heading">Нужно обработать несколько фото?</h2><p>После входа выберите несколько фотографий за один раз. Каждая сохраняется отдельной записью.</p><Link to="/batch-photo-to-text">Пакетная обработка: порядок работы и условия</Link></div>
+        <div id="tables"><h2>На фотографии есть таблица?</h2><p>Попробуйте восстановить строки и столбцы, проверьте ячейки и скопируйте результат в Word.</p><Link to="/table-from-photo">Распознавание таблиц с фото</Link></div>
       </section>
 
       <section className="landing-split" id="cases">
@@ -239,7 +213,7 @@ function PhotoToTextLanding() {
           </article>
           <article className="landing-usecase">
             <h3>Как скопировать таблицу с фотографии?</h3>
-            <p>Если сервис обнаружил таблицу, откройте вкладку «Таблицы» и запустите восстановление. Проверьте ячейки по фото, затем скопируйте результат в Word с сохранением форматирования. <a href="#tables">Условия восстановления таблиц</a>.</p>
+            <p>Если сервис обнаружил таблицу, откройте вкладку «Таблицы» и запустите восстановление. Проверьте ячейки по фото, затем скопируйте результат в Word с сохранением форматирования. <Link to="/table-from-photo">Условия восстановления таблиц</Link>.</p>
           </article>
           <article className="landing-usecase">
             <h3>Что делать, если в тексте есть ошибки?</h3>

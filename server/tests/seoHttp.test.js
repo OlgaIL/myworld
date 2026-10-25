@@ -85,7 +85,10 @@ test("serves unique meaningful React prerenders without JavaScript or bot-specif
   const pages = [
     { path: "/", title: "Фото записи в текст и личный архив — Word2you", h1: "Фото записи — в текст и личный архив", text: "Загрузите фото с телефона" },
     { path: "/photo-to-text", title: "Скопировать текст с фото онлайн — Word2you", h1: "Распознайте текст с фото и скопируйте результат", text: "Конспекты и заметки" },
-    { path: "/handwriting-to-text", title: "Распознать рукописный текст с фото онлайн — Word2you", h1: "Превратите рукописный текст в понятную цифровую запись", text: "Качество результата зависит от фотографии и разборчивости почерка" }
+    { path: "/handwriting-to-text", title: "Распознать рукописный текст с фото онлайн — Word2you", h1: "Переведите рукописный текст с фото в печатный", text: "Качество результата зависит от фотографии и разборчивости почерка" },
+    { path: "/about", title: "О Word2you — текст с фото и личный архив записей", h1: "Текст с фото и личный архив записей", text: "Выберите свою задачу" },
+    { path: "/batch-photo-to-text", title: "Распознать текст с нескольких фото — Word2you", h1: "Несколько фото страниц — в текст за одну загрузку", text: "Три фотографии — три отдельные записи" },
+    { path: "/table-from-photo", title: "Распознать таблицу с фото и скопировать в Word — Word2you", h1: "Таблица с фото — в строки и столбцы", text: "Это схема результата, а не пример распознавания фотографии." }
   ];
   const descriptions = new Set();
   for (const page of pages) {
@@ -119,7 +122,7 @@ test("serves unique meaningful React prerenders without JavaScript or bot-specif
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
   }
-  assert.equal(descriptions.size, 3);
+  assert.equal(descriptions.size, pages.length);
 });
 
 test("keeps build prerender files private", async () => {

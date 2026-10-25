@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
+import { PUBLIC_PAGE_SEO, SITE_ORIGIN } from "../publicPageSeo";
+import "./FeatureLanding.css";
 
 const steps = [
   "Загрузите фото",
@@ -26,9 +28,8 @@ const audiences = [
 const archiveFlow = ["Фото на телефоне", "Распознанный текст", "Личный архив", "Работа на компьютере"];
 
 const seo = {
-  title: "О Word2you — личный архив записей с поиском",
-  description: "Узнайте, как Word2you помогает сохранять фото и тексты записей в личном архиве, находить их и работать с ними на телефоне и компьютере.",
-  canonical: "https://word2you.ru/about"
+  ...PUBLIC_PAGE_SEO["/about"],
+  canonical: `${SITE_ORIGIN}/about`
 };
 
 function useAboutSeo() {
@@ -98,7 +99,7 @@ function AboutPage() {
 
       <section className="about-hero">
         <div className="about-hero__content">
-          <h1>Сохраняйте любые записи. Находите их за секунды.</h1>
+          <h1>Текст с фото и личный архив записей</h1>
           <p>
             Word2you превращает фото заметок, конспектов и документов в удобный архив с текстом, кратким описанием,
             тегами и поиском.
@@ -161,6 +162,18 @@ function AboutPage() {
           </div>
         </div>
       </section>
+
+      <section className="about-section" aria-labelledby="about-features-heading">
+        <h2 id="about-features-heading">Выберите свою задачу</h2>
+        <div className="feature-overview">
+          <article><h3>Печатный текст с фото</h3><p>Получите текст со страницы учебника, документа или скриншота. Проверьте и скопируйте его в свой документ.</p><Link to="/photo-to-text">Посмотреть пример печатной страницы</Link></article>
+          <article><h3>Рукописные записи</h3><p>Переведите конспект или заметку от руки в печатный текст. Сравните фото и результат на примерах разного почерка.</p><Link to="/handwriting-to-text">Посмотреть примеры рукописи</Link></article>
+          <article><h3>Несколько фотографий</h3><p>После входа выберите сразу несколько фото. Каждое станет отдельной записью в архиве.</p><Link to="/batch-photo-to-text">Как работает пакетная обработка</Link></article>
+          <article><h3>Таблицы с фотографий</h3><p>Попробуйте восстановить строки и столбцы. Проверьте ячейки и перенесите результат в Word.</p><Link to="/table-from-photo">Как восстановить таблицу</Link></article>
+        </div>
+      </section>
+
+      <section className="about-section"><div className="feature-roadmap"><h2>Что планируем дальше</h2><p>Распознавание формул и добавление нескольких страниц в один документ — в планах разработки. Сейчас пакетная обработка сохраняет фотографии отдельными записями.</p></div></section>
 
       <section className="about-notice">
         <div className="about-notice__copy">

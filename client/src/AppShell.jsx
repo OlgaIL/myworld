@@ -13,6 +13,7 @@ import ConsentPage from "./pages/ConsentPage";
 import PackagesPage from "./pages/PackagesPage";
 import HandwritingToTextLanding from "./pages/HandwritingToTextLanding";
 import PhotoToTextLanding from "./pages/PhotoToTextLanding";
+import FeatureLanding from "./pages/FeatureLanding";
 import PrivacyPage from "./pages/PrivacyPage";
 import RequisitesPage from "./pages/RequisitesPage";
 import TermsPage from "./pages/TermsPage";
@@ -39,6 +40,8 @@ export default function AppShell() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/handwriting-to-text" element={<HandwritingToTextLanding />} />
         <Route path="/photo-to-text" element={<PhotoToTextLanding />} />
+        <Route path="/batch-photo-to-text" element={<FeatureLanding kind="batch" />} />
+        <Route path="/table-from-photo" element={<FeatureLanding kind="tables" />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route
           path="/packages"

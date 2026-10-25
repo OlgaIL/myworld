@@ -25,4 +25,4 @@ for (const [pathname, seo] of Object.entries(PUBLIC_PAGE_SEO)) {
   if (!html.includes('data-prerendered="true"')) throw new Error("Prerender root placeholder missing");
   await fs.writeFile(path.join(outputDir, seo.file), html);
 }
-console.log("Prerendered /, /photo-to-text, /handwriting-to-text");
+console.log(`Prerendered ${Object.keys(PUBLIC_PAGE_SEO).join(", ")}`);

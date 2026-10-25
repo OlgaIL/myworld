@@ -12,6 +12,8 @@ export const PUBLIC_PAGE_PATHS = Object.freeze([
   "/",
   "/photo-to-text",
   "/handwriting-to-text",
+  "/batch-photo-to-text",
+  "/table-from-photo",
   "/about",
   "/packages",
   "/terms",

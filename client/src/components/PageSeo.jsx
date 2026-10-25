@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { PUBLIC_PAGE_SEO, SITE_ORIGIN } from "../publicPageSeo";
 
-const PUBLIC_PATHS = new Set(["/", "/photo-to-text", "/handwriting-to-text", "/about", "/packages", "/terms", "/privacy", "/consent", "/requisites"]);
+const PUBLIC_PATHS = new Set([...Object.keys(PUBLIC_PAGE_SEO), "/packages", "/terms", "/privacy", "/consent", "/requisites"]);
 
 function setHeadTag(selector, tag, attributes) {
   const existing = [...document.head.querySelectorAll(selector)];
