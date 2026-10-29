@@ -2,6 +2,7 @@ import CabinetArchiveNavigation from "./CabinetArchiveNavigation";
 import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
 import ProcessingPackageOffer from "./ProcessingPackageOffer";
+import BatchUploadHint from "./BatchUploadHint";
 
 function PlusIcon() {
   return (
@@ -75,12 +76,13 @@ function CabinetHome({
               onClick={onRequestUpload}
               disabled={uploading}
             >
-              Загрузить запись
+              Загрузить фото
             </button>
           )}
           <p className="guest-hero__counter upload-panel__counter">
             Документов в архиве: {recordsUsed}
           </p>
+          {recordUploadAllowed && <BatchUploadHint user={user} />}
           {!uploading && <ProcessingPackageOffer user={user} reloadUser={reloadUser} />}
         </section>
       )}
@@ -166,6 +168,7 @@ function CabinetHome({
             <ProcessingPackageOffer user={user} reloadUser={reloadUser} />
           )}
           <div className="cabinet-empty-state__meta">
+            {recordUploadAllowed && <BatchUploadHint user={user} />}
             <p className="guest-hero__counter upload-panel__counter">
               Документов в архиве: {recordsUsed}
             </p>

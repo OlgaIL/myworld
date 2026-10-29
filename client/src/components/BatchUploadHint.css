@@ -1,0 +1,18 @@
+.batch-upload-hint {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.batch-upload-hint p {
+  margin: 0;
+}
+
+.batch-upload-hint a {
+  justify-self: start;
+  color: #1d4ed8;
+  text-underline-offset: 3px;
+}

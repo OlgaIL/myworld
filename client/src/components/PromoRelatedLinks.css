@@ -1,0 +1,18 @@
+.landing-page .landing-section.promo-related > h2 {
+  margin-bottom: 32px;
+}
+
+.promo-related__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .promo-related__links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
