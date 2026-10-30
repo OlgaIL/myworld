@@ -224,6 +224,19 @@ test("failed post-commit source removal is durable and retried by cleanup", asyn
   await assert.rejects(fs.stat(guest.storage_path), { code: "ENOENT" }); await fs.stat(stored.storage_path);
 });
 
+test("first OCR geometry transfers to the claimed photo and is deleted with the photo",async()=>{
+  const guest=await document();
+  const artifact={version:1,provider:"google",sourceSha256:"synthetic",textAnnotations:[]};
+  await query("insert into document_ocr_layouts (guest_document_id,artifact) values ($1,$2::jsonb)",[guest.id,JSON.stringify(artifact)]);
+  const stored=await transferGuestDocument(guest.id,user.id);files.add(stored.storage_path);
+  const row=(await query("select * from document_ocr_layouts where photo_id=$1",[stored.id])).rows[0];
+  assert.deepEqual(row.artifact,artifact);assert.equal(row.guest_document_id,null);
+  const {loadPhotoOcrLayout}=await import("../services/ocrLayoutService.js");
+  assert.equal(await loadPhotoOcrLayout({id:stored.id,user_id:user.id+100000}),null);
+  await query("delete from photos where id=$1",[stored.id]);
+  assert.equal((await query("select count(*)::int as n from document_ocr_layouts")).rows[0].n,0);
+});
+
 test("a real PostgreSQL deferred constraint failure at COMMIT is safely retryable", async () => {
   const guest = await document();
   files.add(path.join(userUploadsDir, `claimed-${guest.id}-${guest.filename}`));

@@ -179,8 +179,9 @@ export async function processImageWithPipeline(imagePath, pipeline, { trigger = 
   });
 }
 
-export async function recognizeWithPipeline(imagePath, pipeline) {
+export async function recognizeWithPipeline(imagePath, pipeline, { captureLayout = false } = {}) {
   return ocrService.recognize(imagePath, {
+    captureLayout,
     provider: pipeline.ocrProvider,
     apiKey: YANDEX_API_KEY,
     folderId: YANDEX_FOLDER_ID,

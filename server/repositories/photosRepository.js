@@ -148,9 +148,11 @@ export async function findPhotoByFilenameAndUser(filename, userId) {
 export async function updatePhotoTables(id, userId, result, runQuery = query) {
   const updated = await runQuery(
     `update photos set table_content = $3::jsonb, table_status = $4,
-       table_error_code = $5, table_extracted_at = now(), updated_at = now()
+       table_error_code = $5, table_retry_after = $6, table_processing_context = $7::jsonb,
+       table_extracted_at = now(), updated_at = now()
      where id = $1 and user_id = $2 returning *`,
-    [id, userId, result.content ? JSON.stringify(result.content) : null, result.status, result.code || null]
+    [id, userId, result.content ? JSON.stringify(result.content) : null, result.status, result.code || null,
+      result.retryAfter || null, result.tableContext ? JSON.stringify(result.tableContext) : null]
   );
   return updated.rows[0] || null;
 }

@@ -2,6 +2,62 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { mergeFormattedTables, promoteDocumentTitle } from "./mergeFormattedTables.js";
 
+test("new OCR placement works after formatter failure and preserves current corrected prose",()=>{
+  const table={type:"table",tableId:"table-1",headers:["A","B"],rows:[["x","1"],["y","2"]]};
+  const content={blocks:[table],documentContent:{blocks:[{type:"paragraph",text:"До таблицы"},table,{type:"paragraph",text:"Заявление Евишни"}]}};
+  const empty=mergeFormattedTables(null,content);
+  assert.equal(empty.merged,true);assert.equal(empty.content.blocks.at(-1).text,"Заявление Евишни");
+  const current={blocks:[{type:"heading",text:"До таблицы"},{type:"paragraph",text:"Заявление Евгении"}]};
+  const merged=mergeFormattedTables(current,content,{corrections:[{original:"Евишни",replacement:"Евгении",applied:true}]});
+  assert.equal(merged.content.blocks[0].type,"heading");
+  assert.equal(merged.content.blocks.at(-1).text,"Заявление Евгении");
+  assert.equal(merged.content.blocks.filter(b=>b.type==="table").length,1);
+  const manual={blocks:[{...table,rows:[["manually edited","100"]]}]};
+  assert.deepEqual(mergeFormattedTables(manual,content).content,manual);
+});
+
+function proseFixture(){
+  const table={type:'table',tableId:'table-1',headers:['Name','Value'],rows:[['Alpha','100']]};
+  const opening='Уважаемые жильцы!';
+  const intro='Сообщаем всем собственникам нашего дома о новом порядке оплаты услуг за текущий период начиная с первого числа следующего месяца.';
+  const sourceMiddle='Начисления будут производится ежемесячно. Размер платы за дополнительную услугу составляет 150,00 рублей согласно решению общего собрания.';
+  const correctedMiddle=sourceMiddle.replace('производится','производиться');
+  const list={type:'list',items:['через банковское приложение после проверки реквизитов получателя платежа','в кассе организации в рабочие дни без дополнительной комиссии']};
+  const tail=[{type:'paragraph',text:opening},{type:'paragraph',text:intro},{type:'paragraph',text:correctedMiddle},
+    {type:'paragraph',text:'Оплатить услуги можно следующими способами:'},list];
+  const source={type:'paragraph',text:[opening,intro,sourceMiddle,tail[3].text,...list.items].join('\n')};
+  return {table,tail,source,existing:{blocks:[{type:'paragraph',text:'Old flattened table Alpha 100'},...tail]},
+    extracted:{blocks:[table],placement:'ocr',documentContent:{blocks:[table,source]}}};
+}
+
+test('OCR placement preserves paragraphs, lists and spelling fixes after tables using unique exact boundaries',()=>{
+  const {existing,extracted,table,tail}=proseFixture(),before=structuredClone(existing);
+  const result=mergeFormattedTables(existing,extracted);
+  assert.equal(result.merged,true);
+  assert.deepEqual(result.content.blocks,[table,...tail]);
+  assert.deepEqual(existing,before);
+});
+
+test('manual additions after the last source paragraph survive both exact and anchored placement',()=>{
+  const {existing,extracted,table,tail}=proseFixture();
+  const manual={type:'paragraph',text:'Моя дополнительная заметка после документа.'};
+  existing.blocks.push(manual);
+  assert.deepEqual(mergeFormattedTables(existing,extracted).content.blocks,[table,...tail,manual]);
+  extracted.documentContent.blocks[1].text=tail.map(b=>b.type==='list'?b.items.join('\n'):b.text).join('\n');
+  assert.deepEqual(mergeFormattedTables(existing,extracted).content.blocks,[table,...tail,manual]);
+});
+
+test('ambiguous anchors or unexplained numeric changes never authorize prose replacement',()=>{
+  const first=proseFixture();
+  first.existing.blocks.push(...structuredClone(first.tail));
+  assert.deepEqual(mergeFormattedTables(first.existing,first.extracted).content.blocks,[first.table,first.source]);
+  const second=proseFixture();
+  second.existing.blocks[3]={...second.existing.blocks[3],text:second.existing.blocks[3].text.replace('150,00','250,00')};
+  assert.deepEqual(mergeFormattedTables(second.existing,second.extracted).content.blocks,[second.table,second.source]);
+  const tracked=mergeFormattedTables(second.existing,second.extracted,{corrections:[{original:'150,00',replacement:'250,00',applied:true}]});
+  assert.deepEqual(tracked.content.blocks,[second.table,...second.existing.blocks.slice(1)]);
+});
+
 test("replaces two captioned table spans while preserving prose between them", () => {
   const formatted = { blocks: [
     { type: "paragraph", text: "Таблица 17 – Вводы мощностей" },
@@ -50,6 +106,23 @@ test("leaves uncertain placement unchanged", () => {
   const formatted = { blocks: [{ type: "paragraph", text: "Свободный текст без таблиц" }] };
   const extracted = { blocks: [{ type: "table", headers: ["A", "B"], rows: [["x", "1"], ["y", "2"]] }] };
   assert.deepEqual(mergeFormattedTables(formatted, extracted), { content: formatted, merged: false });
+});
+
+test("new documents insert tables by ID regardless of captions, wording or extraction order", () => {
+  const source = (id) => ({ type: "table_source", tableId: `table-${id}`, text: "Сырые ячейки\n111\n222" });
+  const text = { type: "paragraph", text: "Расчёт между таблицами: 111 + 222 = 333" };
+  const formatted = { blocks: [source(1), text, source(2)] };
+  const table = (id) => ({ type: "table", tableId: `table-${id}`, headers: ["A", "B"], rows: [["x", "111"], ["y", "222"]] });
+  const result = mergeFormattedTables(formatted, { blocks: [table(2), table(1)] });
+  assert.equal(result.merged, true);
+  assert.deepEqual(result.content.blocks, [table(1), text, table(2)]);
+  const caption = { type: "heading", text: "Таблица 17 — Мощность" };
+  const captioned = { blocks: [caption, source(1), text] };
+  assert.deepEqual(mergeFormattedTables(captioned, { blocks: [caption, table(1)] }).content.blocks,
+    [caption, table(1), text]);
+  for (const blocks of [[table(1)], [table(1), table(1)], [table(1), table(3)]]) {
+    assert.deepEqual(mergeFormattedTables(formatted, { blocks }), { content: formatted, merged: false });
+  }
 });
 
 test("merges two numbered tables split into column lists without removing intervening prose", () => {

@@ -126,11 +126,102 @@ function findTableRange(blocks, heading, table) {
   return { start, end: headerIndex + table.rows.length + 1 };
 }
 
+function anchoredProseRange(text, existing, originalKey) {
+  const key=normalized(text),words=key.split(' ');
+  // Long, exact boundary anchors locate the existing prose despite spelling
+  // corrections inside it. Never use fuzzy similarity to delete document text.
+  if(words.length<24)return null;
+  const first=words.slice(0,12).join(' '),last=words.slice(-12).join(' '),candidates=[];
+  const digits=value=>(value.match(/\d+/gu)||[]).join('|');
+  for(let start=0;start<existing.length;start++){
+    let combined='';
+    for(let end=start;end<existing.length;end++){
+      if(!['paragraph','heading','list'].includes(existing[end].type))break;
+      combined=[combined,originalKey(existing[end])].filter(Boolean).join(' ');
+      if(combined.length<first.length)continue;
+      if(!(combined===first||combined.startsWith(`${first} `)))break;
+      if((combined===last||combined.endsWith(` ${last}`))&&digits(combined)===digits(key))candidates.push({start,end:end+1});
+    }
+  }
+  if(candidates.length!==1)return null;
+  return candidates[0];
+}
+
 // Only replace a uniquely located table-shaped span. Uncertain placement stays
 // in the separate Tables tab so surrounding prose cannot silently disappear.
-export function mergeFormattedTables(formattedContent, tableContent) {
-  if (!Array.isArray(formattedContent?.blocks) || !Array.isArray(tableContent?.blocks)) {
+export function mergeFormattedTables(formattedContent, tableContent, { corrections = [], allowOcrFallback = true } = {}) {
+  if (!Array.isArray(tableContent?.blocks)) {
     return { content: formattedContent, merged: false };
+  }
+  const sources = (formattedContent?.blocks || []).filter((block) => block.type === "table_source");
+  // New documents can recover placement directly from the first OCR when the
+  // text formatter failed to emit slots. Reuse existing prose only on a complete
+  // literal match or unique exact prose boundaries (allowing known corrections).
+  if ((!sources.length || tableContent.placement==="ocr") && allowOcrFallback && !formattedContent?.blocks?.some(block=>block.type==="table")
+    && Array.isArray(tableContent.documentContent?.blocks)) {
+    const existing=formattedContent?.blocks || [];
+    const originalKey=block=>{
+      let text=block.type==="list"?(block.items||[]).join(" "):String(block.text||"");
+      for(const correction of corrections)if(correction.applied!==false&&correction.replacement)
+        text=text.split(correction.replacement).join(correction.original);
+      return normalized(text);
+    };
+    const documentBlocks=tableContent.documentContent.blocks;
+    const firstTable=documentBlocks.findIndex(block=>block.type==='table');
+    const lastTable=documentBlocks.findLastIndex(block=>block.type==='table');
+    let previousProseEnd=0;
+    const blocks=documentBlocks.flatMap((block,blockIndex)=>{
+      if(block.type!=="paragraph")return [block];
+      const key=normalized(block.text), candidates=[];
+      for(let start=0;start<existing.length;start++){
+        let combined="";
+        for(let end=start;end<existing.length;end++){
+          if(!["paragraph","heading","list"].includes(existing[end].type))break;
+          combined=[combined,originalKey(existing[end])].filter(Boolean).join(" ");
+          if(combined===key)candidates.push({start,end:end+1});
+          if(combined.length>=key.length)break;
+        }
+      }
+      const range=candidates.length===1?candidates[0]:anchoredProseRange(block.text,existing,originalKey);
+      if(!range)return [block];
+      // Keep manual additions at document edges, not just the OCR substring.
+      if(blockIndex===0&&firstTable>0&&existing.slice(0,range.start).every(b=>['paragraph','heading','list'].includes(b.type)))range.start=0;
+      if(blockIndex===documentBlocks.length-1&&lastTable>=0&&blockIndex>lastTable
+        &&existing.slice(range.end).every(b=>['paragraph','heading','list'].includes(b.type)))range.end=existing.length;
+      if(range.start<previousProseEnd)return [block];
+      previousProseEnd=range.end;
+      return existing.slice(range.start,range.end);
+    });
+    return { content:{blocks}, merged:true };
+  }
+  if (!Array.isArray(formattedContent?.blocks)) return {content:formattedContent,merged:false};
+  if (sources.length) {
+    const tables = tableContent.blocks.filter((block) => block.type === "table");
+    const ids = sources.map((block) => block.tableId);
+    if (new Set(ids).size !== ids.length || sources.some((block, index) => block.tableId !== `table-${index + 1}`)
+      || new Set(tables.map((block) => block.tableId)).size !== ids.length
+      || tables.some((block) => !ids.includes(block.tableId))) {
+      return { content: formattedContent, merged: false };
+    }
+    const byId = new Map();
+    const parts = new Map();
+    for (const [index, block] of tableContent.blocks.entries()) {
+      if (block.type !== "table") continue;
+      const expected = (parts.get(block.tableId) || 0) + 1;
+      if ((block.tablePart ?? 1) !== expected) return { content: formattedContent, merged: false };
+      parts.set(block.tableId, expected);
+      const group = byId.get(block.tableId) || [];
+      if (tableContent.blocks[index - 1]?.type === "heading") group.push(tableContent.blocks[index - 1]);
+      group.push(block);
+      byId.set(block.tableId, group);
+    }
+    return { content: { ...formattedContent, blocks: formattedContent.blocks.flatMap((block, index, blocks) => {
+      if (block.type !== "table_source") return [block];
+      const replacement = byId.get(block.tableId);
+      const previous = blocks[index - 1];
+      return previous?.type === "heading" && replacement[0]?.type === "heading"
+        && normalized(previous.text) === normalized(replacement[0].text) ? replacement.slice(1) : replacement;
+    }) }, merged: true };
   }
   if (formattedContent.blocks.some((block) => block.type === "table")) {
     return { content: formattedContent, merged: false };

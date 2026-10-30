@@ -4,6 +4,8 @@ import { buildManualFormattedContent, formatFormattedLine, nestFormattedLists } 
 import { FormattedList } from "./FormattedList.js";
 import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
 import { mergeFormattedTables, promoteDocumentTitle } from "../utils/mergeFormattedTables.js";
+import { getTableAttemptState, tableFailureMessage } from "../utils/tableAttemptState.js";
+import { getTableHeaderRows } from "../utils/tableHeaders.js";
 import { getDocumentTables, restoreDocumentTables } from "../services/api.js";
 import {
   COPY_GUIDE_USED_EVENT,
@@ -145,15 +147,20 @@ function FormattedContent({ content, highlightedText }) {
     <div data-clarity-unmask="true" className="document-page__formatted-content">
       {nestFormattedLists(content.blocks).map((block, index) => {
         if (block.type === "table") {
+          const headerRows = getTableHeaderRows(block);
           return (
             <div className="document-page__table-scroll" key={`${block.type}-${index}`}>
-              <table>
-                <thead><tr>{block.headers.map((cell, cellIndex) => (
-                  <th scope="col" key={cellIndex}>{renderHighlightedText(cell, highlightedText)}</th>
-                ))}</tr></thead>
+              <table className={`${block.headers.length > 4 ? "document-page__table--compact" : ""} ${headerRows.length > 1 ? "document-page__table--grouped" : ""}`.trim() || undefined}>
+                <thead>{headerRows.map((row,rowIndex)=><tr key={rowIndex}>{row.map(cell=>(
+                  <th scope={cell.colSpan>1?"colgroup":"col"} colSpan={cell.colSpan} rowSpan={cell.rowSpan}
+                    key={cell.col}>{renderHighlightedText(cell.text, highlightedText)}</th>
+                ))}</tr>)}</thead>
                 <tbody>{block.rows.map((row, rowIndex) => (
                   <tr key={rowIndex}>{row.map((cell, cellIndex) => (
-                    <td key={cellIndex}>{renderHighlightedText(cell, highlightedText)}</td>
+                    <td key={cellIndex}
+                      className={block.unverifiedCells?.some(cell=>cell.row===rowIndex&&cell.col===cellIndex)?"document-page__cell-review":undefined}
+                      title={block.unverifiedCells?.some(cell=>cell.row===rowIndex&&cell.col===cellIndex)?"Сверьте эту ячейку с фото":undefined}
+                    >{renderHighlightedText(cell, highlightedText)}</td>
                   ))}</tr>
                 ))}</tbody>
               </table>
@@ -286,9 +293,22 @@ function DocumentTextVariants({
   const visibleTableError = tableRequestError.documentId === documentId ? tableRequestError.message : "";
   const tableContent = Array.isArray(currentTableInfo?.tableContent?.blocks)
     ? currentTableInfo.tableContent : null;
-  const tableReady = currentTableInfo?.tableStatus === "ready" && Boolean(tableContent?.blocks.length);
+  const tableDocumentUnavailable = Boolean(enrichmentPending)
+    || info?.status !== "processed";
+  const tableReady = !tableDocumentUnavailable && currentTableInfo?.tableStatus === "ready" && Boolean(tableContent?.blocks.length);
+  const tableNeedsReview = tableReady && tableContent.blocks.some(block=>block.unverifiedCells?.length);
+  const tableAttempts = getTableAttemptState(currentTableInfo);
+  const [, refreshRetryTime] = useState(0);
+  useEffect(() => {
+    if (!tableAttempts.waiting) return undefined;
+    const delay = Math.max(0, new Date(currentTableInfo?.tableRetryAfter).getTime() - Date.now());
+    const timer = setTimeout(() => refreshRetryTime((value) => value + 1), Math.min(delay + 20, 2147483647));
+    return () => clearTimeout(timer);
+  }, [currentTableInfo?.tableRetryAfter, tableAttempts.waiting]);
   const formattedMerge = tableReady
-    ? mergeFormattedTables(baseFormattedContent, tableContent)
+    ? mergeFormattedTables(baseFormattedContent, tableContent, {
+      corrections: info?.corrections || [], allowOcrFallback: !improvedText.trim()
+    })
     : { content: baseFormattedContent, merged: false };
   const formattedContent = formattedMerge.content;
   const formattedText = getFormattedText(formattedContent);
@@ -306,14 +326,15 @@ function DocumentTextVariants({
       : []),
     { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
       html: formattedContent?.blocks.some((block) => ["table", "list"].includes(block.type)) ? getFormattedHtml(formattedContent) : undefined },
-    ...(info?.hasTable && ["processed", "recognized"].includes(info?.status) ? [{ id: "tables", label: "Таблицы",
+    ...(isAuthenticated && info?.hasTable && ["processed", "recognized"].includes(info?.status) ? [{ id: "tables", label: "Таблицы",
       text: tableReady ? getFormattedText(tableContent) : "", tables: true, locked: tableLocked,
+      disabled: tableDocumentUnavailable,
       html: tableReady ? getFormattedHtml(tableContent) : undefined }] : [])
   ];
   const activeTab = tabSelection.documentId === documentId ? tabSelection.tab : "text";
-  const activeVariant = variants.find((variant) => variant.id === activeTab) || variants[0];
+  const activeVariant = variants.find((variant) => variant.id === activeTab && !variant.disabled) || variants[0];
   useEffect(() => {
-    if (!["tables", "formatted"].includes(activeTab) || !isAuthenticated || info?.tableStatus !== "ready"
+    if (tableDocumentUnavailable || !["tables", "formatted"].includes(activeTab) || !isAuthenticated || info?.tableStatus !== "ready"
       || info?.tableContent?.blocks?.length
       || (tableResult.documentId === documentId && tableResult.info?.tableContent)) return undefined;
     let cancelled = false;
@@ -326,7 +347,7 @@ function DocumentTextVariants({
     });
     setTableLoadingDocumentId(documentId);
     return () => { cancelled = true; };
-  }, [activeTab, documentId, info?.tableStatus, info?.tableContent, isAuthenticated, tableApi, tableResult.documentId, tableResult.info?.tableContent]);
+  }, [activeTab, documentId, info?.tableStatus, info?.tableContent, isAuthenticated, tableApi, tableResult.documentId, tableResult.info?.tableContent, tableDocumentUnavailable]);
   const readableText = activeVariant?.text || "";
   const copyActiveVariant = () => onCopy(`text-${activeVariant.id}`, readableText,
     activeVariant.html ? { html: activeVariant.html } : undefined);
@@ -342,7 +363,7 @@ function DocumentTextVariants({
     && !["source", "improved", "tables"].includes(activeVariant.id);
 
   async function handleRestoreTables() {
-    if (tablePending || tableLocked) return;
+    if (tableDocumentUnavailable || tablePending || tableLocked || tableAttempts.disabled) return;
     setTableRequestError({ documentId, message: "" });
     setTablePendingDocumentId(documentId);
     try {
@@ -351,6 +372,10 @@ function DocumentTextVariants({
       if (result.tableStatus === "ready") onTableReady?.();
     } catch (error) {
       const code = error.response?.data?.error;
+      if (["TABLE_DOCUMENT_NOT_READY", "TABLE_ATTEMPT_LIMIT", "TABLE_RETRY_NOT_USEFUL", "TABLE_RETRY_LATER"].includes(code) && error.response?.data?.info) {
+        setTableResult({ documentId, info: error.response.data.info });
+        return;
+      }
       const message = code === "TABLE_BUSY"
         ? "Таблица уже обрабатывается. Повторите через минуту."
         : code === "TABLE_PACKAGE_REQUIRED"
@@ -375,22 +400,24 @@ function DocumentTextVariants({
         <div className="document-page__text-tabs" role="tablist" aria-label="Варианты текста">
           {variants.map((variant) => (
             <button
-              className={`document-page__text-tab ${activeVariant.id === variant.id ? "document-page__text-tab--active" : ""}`}
+              className={`document-page__text-tab ${activeVariant.id === variant.id ? "document-page__text-tab--active" : ""} ${variant.tables && !variant.disabled && tableAttempts.failed ? "document-page__text-tab--failed" : ""}`}
               type="button"
               role="tab"
               aria-selected={activeVariant.id === variant.id}
-              aria-label={variant.tables && currentTableInfo?.tableStatus !== "ready"
+              disabled={variant.disabled}
+              aria-label={variant.disabled ? undefined : variant.tables && tableAttempts.failed ? "Таблицы — не получилось" : variant.tables && currentTableInfo?.tableStatus !== "ready"
                 ? "Таблицы не собраны. Собрать?" : undefined}
-              title={variant.tables && currentTableInfo?.tableStatus !== "ready"
+              title={variant.disabled ? "Сначала повторите обработку документа." : variant.tables && tableAttempts.failed ? "Не получилось собрать таблицы" : variant.tables && currentTableInfo?.tableStatus !== "ready"
                 ? "Таблицы не собраны. Собрать?" : undefined}
               key={variant.id}
               onClick={() => setTabSelection({ documentId, tab: variant.id })}
             >
               {variant.label}
-              {variant.tables && currentTableInfo?.tableStatus !== "ready" && (
+              {variant.tables && !variant.disabled && tableAttempts.failed && <span className="document-page__table-failed" aria-hidden="true">!</span>}
+              {variant.tables && !variant.disabled && !tableAttempts.failed && currentTableInfo?.tableStatus !== "ready" && (
                 <span className="document-page__table-cue" aria-hidden="true">?</span>
               )}
-              {variant.locked && <LockIcon />}
+              {variant.locked && !variant.disabled && <LockIcon />}
             </button>
           ))}
         </div>
@@ -399,24 +426,41 @@ function DocumentTextVariants({
       {activeVariant.tables ? (
         <div className="document-page__table-panel">
           {tableReady ? (
-            <div className="document-page__text-body">
-              <FormattedContent content={tableContent} highlightedText="" />
-              <CopyButton
-                label="Скопировать таблицы в Word или Excel"
-                guideLabel="Копировать таблицы"
-                copied={Boolean(copiedMap?.["text-tables"])}
-                onClick={copyActiveVariant}
-              />
+            <>
+              {tableNeedsReview && <p className="document-page__table-review-note" role="status">Выделенные ячейки требуют сверки с фото.</p>}
+              <div className="document-page__text-body">
+                <FormattedContent content={tableContent} highlightedText="" />
+                <CopyButton
+                  label="Скопировать таблицы в Word или Excel"
+                  guideLabel="Копировать таблицы"
+                  copied={Boolean(copiedMap?.["text-tables"])}
+                  onClick={copyActiveVariant}
+                />
+              </div>
+            </>
+          ) : tableAttempts.blocked ? (
+            <div className="document-page__table-message" role="status">
+              <p>{tableFailureMessage(currentTableInfo)}</p>
+              <button type="button" disabled>Собрать таблицы</button>
+            </div>
+          ) : tableAttempts.exhausted ? (
+            <div className="document-page__table-message" role="status">
+              <p>Не удалось собрать таблицы в этом документе.</p>
+              <button type="button" disabled>Собрать таблицы</button>
             </div>
           ) : tableLocked ? (
-            <div className="document-page__table-message">
-              <LockIcon />
-              <p>{isAuthenticated
-                ? "Бесплатное восстановление уже использовано. Дальше нужен пакет обработок, включая подарочные."
-                : "Войдите, чтобы бесплатно восстановить таблицы в одном документе."}</p>
-              {isAuthenticated ? <a href="/account">Посмотреть пакет</a>
-                : <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} compact />}
-            </div>
+            isAuthenticated ? (
+              <div className="document-page__table-message">
+                <LockIcon />
+                <p>Бесплатное восстановление уже использовано. Дальше нужен пакет обработок, включая подарочные.</p>
+                <a href="/account">Посмотреть пакет</a>
+              </div>
+            ) : (
+              <div className="document-page__format-login">
+                <p>Восстановление таблиц доступно после входа.</p>
+                <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} compact />
+              </div>
+            )
           ) : currentTableInfo?.tableStatus === "ready" ? (
             <div className="document-page__table-message">
               <p>{tableLoadingDocumentId === documentId ? "Загружаем сохранённые таблицы…" :
@@ -424,30 +468,29 @@ function DocumentTextVariants({
             </div>
           ) : (
             <div className="document-page__table-message">
-              {currentTableInfo?.tableStatus === "review" && (
-                <p>Не удалось проверить расположение строк и столбцов. Попробуйте ещё раз или загрузите более чёткое фото.</p>
-              )}
-              {currentTableInfo?.tableStatus === "error" && (
-                <p>Сервис таблиц временно недоступен. Попробуйте позже.</p>
-              )}
-              {currentTableInfo?.tableStatus === "no_tables" && (
-                <p>На фото не удалось найти таблицу. Попробуйте ещё раз с более чётким фото.</p>
-              )}
+              {tableAttempts.failed && <p>{tableFailureMessage(currentTableInfo)}</p>}
               {!currentTableInfo?.tableStatus || currentTableInfo.tableStatus === "not_started" ? (
                 <p>Похоже, на фото есть таблицы.<br />Попробовать собрать их, сохранив расположение строк и столбцов?</p>
               ) : null}
               {visibleTableError && <p role="alert">{visibleTableError}</p>}
-              <button type="button" onClick={handleRestoreTables} disabled={tablePending}>
-                {tablePending ? "Собираем таблицы…" : "Собрать таблицы"}
+              {tableAttempts.waiting && <p role="status">Повторить сборку можно будет чуть позже.</p>}
+              <button type="button" onClick={handleRestoreTables} disabled={tablePending || tableAttempts.disabled} aria-busy={tablePending}>
+                {tablePending ? "Собираем таблицы…" : tableAttempts.failed ? "Попробовать ещё раз" : "Собрать таблицы"}
               </button>
-              <small>{Number(packageRemaining) + Number(giftRemaining) > 0
-                ? "Дополнительные обработки не списываются."
-                : "Одно успешное восстановление бесплатно. Ошибки попытку не расходуют."}</small>
+              {Number(packageRemaining) + Number(giftRemaining) <= 0 && (
+                <small>Одно успешное восстановление бесплатно. Ошибки бесплатное восстановление не расходуют.</small>
+              )}
             </div>
           )}
         </div>
       ) : activeVariant.formatted ? (
         <div className="document-page__formatted">
+          {tableNeedsReview && formattedMerge.merged && <p className="document-page__table-review-note" role="status">Выделенные ячейки требуют сверки с фото.</p>}
+          {tableReady && !formattedMerge.merged && !baseFormattedContent?.blocks.some((block) => block.type === "table") && (
+            <p className="document-page__table-message">{baseFormattedContent?.blocks.some((block) => block.type === "table_source")
+              ? "Таблицы доступны во вкладке «Таблицы», но не появились в оформленном тексте. Попробуйте загрузить документ заново."
+              : "Таблица не появилась в оформленном тексте? Загрузите документ заново."}</p>
+          )}
           {formattedContent ? (
             <div className="document-page__text-body">
               <FormattedContent content={formattedContent} highlightedText={highlightedText} />

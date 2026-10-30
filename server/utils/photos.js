@@ -10,8 +10,11 @@ import {
   YANDEX_OCR_ENABLED
 } from "../config/env.js";
 import { DEFAULT_FREE_PROCESSING_LIMIT } from "../config/processingLimits.js";
+import { TABLE_ATTEMPT_LIMIT } from "../config/tableLimits.js";
 import { formatAiNotesForDisplay } from "./aiNotes.js";
 import { isTableSuspected } from "./tableDetection.js";
+import { tableFailurePolicy } from "./tableFailurePolicy.js";
+import { analyzeTableFailure } from "./tableFailureAnalysis.js";
 import {
   getEffectiveTextContent,
   getStoredTextCorrections,
@@ -43,8 +46,16 @@ export function mapPhotoInfo(photo, { includeTableContent = false } = {}) {
     formattedAt: photo.formatted_at || null,
     hasTable: isTableSuspected(photo),
     tableStatus: photo.table_status || "not_started",
+    tableAttempts: Number(photo.table_attempts || 0),
+    tableAttemptsLimit: TABLE_ATTEMPT_LIMIT,
+    tableAttemptsRemaining: Math.max(0, TABLE_ATTEMPT_LIMIT - Number(photo.table_attempts || 0)),
     tableContent: includeTableContent ? photo.table_content || null : null,
     tableErrorCode: photo.table_error_code || null,
+    tableRetryable: tableFailurePolicy(photo.table_status, photo.table_error_code, photo.table_processing_context).retryable,
+    tableFailureKind: tableFailurePolicy(photo.table_status, photo.table_error_code, photo.table_processing_context).kind,
+    tableNextAction: analyzeTableFailure(photo.table_status, photo.table_error_code, photo.table_processing_context,
+      {pageInventory:process.env.TABLE_PAGE_INVENTORY_ENABLED === "true"}).action,
+    tableRetryAfter: photo.table_retry_after || null,
     tableExtractedAt: photo.table_extracted_at || null,
     hasFormulas: Boolean(photo.has_formulas),
     hasRecognitionErrors: Boolean(photo.has_recognition_errors),

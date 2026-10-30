@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminAccessRequests from "../components/AdminAccessRequests";
 import AdminGuestStorage from "../components/AdminGuestStorage";
+import AdminTableStatistics from "../components/AdminTableStatistics";
 import { createLatestLoader } from "../utils/latestLoader";
 import AdminImprovementRequests from "../components/AdminImprovementRequests";
 import AdminProcessingCredits from "../components/AdminProcessingCredits";
@@ -1011,6 +1012,7 @@ function AdminDashboard({ onLogout }) {
                       )}
                     </>
                   )}
+                <AdminTableStatistics hours={llmHours} />
                 <AdminGuestStorage hours={llmHours} />
               </section>
               <AdminSettingsPanel settings={settings} />

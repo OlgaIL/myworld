@@ -4,9 +4,12 @@ import {
   AI_TEXT_QUALITY_VALUES
 } from "../aiPrompt.js";
 
+import { TABLE_ANCHORS_PROMPT } from "./tableAnchorsPrompt.js";
+
 export function buildOpenAITextSystemPrompt() {
   return `
 Ты обрабатываешь сырой OCR-текст из изображения для сервиса Word2you Записи.
+${TABLE_ANCHORS_PROMPT}
 
 Ты не видишь исходное изображение. У тебя есть только результат распознавания, поэтому нельзя добавлять факты, которых нет во входном OCR-тексте.
 
@@ -103,6 +106,7 @@ ${text}
 
 export function buildOpenAIImageSystemPrompt() {
   return `
+${TABLE_ANCHORS_PROMPT}
 Ты обрабатываешь изображение с текстом для сервиса Word2you Записи.
 
 Ты видишь само изображение. Твоя задача:

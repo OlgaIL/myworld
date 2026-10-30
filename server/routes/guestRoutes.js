@@ -24,11 +24,11 @@ import {
   canProcessImageWithPipeline,
   enrichWithPipeline,
   getProcessingPipelineForUser,
-  processImageWithPipeline,
-  recognizeWithPipeline
+  processImageWithPipeline
 } from "../services/processingPipelineService.js";
 import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
+import { recognizeAndCacheOcr } from "../services/ocrLayoutService.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingServiceGuardError } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
@@ -732,7 +732,7 @@ router.post("/api/guest/upload", (req, res) => {
         model: pipeline.ocrModel || null
       });
 
-      const rawOcrResult = await recognizeWithPipeline(guestDocument.storage_path, pipeline);
+      const rawOcrResult = await recognizeAndCacheOcr(guestDocument, pipeline, { guest: true });
 
       timer.log("ocr_finished", {
         pipeline: pipeline.pipeline,

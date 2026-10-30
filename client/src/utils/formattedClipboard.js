@@ -1,4 +1,5 @@
 import { formatFormattedLine, getFormattedList, nestFormattedLists } from "./formattedText.js";
+import { getTableHeaderRows } from "./tableHeaders.js";
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -34,10 +35,12 @@ function listHtml(block) {
 export function getFormattedHtml(content) {
   const blocks = nestFormattedLists(content?.blocks).map((block) => {
     if (block.type === "table") {
-      const cell = (tag, value) => `<${tag} style="border:1px solid #777;padding:6px 8px;text-align:left;">${escapeHtml(value)}</${tag}>`;
-      const headers = block.headers.map((value) => cell("th", value)).join("");
+      const compact=block.headers.length>4;
+      const cell = (tag, value, attributes="") => `<${tag}${attributes} style="border:1px solid #777;padding:${compact?'4px 6px':'6px 8px'};text-align:${tag==='th'?'center':'left'};vertical-align:middle;">${escapeHtml(value)}</${tag}>`;
+      const headers = getTableHeaderRows(block).map(row=>`<tr>${row.map(header=>cell("th",header.text,
+        ` colspan="${header.colSpan}" rowspan="${header.rowSpan}" scope="${header.colSpan>1?'colgroup':'col'}"`)).join("")}</tr>`).join("");
       const rows = block.rows.map((row) => `<tr>${row.map((value) => cell("td", value)).join("")}</tr>`).join("");
-      return `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+      return `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;font-size:${compact?'9pt':'10.5pt'};"><thead>${headers}</thead><tbody>${rows}</tbody></table>`;
     }
     if (block.type === "list") {
       return listHtml(block);

@@ -37,6 +37,21 @@ test("validates rows and columns against independent OCR coordinates", () => {
   assert.equal(tablesToContent([table]).blocks[1].rows[0][3], "530,6");
 });
 
+test("preserves empty leading supplier codes while checking the remaining columns", () => {
+  const sparse = { title: "Поставщики", headers: ["Код", "Поставщик", "Сумма"],
+    rows: [["", "Альфа", "283,54"], ["", "Бета", "50,00"]] };
+  const annotations = [annotation("page", 0, 0), annotation("Код", 30, 40),
+    annotation("Поставщик", 140, 40), annotation("Сумма", 250, 40),
+    annotation("Альфа", 140, 80), annotation("283,54", 250, 80),
+    annotation("Бета", 140, 110), annotation("50,00", 250, 110)];
+  assert.deepEqual(validateTablePayload({ tables: [sparse] }), [sparse]);
+  assert.equal(validateTableLayout([sparse], annotations).valid, true);
+  const shifted = structuredClone(sparse);
+  shifted.rows[1] = ["", "50,00", "Бета"];
+  assert.equal(validateTableLayout([shifted], annotations).valid, false);
+  assert.throws(() => validateTablePayload({ tables: [{ ...sparse, rows: [["", "", ""], sparse.rows[1]] }] }), /TABLE_INVALID_STRUCTURE/);
+});
+
 test("rejects a transposed table even if all numbers are present", () => {
   const transposed = { title: table.title, headers: ["Наименование", "Всего", "ТЭС", "СЭС"],
     rows: [

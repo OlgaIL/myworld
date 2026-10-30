@@ -4,6 +4,8 @@ import {
   AI_TEXT_QUALITY_VALUES
 } from "../aiPrompt.js";
 
+import { TABLE_ANCHORS_PROMPT } from "./tableAnchorsPrompt.js";
+
 export const YANDEX_CORRECTION_HINTS = Object.freeze([
   { original: "Евишня", replacement: "Евгения" },
   { original: "мсло", replacement: "масло" },
@@ -13,6 +15,7 @@ export const YANDEX_CORRECTION_HINTS = Object.freeze([
 export function buildYandexSystemPrompt() {
   return `
 Ты обрабатываешь OCR-текст из изображения для сервиса Word2you Записи.
+${TABLE_ANCHORS_PROMPT}
 
 Ты не видишь исходное изображение. У тебя есть только результат распознавания OCR, иногда с подсказками о блоках, зонах или колонках.
 Твоя задача — превратить сырой OCR в полезную запись для пользователя.

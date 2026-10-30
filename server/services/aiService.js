@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import OpenAI from "openai";
+import { validateTableSources } from "../utils/tableAnchors.js";
 import { processTimeweb } from "./timewebAiService.js";
 import {
   AI_CATEGORIES,
@@ -153,7 +154,8 @@ async function processYandex(text, {
     const rawText = alternative.message?.text || "";
     const parsedResponse = parseAIResponse(rawText, {
       sourceText: text,
-      correctionHints: YANDEX_CORRECTION_HINTS
+      correctionHints: YANDEX_CORRECTION_HINTS,
+      requireTableAnchors: true
     });
     logger.info?.("YANDEX GPT REQUEST SUCCESS:", {
       durationMs: Date.now() - startedAt,
@@ -223,7 +225,7 @@ async function processOpenAI(text, { openAiApiKey, model = "gpt-4o-mini" }) {
     });
 
     const rawText = response.choices?.[0]?.message?.content || "";
-    return parseAIResponse(rawText, { sourceText: text });
+    return parseAIResponse(rawText, { sourceText: text, requireTableAnchors: true });
   } catch (error) {
     if (error.status) {
       console.error("OPENAI API ERROR:", {
@@ -281,7 +283,7 @@ async function processOpenAIImage(imagePath, { openAiApiKey, model = "gpt-4o-min
     });
 
     const rawText = response.choices?.[0]?.message?.content || "";
-    return parseAIResponse(rawText);
+    return parseAIResponse(rawText, { requireTableAnchors: true });
   } catch (error) {
     if (error.status) {
       console.error("OPENAI IMAGE API ERROR:", {
@@ -308,7 +310,7 @@ function buildImageDataUrl(imagePath) {
 const ALLOWED_CATEGORIES = new Set(AI_CATEGORIES);
 const ALLOWED_SECTIONS = new Set(AI_SECTIONS);
 const ALLOWED_TEXT_QUALITY = new Set(AI_TEXT_QUALITY_VALUES);
-const ALLOWED_FORMATTED_BLOCK_TYPES = new Set(["heading", "paragraph", "list"]);
+const ALLOWED_FORMATTED_BLOCK_TYPES = new Set(["heading", "paragraph", "list", "table_source"]);
 
 function buildFallbackFormattedContent(text) {
   const blocks = String(text || "")
@@ -360,6 +362,7 @@ function normalizeListBlock(block) {
 }
 
 export function normalizeFormattedContent(value, fallbackText = "") {
+  validateTableSources(value);
   const blocks = Array.isArray(value?.blocks)
     ? value.blocks.flatMap((block) => {
       if (!block || !ALLOWED_FORMATTED_BLOCK_TYPES.has(block.type)) {
@@ -373,6 +376,10 @@ export function normalizeFormattedContent(value, fallbackText = "") {
 
       if (typeof block.text !== "string") {
         return [];
+      }
+
+      if (block.type === "table_source") {
+        return [{ type: "table_source", tableId: block.tableId, text: block.text.trim() }];
       }
 
       if (block.type === "paragraph") {
@@ -492,7 +499,7 @@ function normalizeTextQuality(value) {
   return ALLOWED_TEXT_QUALITY.has(textQuality) ? textQuality : "low_confidence";
 }
 
-export function parseAIResponse(raw, { sourceText = "", correctionHints = [] } = {}) {
+export function parseAIResponse(raw, { sourceText = "", correctionHints = [], requireTableAnchors = false } = {}) {
   try {
     const jsonStart = raw.indexOf("{");
     const jsonEnd = raw.lastIndexOf("}");
@@ -510,6 +517,7 @@ export function parseAIResponse(raw, { sourceText = "", correctionHints = [] } =
       parsed.cleanText
     );
     const cleanText = formattedContentToText(formattedContent);
+    const tableSources = validateTableSources(formattedContent, { required: requireTableAnchors && parsed.hasTable === true });
     const textQuality = normalizeTextQuality(parsed.textQuality);
     const corrections = normalizeTextCorrections(
       [
@@ -530,7 +538,7 @@ export function parseAIResponse(raw, { sourceText = "", correctionHints = [] } =
       ocrText: typeof parsed.ocrText === "string" ? parsed.ocrText : "",
       cleanText,
       formattedContent,
-      hasTable: parsed.hasTable === true,
+      hasTable: parsed.hasTable === true || tableSources.length > 0,
       hasFormulas: parsed.hasFormulas === true,
       hasRecognitionErrors: parsed.hasRecognitionErrors === true
         || corrections.length > 0

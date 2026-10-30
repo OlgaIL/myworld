@@ -4,7 +4,7 @@ import axios from "axios";
 import vision from '@google-cloud/vision';
 import { hasDetachedLeadingNumbers, repairDetachedLeadingNumbers } from "../utils/googleOcrLayout.js";
 
-const client = new vision.ImageAnnotatorClient();
+let googleClient;
 
 // -------------------------
 // Exported recognize
@@ -15,7 +15,7 @@ export default {
     const { provider } = options;
 
     if (provider === "google") {
-      return recognizeGoogle(imagePath);
+      return recognizeGoogle(imagePath, options);
     }
 
     if (provider === "yandex") {
@@ -27,28 +27,47 @@ export default {
 };
 
 // --- GOOGLE OCR (твой текущий код, НЕ ломаем) ---
-async function recognizeGoogle(imagePath) {
+async function recognizeGoogle(imagePath, { captureLayout = false } = {}) {
   try {
-    const [result] = await client.textDetection(imagePath);
-
-    const detections = result.textAnnotations;
-
-    if (!detections || detections.length === 0) {
-      console.log("OCR: no text detected");
-      return '';
+    const image = captureLayout ? await fs.promises.readFile(imagePath) : null;
+    googleClient ||= new vision.ImageAnnotatorClient();
+    const [result] = await googleClient.textDetection(image ? { image: { content: image } } : imagePath,
+      { timeout:30000, retry:null });
+    if (result.error) {
+      console.error("Google OCR response error:", {
+        code: result.error.code,
+        message: result.error.message
+      });
     }
-
-    const detectedText = detections[0].description || '';
-    const text = hasDetachedLeadingNumbers(detectedText)
-      ? repairDetachedLeadingNumbers(detectedText, detections)
-      : detectedText;
-
-    return text;
+    const extracted = extractGoogleOcrResult(result);
+    if (!captureLayout || result.error) return extracted;
+    const { buildGoogleOcrLayout } = await import("../utils/ocrLayout.js");
+    return { text: typeof extracted === "string" ? extracted : extracted.text,
+      layout: buildGoogleOcrLayout(result, image, typeof extracted === "string" ? extracted : extracted.text) };
 
   } catch (error) {
     console.error("OCR error (Google):", error);
     throw error;
   }
+}
+
+export function extractGoogleOcrResult(result) {
+  if (result?.error) {
+    return {
+      text: "",
+      error: Number(result.error.code) === 8
+        ? "Достигнут лимит Google OCR. Попробуйте позже."
+        : "Сервис распознавания временно недоступен. Попробуйте позже."
+    };
+  }
+
+  const detections = result?.textAnnotations;
+  if (!detections?.length) return "";
+
+  const detectedText = detections[0].description || "";
+  return hasDetachedLeadingNumbers(detectedText)
+    ? repairDetachedLeadingNumbers(detectedText, detections)
+    : detectedText;
 }
 
 // --- YANDEX OCR  ------

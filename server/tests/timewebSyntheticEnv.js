@@ -2,6 +2,7 @@
 globalThis.__myworldEnvLoaded = true;
 process.env.DATABASE_URL = "";
 process.env.DATABASE_SSL = "false";
+process.env.TABLE_PAGE_INVENTORY_ENABLED = "false";
 for (const name of ["OPENAI_API_KEY", "YANDEX_API_KEY", "YANDEX_FOLDER_ID", "TIMEWEB_API_KEY",
   "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLIENT_SECRET", "YANDEX_CLIENT_SECRET"]) process.env[name] = "";
 process.env.DOTENV_CONFIG_QUIET = "true";

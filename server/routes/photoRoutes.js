@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { reserveTableAttempt, finishTableAttempt } from "../services/tableAttemptService.js";
 import { getPool, query } from "../db/index.js";
 import multer from "multer";
 import fs from "fs";
@@ -21,16 +22,17 @@ import {
   canProcessImageWithPipeline,
   enrichWithPipeline,
   getProcessingPipelineForUser,
-  processImageWithPipeline,
-  recognizeWithPipeline
+  processImageWithPipeline
 } from "../services/processingPipelineService.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
 import { withAccountOperation } from "../services/accountOperationLocks.js";
-import { extractDocumentTables } from "../services/documentTableService.js";
+import { extractDocumentTables, photoWithTableHeaderRows } from "../services/documentTableService.js";
 import { isTableSuspected } from "../utils/tableDetection.js";
+import { recognizeAndCacheOcr } from "../services/ocrLayoutService.js";
+import { tableFailurePolicy } from "../utils/tableFailurePolicy.js";
 
 const router = Router();
 
@@ -225,14 +227,17 @@ router.get("/api/photos/:id/info", requireAuthenticatedUser, async (req, res) =>
 router.get("/api/photos/:id/tables", requireAuthenticatedUser, async (req, res) => {
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
   if (!photo) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
-  return res.json(mapPhotoInfo(photo, { includeTableContent: true }));
+  return res.json(mapPhotoInfo(await photoWithTableHeaderRows(photo), { includeTableContent: true }));
 });
 
 router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
   if (!photo) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
-  if (photo.table_status === "ready") return res.json(mapPhotoInfo(photo, { includeTableContent: true }));
-  if (!["processed", "recognized"].includes(photo.status) || !isTableSuspected(photo)) {
+  if (photo.table_status === "ready") return res.json(mapPhotoInfo(await photoWithTableHeaderRows(photo), { includeTableContent: true }));
+  if (photo.status !== "processed") return res.status(409).json({
+    error: "TABLE_DOCUMENT_NOT_READY", info: mapPhotoInfo(photo)
+  });
+  if (!isTableSuspected(photo)) {
     return res.status(409).json({ error: "TABLE_NOT_DETECTED" });
   }
   const client = await getPool().connect();
@@ -260,17 +265,36 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
     if (!locked) return res.status(409).json({ error: "TABLE_BUSY" });
     const current = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
     if (!current) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
-    if (current.table_status === "ready") return res.json(mapPhotoInfo(current, { includeTableContent: true }));
-    const result = await extractDocumentTables(current);
+    if (current.table_status === "ready") return res.json(mapPhotoInfo(await photoWithTableHeaderRows(current), { includeTableContent: true }));
+    if (current.status !== "processed") return res.status(409).json({
+      error: "TABLE_DOCUMENT_NOT_READY", info: mapPhotoInfo(current)
+    });
+    const policy = tableFailurePolicy(current.table_status, current.table_error_code, current.table_processing_context);
+    if (policy.kind && !policy.retryable) return res.status(409).json({
+      error: "TABLE_RETRY_NOT_USEFUL", info: mapPhotoInfo(current)
+    });
+    if (new Date(current.table_retry_after).getTime() > Date.now()) return res.status(429).json({
+      error: "TABLE_RETRY_LATER", info: mapPhotoInfo(current)
+    });
+    const attempt = await reserveTableAttempt(current.id, req.user.id, client.query.bind(client));
+    if (!attempt) return res.status(409).json({ error: "TABLE_ATTEMPT_LIMIT", info: mapPhotoInfo(current) });
+    const started = Date.now();
+    let result;
+    try { result = await extractDocumentTables(current); }
+    catch { result = { status: "error", code: "TABLE_PROCESSING_FAILED" }; }
     if (result.modelStartedAt) {
       try {
+        const events = result.modelAttempts || [{ startedAt:result.modelStartedAt,
+          outcome:result.status === "ready" ? "success" : result.code === "TABLE_TIMEOUT" ? "timeout" : "error",
+          durationMs:result.modelDurationMs }];
+        for (const event of events) {
         await query(
           `insert into llm_attempt_events
             (started_at, audience, pipeline, provider, trigger, input_kind, outcome, duration_ms)
            values ($1, 'paid', 'standard', 'timeweb', 'tables', 'image', $2, $3)`,
-          [result.modelStartedAt, result.status === "ready" || result.status === "no_tables" ? "success" :
-            result.code === "TABLE_TIMEOUT" ? "timeout" : "error", result.modelDurationMs]
+          [event.startedAt,event.outcome,event.durationMs]
         );
+        }
       } catch (error) {
         console.error("[table-metrics] write failed", { code: error?.code || "UNKNOWN" });
       }
@@ -279,8 +303,9 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
     let updated;
     try {
       updated = await updatePhotoTables(current.id, req.user.id, result, client.query.bind(client));
+      await finishTableAttempt(attempt.id, updated ? result : { status: "error", code: "TABLE_RESULT_SAVE_FAILED" }, Date.now() - started, client.query.bind(client));
       if (!updated) {
-        await client.query("ROLLBACK");
+        await client.query("COMMIT");
         return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
       }
       if (!hasBalance && result.status === "ready") {
@@ -292,6 +317,8 @@ router.post("/api/photos/:id/tables", requireAuthenticatedUser, withAccountOpera
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
+      try { await finishTableAttempt(attempt.id, { status: "error", code: "TABLE_RESULT_SAVE_FAILED" }, Date.now() - started); }
+      catch { console.error("[table-attempt] result write failed"); }
       throw error;
     }
     return res.json(mapPhotoInfo(updated, { includeTableContent: true }));
@@ -501,7 +528,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
         model: pipeline.ocrModel || null
       });
 
-      const rawOcrResult = await recognizeWithPipeline(imagePath, pipeline);
+      const rawOcrResult = await recognizeAndCacheOcr({ ...photo, storage_path: imagePath }, pipeline);
 
       timer.log("ocr_finished", {
         pipeline: pipeline.pipeline,

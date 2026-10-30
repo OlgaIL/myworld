@@ -9,7 +9,9 @@ export function normalizeOcrResult(ocrResult) {
   if (ocrResult && typeof ocrResult === "object") {
     return {
       text: typeof ocrResult.text === "string" ? ocrResult.text : "",
-      error: ocrResult.error || null
+      error: ocrResult.error || null,
+      ...(ocrResult.layout ? { layout: ocrResult.layout } : {}),
+      ...(ocrResult.reused ? { reused: true } : {})
     };
   }
 

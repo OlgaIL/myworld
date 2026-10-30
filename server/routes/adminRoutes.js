@@ -68,6 +68,7 @@ import { findUserForAdmin, updateUserProductAccess } from "../repositories/users
 import { getProcessingPipelineForUser, getTimewebSettings } from "../services/processingPipelineService.js";
 import { getMetrikaVisitsByClientIds } from "../services/metrikaService.js";
 import { getLlmAttemptSummary, LLM_SUMMARY_HOURS } from "../services/llmAttemptSummaryService.js";
+import { getTableAttemptSummary } from "../services/tableAttemptService.js";
 import { getGuestStorageSummary } from "../services/guestStatisticsService.js";
 import { countPaidActiveUsers, getPresenceSnapshot } from "../services/presenceService.js";
 import { isAuthProviderConfigured } from "../auth/providers.js";
@@ -425,6 +426,13 @@ router.get("/admin-api/llm-attempts", requireAdmin, async (req, res) => {
     return res.status(400).json({ error: "INVALID_PERIOD" });
   }
   return res.json(await getLlmAttemptSummary(hours));
+});
+
+router.get("/admin-api/table-attempts", requireAdmin, async (req, res) => {
+  const hours = Number(req.query.hours || 24);
+  if (!LLM_SUMMARY_HOURS.has(hours)) return res.status(400).json({ error: "INVALID_PERIOD" });
+  try { return res.json(await getTableAttemptSummary(hours)); }
+  catch { return res.status(503).json({ error: "TABLE_STATISTICS_UNAVAILABLE" }); }
 });
 
 router.get("/admin-api/guest-storage", requireAdmin, async (req, res) => {

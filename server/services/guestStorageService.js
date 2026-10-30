@@ -29,6 +29,8 @@ export async function transferGuestDocument(id, userId, { copy = durableCopy, tr
       select $2, $3, $4, $5, ${contentColumns.join(", ")} from guest_documents where id = $1
       returning *`, [id, userId, filename, destination, status]);
     const photo = photoResult.rows[0];
+    await client.query(`update document_ocr_layouts set photo_id = $2, guest_document_id = null
+      where guest_document_id = $1`, [id, photo.id]);
     await client.query(`insert into guest_document_claims
       (guest_document_id, guest_session_id, photo_id, user_id, expires_at, source_path)
       values ($1, $2, $3, $4, $5, $6)`,

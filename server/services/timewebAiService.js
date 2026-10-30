@@ -81,7 +81,7 @@ export function validateTimewebJson(raw, normalizations = []) {
     const field = `formattedContent.blocks[${index}]`;
     const block = originalBlock?.type === "list" ? normalizeListShape(originalBlock, field, normalizations) : originalBlock;
     value.formattedContent.blocks[index] = block;
-    if (!block || !["heading", "paragraph", "list"].includes(block.type)) invalid("INVALID_BLOCK_TYPE", `${field}.type`);
+    if (!block || !["heading", "paragraph", "list", "table_source"].includes(block.type)) invalid("INVALID_BLOCK_TYPE", `${field}.type`);
     if (block.type === "list") {
       const level = block.level === undefined ? 0 : block.level;
       if (!Number.isInteger(level) || level < 0 || level > 2) invalid("INVALID_LIST_LEVEL", `${field}.level`);
@@ -190,7 +190,7 @@ export async function processTimeweb(text, { timeweb = {}, logger = console, onR
     const document = { ...validated };
     delete document.formattedText;
     delete document.cleanText;
-    const result = parseAIResponse(JSON.stringify(document), { sourceText: text });
+    const result = parseAIResponse(JSON.stringify(document), { sourceText: text, requireTableAnchors: true });
     if (result.error) return fail("TIMEWEB_INVALID_JSON", { usage }, { validationReason: "NORMALIZATION_FAILED" });
     if (hasChangedMixedListMarkers(text, result.formattedContent)) {
       result.hasRecognitionErrors = true;

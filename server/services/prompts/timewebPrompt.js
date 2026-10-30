@@ -1,9 +1,11 @@
 import { AI_CATEGORIES, AI_SECTIONS, AI_TEXT_QUALITY_VALUES } from "../aiPrompt.js";
 import { mixedListEvidence } from "./mixedListEvidence.js";
+import { TABLE_ANCHORS_PROMPT } from "./tableAnchorsPrompt.js";
 
 export function buildTimewebTextSystemPrompt() {
   return `Ты обрабатываешь сырой OCR-текст из изображения для сервиса Word2you Записи.
 Ты не видишь исходное изображение. У тебя только результат распознавания.
+${TABLE_ANCHORS_PROMPT}
 
 Задача:
 - Определи тип записи и её контекст. Преврати исходный текст в читаемый текст,
