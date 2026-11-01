@@ -20,6 +20,7 @@ import TermsPage from "./pages/TermsPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import PageSeo from "./components/PageSeo";
 import PromoNavigationScroll from "./components/PromoNavigationScroll";
+import DocumentNavigationScroll from "./components/DocumentNavigationScroll";
 
 export default function AppShell() {
   const isOcrReview = useLocation().pathname === "/admin-control/ocr-check";
@@ -27,6 +28,7 @@ export default function AppShell() {
     <>
       <PageSeo />
       <PromoNavigationScroll />
+      <DocumentNavigationScroll />
       {!isOcrReview && <><AnalyticsTracker /><ClarityTracker /><PresenceTracker /><CookieNotice /></>}
       <ClarityRouteBoundary><Routes>
         <Route path="/admin-control" element={<AdminPage />} />

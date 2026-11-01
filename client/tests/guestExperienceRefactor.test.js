@@ -35,14 +35,17 @@ test("scrolls to the exact uploaded guest document at every viewport width", asy
 });
 
 test("opens a guest document at the top with browser history", async () => {
-  const [mainSource, experienceSource] = await Promise.all([
+  const [mainSource, experienceSource, scrollSource] = await Promise.all([
     readFile(mainUrl, "utf8"),
-    readFile(experienceUrl, "utf8")
+    readFile(experienceUrl, "utf8"),
+    readFile(new URL("../src/components/DocumentNavigationScroll.jsx", import.meta.url), "utf8")
   ]);
 
   assert.match(mainSource, /path="\/guest-documents\/:guestDocumentId"/);
   assert.match(experienceSource, /useNavigate\(\)/);
-  assert.match(experienceSource, /navigate\(`\/guest-documents\/\$\{encodeURIComponent\(document\.id\)\}`\)/);
-  assert.match(experienceSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
+  assert.match(experienceSource, /navigate\(`\/guest-documents\/\$\{encodeURIComponent\(document\.id\)\}/);
+  assert.match(mainSource, /<DocumentNavigationScroll \/>/);
+  assert.match(scrollSource, /useLayoutEffect/);
+  assert.match(scrollSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "instant" \}\)/);
   assert.match(experienceSource, /navigate\(-1\)/);
 });

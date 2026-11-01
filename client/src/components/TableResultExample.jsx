@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { TABLE_UPLOAD_PATH } from "../utils/tableFlow";
 import "./TableResultExample.css";
 
 export default function TableResultExample() {
@@ -18,7 +19,7 @@ export default function TableResultExample() {
         </table>
       </div>
       <p>После восстановления сверьте каждую ячейку с фото. Скопируйте таблицу и вставьте в Word с сохранением исходного форматирования.</p>
-      <Link className="landing-button landing-button--primary" to="/">Загрузить фото таблицы</Link>
+      <Link className="landing-button landing-button--primary" to={TABLE_UPLOAD_PATH}>Загрузить фото таблицы</Link>
       <small>Восстановление таблиц доступно после входа. Доступность и остаток попыток проверяются в аккаунте.</small>
     </article>
   );

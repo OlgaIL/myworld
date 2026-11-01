@@ -88,6 +88,8 @@ function DocumentPage({
   giftRemaining = 0,
   tableTrialAvailable = false,
   onTableReady,
+  initialTextTab = "text",
+  autoRestoreTables = false,
   showPostAuthNextStep = false,
   postAuthUserId = "",
   postAuthProcessingOrdinal = 0,
@@ -218,6 +220,8 @@ function DocumentPage({
             giftRemaining={giftRemaining}
             tableTrialAvailable={tableTrialAvailable}
             onTableReady={onTableReady}
+            initialTab={initialTextTab}
+            autoRestoreTables={autoRestoreTables}
             enrichmentPending={enrichmentPending}
             improvementSection={showImprovementSection ? (
               <section className="document-improvement" aria-label="Улучшение распознавания">

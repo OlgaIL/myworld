@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import DocumentPage from "./DocumentPage";
 import GuestHome from "./GuestHome";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
 import { useGuestUpload } from "../hooks/useGuestUpload";
-import { rememberPendingGuestResult } from "../utils/guestResultHandoff";
+import { hasTableIntent } from "../utils/tableFlow";
 
 function GuestExperience({
   documents,
@@ -20,6 +20,7 @@ function GuestExperience({
   onRequestImprovement
 }) {
   const navigate = useNavigate();
+  const tableIntent = hasTableIntent(useLocation().search);
   const { guestDocumentId } = useParams();
   const activeDocumentId = guestDocumentId || null;
   const [scrollTargetDocumentId, setScrollTargetDocumentId] = useState(null);
@@ -43,9 +44,13 @@ function GuestExperience({
 
   const handleUploadSuccess = useCallback((document) => {
     if (document?.id) {
+      if (tableIntent && ["processed", "recognized"].includes(document.status)) {
+        navigate(`/guest-documents/${encodeURIComponent(document.id)}?view=tables`);
+        return;
+      }
       setScrollTargetDocumentId(document.id);
     }
-  }, []);
+  }, [navigate, tableIntent]);
 
   const handleScrollTargetHandled = useCallback(() => {
     setScrollTargetDocumentId(null);
@@ -74,26 +79,20 @@ function GuestExperience({
     resetCopied();
   }, [activeDocumentId, resetCopied]);
 
-  useEffect(() => {
-    if (activeDocumentId) {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    }
-  }, [activeDocumentId]);
-
   function openDocument(document) {
-    navigate(`/guest-documents/${encodeURIComponent(document.id)}`);
+    navigate(`/guest-documents/${encodeURIComponent(document.id)}${tableIntent ? "?view=tables" : ""}`);
   }
 
   function closeDocument() {
     navigate(-1);
   }
 
-  function requestDocumentLogin(providerId) {
+  function requestDocumentLogin(providerId, options = {}) {
     const guestResultId = activeDocument?.filename || activeDocument?.id || "";
-    if (guestResultId) {
-      rememberPendingGuestResult(guestResultId);
-    }
-    onProviderLogin(providerId, { placement: "document_after_result", source: "guest_result_cta" });
+    onProviderLogin(providerId, {
+      placement: "document_after_result", source: "guest_result_cta", ...options,
+      guestResultId
+    });
   }
 
   async function handleProcessingRetry() {
@@ -135,6 +134,7 @@ function GuestExperience({
           onCopy={copyText}
           authProviders={authProviders}
           onProviderLogin={requestDocumentLogin}
+          initialTextTab={tableIntent ? "tables" : "text"}
           improvementRequest={activeDocument.improvementRequest || null}
           onRequestImprovement={() => onRequestImprovement(activeDocument)}
           onRetryProcessing={handleProcessingRetry}

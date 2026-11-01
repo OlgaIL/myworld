@@ -20,7 +20,8 @@ import { useLegalAgreement } from "../hooks/useLegalAgreement";
 import { usePhotos } from "../hooks/usePhotos";
 import { trackGoal } from "../services/analytics";
 import { getPhotoUrl, processPhoto, setPhotoCorrectionApplied } from "../services/api";
-import { clearPendingGuestResult, getPendingGuestResult } from "../utils/guestResultHandoff";
+import { clearPendingGuestResult, getPendingGuestResult, rememberPendingGuestResult } from "../utils/guestResultHandoff";
+import { clearPendingTableRestore, getPendingTableRestore, hasTableIntent, rememberPendingTableRestore } from "../utils/tableFlow";
 
 const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
 
@@ -49,10 +50,12 @@ function clearPendingImprovementDocument() {
 }
 
 function App() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const tableIntent = hasTableIntent(search);
   const navigate = useNavigate();
   const { documentName } = useParams();
   const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuthContext();
+  const pendingTableRestore = getPendingTableRestore();
   const {
     legalAgreementOpen,
     requestLegalAgreement,
@@ -165,6 +168,12 @@ function App() {
     }
 
     requestLegalAgreement(() => {
+      clearPendingTableRestore();
+      clearPendingGuestResult();
+      if (options.guestResultId) {
+        rememberPendingGuestResult(options.guestResultId);
+        if (options.restoreTables) rememberPendingTableRestore(options.guestResultId);
+      }
       if (options.improvementDocumentId) {
         rememberPendingImprovementDocument(options.improvementDocumentId);
       }
@@ -206,18 +215,15 @@ function App() {
       return;
     }
 
-    if (documentName === pendingGuestResult) {
-      setShowPostAuthNextStep(true);
-      clearPendingGuestResult();
-      return;
-    }
-
     if (photos.some((photo) => photo.name === pendingGuestResult)) {
-      setShowPostAuthNextStep(true);
+      const restoreTables = pendingTableRestore === pendingGuestResult;
+      setShowPostAuthNextStep(!restoreTables);
       clearPendingGuestResult();
-      navigate(`/documents/${encodeURIComponent(pendingGuestResult)}`);
+      if (documentName !== pendingGuestResult || restoreTables) {
+        navigate(`/documents/${encodeURIComponent(pendingGuestResult)}${restoreTables ? "?view=tables" : ""}`);
+      }
     }
-  }, [documentName, navigate, photos, user]);
+  }, [documentName, navigate, pendingTableRestore, photos, user]);
 
   const requestCabinetUpload = useCallback(() => {
     requestLegalAgreement(() => fileInputRef.current?.click());
@@ -225,8 +231,8 @@ function App() {
 
   const openDocument = useCallback(function openDocument(photo) {
     resetCopied();
-    navigate(`/documents/${encodeURIComponent(photo.name)}`);
-  }, [navigate, resetCopied]);
+    navigate(`/documents/${encodeURIComponent(photo.name)}${tableIntent ? "?view=tables" : ""}`);
+  }, [navigate, resetCopied, tableIntent]);
 
   const closeDocument = useCallback(function closeDocument() {
     resetCopied();
@@ -370,6 +376,8 @@ function App() {
               giftRemaining={Number(user.giftRemaining || 0)}
               tableTrialAvailable={Boolean(user.tableTrialAvailable)}
               onTableReady={() => Promise.all([reloadPhotos(), reloadUser()])}
+              initialTextTab={tableIntent ? "tables" : "text"}
+              autoRestoreTables={pendingTableRestore === documentName}
               showPostAuthNextStep={showPostAuthNextStep}
               postAuthUserId={user.id}
               postAuthProcessingOrdinal={Number(user.recordsProcessedTotal || user.recordsUsed || 0) + 1}

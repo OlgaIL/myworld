@@ -45,17 +45,26 @@
 
 .document-page__table-message p { margin: 0; }
 .document-page__table-message svg { width: 22px; height: 22px; }
-.document-page__table-message button {
+.document-page__table-message > button { cursor: pointer; }
+.document-page__table-message > button:disabled { opacity: .55; cursor: not-allowed; }
+.document-page__table-message > button[aria-busy="true"] { cursor: wait; }
+.document-page__table-message > button:focus-visible {
+  outline: 2px solid #98a2b3;
+  outline-offset: 3px;
+}
+.document-page__table-message small { color: #667085; }
+.document-page__table-panel .document-page__table-full-text { margin: 0; padding-top: 24px; font-size: 14px; }
+.document-page__table-full-text button {
+  padding: 0;
   border: 0;
-  border-radius: 8px;
-  padding: 10px 16px;
-  color: #fff;
-  background: #161e30;
+  background: transparent;
+  color: #5f6675;
+  font: inherit;
+  text-decoration: none;
   cursor: pointer;
 }
-.document-page__table-message button:disabled { opacity: .55; cursor: not-allowed; }
-.document-page__table-message button[aria-busy="true"] { cursor: wait; }
-.document-page__table-message small { color: #667085; }
+.document-page__table-full-text button:hover,
+.document-page__table-full-text button:focus-visible { color: #111827; }
 .document-page__table-scroll td.document-page__cell-review { background: #fff2c7; }
 .document-page__table-review-note { color: #785500; font-size: 14px; margin: 0 0 12px; }
 
