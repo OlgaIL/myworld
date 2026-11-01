@@ -196,7 +196,7 @@ function PhotoCard({
                 <br />
                 Можно удалить и загрузить другую запись.
               </p>
-              {info.error && <p data-clarity-mask="true">{info.error}</p>}
+              {info.error && <p data-clarity-unmask="true">{info.error}</p>}
             </>
           )}
 

@@ -44,14 +44,16 @@ test("loads only after explicit consent, once across rerenders and SPA navigatio
   assert.deepEqual(f.win.clarity.q[0], ["consentv2", { analytics_Storage: "granted", ad_Storage: "denied" }]);
 });
 
-test("old masked-recording consent never authorizes recording document content", () => {
-  const f = fixture();
-  f.values.set("word2you_clarity_consent_v1", "granted");
-  f.controller.sync();
-  assert.equal(f.scripts.length, 0);
-  f.controller.chooseConsent(true);
-  assert.equal(f.values.get(CLARITY_CONSENT_KEY), "granted");
-  assert.equal(f.scripts.length, 1);
+test("earlier consents never authorize recording account details", () => {
+  for (const oldKey of ["word2you_clarity_consent_v1", "word2you_clarity_consent_v2_documents"]) {
+    const f = fixture();
+    f.values.set(oldKey, "granted");
+    f.controller.sync();
+    assert.equal(f.scripts.length, 0);
+    f.controller.chooseConsent(true);
+    assert.equal(f.values.get(CLARITY_CONSENT_KEY), "granted");
+    assert.equal(f.scripts.length, 1);
+  }
 });
 
 test("private navigation stops before history mutation; revocation reloads without recording", () => {

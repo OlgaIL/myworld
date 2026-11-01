@@ -265,8 +265,8 @@ function AccountPage() {
       <main className="account-page">
         <section className="account-card account-card--hero">
           <p className="requisites-eyebrow">Личный кабинет</p>
-          <h1 data-clarity-mask="true">{user.displayName || "Пользователь"}</h1>
-          {user.email && <p data-clarity-mask="true" className="account-card__email">{user.email}</p>}
+          <h1 data-clarity-unmask="true">{user.displayName || "Пользователь"}</h1>
+          {user.email && <p data-clarity-unmask="true" className="account-card__email">{user.email}</p>}
         </section>
 
         <section className={`account-card ${limitReached && !showRequestedPackage ? "account-card--warning" : ""}`}>

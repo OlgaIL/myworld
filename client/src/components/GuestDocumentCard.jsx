@@ -122,7 +122,7 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
                 <br />
                 Можно загрузить другую запись.
               </p>
-              {document.error && <p data-clarity-mask="true">{document.error}</p>}
+              {document.error && <p data-clarity-unmask="true">{document.error}</p>}
             </>
           )}
 
