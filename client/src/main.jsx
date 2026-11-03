@@ -3,9 +3,9 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import AppShell from "./AppShell";
 import "./index.css";
-import { clarityController } from "./services/clarity";
+import { inspectletController } from "./services/inspectlet";
 
-clarityController?.install();
+inspectletController?.install();
 
 const root = document.getElementById("root");
 const app = <React.StrictMode><BrowserRouter><AppShell /></BrowserRouter></React.StrictMode>;

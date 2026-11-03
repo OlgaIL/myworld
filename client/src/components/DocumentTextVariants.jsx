@@ -164,7 +164,7 @@ function renderHighlightedText(value, highlight) {
 
 function FormattedContent({ content, highlightedText }) {
   return (
-    <div data-clarity-unmask="true" className="document-page__formatted-content">
+    <div className="document-page__formatted-content">
       {nestFormattedLists(content.blocks).map((block, index) => {
         if (block.type === "table") {
           const headerRows = getTableHeaderRows(block);
@@ -216,7 +216,7 @@ function TextCorrections({ corrections, onToggle, onHighlight, updatingId, error
   return (
     <div className="document-page__corrections">
       <p className="document-page__corrections-title">Сделаны замены:</p>
-      <div data-clarity-unmask="true" className="document-page__corrections-list" role="list">
+      <div className="document-page__corrections-list" role="list">
         {corrections.map((correction) => {
           const updating = updatingId === correction.id;
           const actionLabel = correction.applied ? "Отменить замену" : "Вернуть замену";
@@ -556,7 +556,7 @@ function DocumentTextVariants({
         <div className="document-page__text-body">
           {activeVariant.id === "improved" && improvedHasRichContent
             ? <FormattedContent content={improvedContent} highlightedText={highlightedText} />
-            : <p data-clarity-unmask="true">{readableText
+            : <p>{readableText
               ? renderHighlightedText(readableText, highlightedText)
               : "Текст пока не загружен."}</p>}
           {readableText && (

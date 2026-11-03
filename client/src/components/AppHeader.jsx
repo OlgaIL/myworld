@@ -75,13 +75,13 @@ function AppHeader({
       ) : (
         <div className="profile">
           {user.avatarUrl && (
-            <img data-clarity-unmask="true" className="profile__avatar" src={user.avatarUrl} alt="" />
+            <img className="profile__avatar" src={user.avatarUrl} alt="" />
           )}
           <div className="profile__meta">
             {profileLinkEnabled ? (
-              <Link data-clarity-unmask="true" className="profile__name profile__name--link" to="/account">{user.displayName}</Link>
+              <Link className="profile__name profile__name--link" to="/account">{user.displayName}</Link>
             ) : (
-              <span data-clarity-unmask="true" className="profile__name">{user.displayName}</span>
+              <span className="profile__name">{user.displayName}</span>
             )}
             {typeof accessText === "string" ? (
               <span className="profile__hint">{accessText}</span>

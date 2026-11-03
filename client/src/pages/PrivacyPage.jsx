@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
-import { clarityController } from "../services/clarity";
+import { inspectletController } from "../services/inspectlet";
 
 function PrivacyPage() {
   return (
@@ -199,29 +199,11 @@ function PrivacyPage() {
             <li>корректной работы сайта.</li>
           </ul>
           <p>
-            Для получения обезличенной статистики использования сайта и улучшения его работы используется Яндекс
-            Метрика.
+            Для аналитики использования сайта и улучшения его работы используются Яндекс Метрика и Inspectlet,
+            которые используют файлы cookie.
           </p>
-          <p>
-            С отдельного согласия используется Microsoft Clarity (Microsoft): запись действий на страницах,
-            нажатий, прокрутки и ожидания для ручного анализа удобства сайта. Clarity получает технические
-            данные браузера и посещения, использует аналитические cookie; обработка может происходить за пределами РФ.
-            Согласие на запись включает передачу Microsoft загруженных фотографий, распознанных текстов,
-            названий, таблиц, исправлений и содержимого архива без маскирования для проверки качества
-            распознавания и удобства сервиса. В документах могут содержаться персональные данные.
-            Отображаемые на сайте имя, аватар и почта учётной записи также передаются Microsoft
-            без маскирования, чтобы сопоставлять действия с пользователем при просмотре записи.
-            Поля входа, пароли и коды маскируются до передачи. Административные страницы не записываются.
-            Прежнее согласие на запись со скрытыми данными аккаунта не разрешает их передачу:
-            необходимо новое согласие.
-            Дополнительные события и идентификаторы пользователей в Clarity не передаются.
-            Отказ от записи не ограничивает работу сервиса.
-          </p>
-          <p>
-            <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noreferrer">Политика Microsoft</a>.
-          </p>
-          <button type="button" onClick={() => clarityController?.chooseConsent(true)}>Разрешить запись Clarity</button>{" "}
-          <button type="button" onClick={() => clarityController?.chooseConsent(false)}>Отключить запись Clarity</button>
+          <button type="button" onClick={() => inspectletController?.chooseConsent(true)}>Разрешить Inspectlet</button>{" "}
+          <button type="button" onClick={() => inspectletController?.chooseConsent(false)}>Отключить Inspectlet</button>
           <p>
             Пользователь может изменить настройки использования файлов cookie в своем браузере. При этом отдельные
             функции сервиса могут работать некорректно.

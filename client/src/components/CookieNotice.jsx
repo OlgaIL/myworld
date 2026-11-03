@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CLARITY_CONSENT_KEY, clarityController } from "../services/clarity";
+import { INSPECTLET_CONSENT_KEY, inspectletController } from "../services/inspectlet";
 
 const COOKIE_NOTICE_KEY = "word2you_cookie_notice_accepted";
 
@@ -10,7 +10,7 @@ function CookieNotice() {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       try {
-        setVisible(!localStorage.getItem(CLARITY_CONSENT_KEY));
+        setVisible(!localStorage.getItem(INSPECTLET_CONSENT_KEY));
       } catch {
         setVisible(true);
       }
@@ -19,7 +19,7 @@ function CookieNotice() {
   }, []);
 
   function acceptCookies(granted) {
-    clarityController?.chooseConsent(granted);
+    inspectletController?.chooseConsent(granted);
     try { localStorage.setItem(COOKIE_NOTICE_KEY, "true"); } catch { /* Optional storage. */ }
     setVisible(false);
   }
@@ -31,11 +31,7 @@ function CookieNotice() {
   return (
     <div className="cookie-notice" role="region" aria-label="Уведомление о cookie">
       <p>
-        Мы используем cookie для работы сайта и Яндекс Метрику для аналитики.
-        Разрешить Microsoft Clarity записывать действия, загруженные фото, распознанные тексты,
-        а также отображаемые имя, почту и аватар аккаунта для проверки качества сервиса?
-        Эти данные и содержимое документов будут передаваться Microsoft.
-        Поля входа, пароли и коды входа скрыты.
+        Мы используем cookie, чтобы сайт работал корректно, сохранял вашу сессию и помогал нам улучшать сервис с помощью аналитики.
       </p>
       <div className="cookie-notice__actions">
         <Link className="cookie-notice__link" to="/privacy">

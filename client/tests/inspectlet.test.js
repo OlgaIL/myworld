@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createClarityController, isClarityUrlSafe, isClarityReferrerSafe, CLARITY_CONSENT_KEY } from "../src/services/clarity.js";
+import { createInspectletController, isInspectletUrlSafe, isInspectletReferrerSafe, INSPECTLET_CONSENT_KEY } from "../src/services/inspectlet.js";
 
 function fixture(overrides = {}) {
   const calls = [], scripts = [], navigation = [], listeners = {};
@@ -14,18 +14,18 @@ function fixture(overrides = {}) {
   };
   const doc = { referrer: "", createElement: () => ({}), head: { appendChild: script => scripts.push(script) } };
   Object.assign(doc, overrides);
-  const controller = createClarityController(win, doc, { PROD: true });
+  const controller = createInspectletController(win, doc, { PROD: true });
   controller.install();
   return { win, doc, controller, calls, scripts, navigation, listeners, values };
 }
 
 test("safe URLs exclude admin, arbitrary filenames, query parameters, hashes and other origins", () => {
   const origin = "https://word2you.ru";
-  for (const url of ["/", "/account", "/photo-to-text", "/handwriting-to-text", "/guest-documents/123", "/documents/1792012345678-12345678-1234-1234-1234-123456789abc.jpg"]) assert.equal(isClarityUrlSafe(url, origin), true, url);
-  for (const url of ["/admin-control", "/documents/secret.jpg", "/?email=private", "/#code", "/photo-to-text?utm_source=test", "/photo-to-text#how", "https://mirror.ru/", "mailto:private@example.org"]) assert.equal(isClarityUrlSafe(url, origin), false, url);
-  assert.equal(isClarityReferrerSafe("https://yandex.ru/", origin), true);
-  assert.equal(isClarityReferrerSafe("https://other.test/private-name", origin), false);
-  assert.equal(isClarityReferrerSafe("https://other.test/?email=private", origin), false);
+  for (const url of ["/", "/account", "/photo-to-text", "/handwriting-to-text", "/guest-documents/123", "/documents/1792012345678-12345678-1234-1234-1234-123456789abc.jpg"]) assert.equal(isInspectletUrlSafe(url, origin), true, url);
+  for (const url of ["/admin-control", "/documents/secret.jpg", "/?email=private", "/#code", "/photo-to-text?utm_source=test", "/photo-to-text#how", "https://mirror.ru/", "mailto:private@example.org"]) assert.equal(isInspectletUrlSafe(url, origin), false, url);
+  assert.equal(isInspectletReferrerSafe("https://yandex.ru/", origin), true);
+  assert.equal(isInspectletReferrerSafe("https://other.test/private-name", origin), false);
+  assert.equal(isInspectletReferrerSafe("https://other.test/?email=private", origin), false);
 });
 
 test("loads only after explicit consent, once across rerenders and SPA navigation", () => {
@@ -40,30 +40,29 @@ test("loads only after explicit consent, once across rerenders and SPA navigatio
   f.win.history.pushState({}, "", "/about");
   f.controller.sync();
   assert.equal(f.scripts.length, 1);
-  assert.equal(f.scripts[0].src, "https://www.clarity.ms/tag/yy89cpbeew");
-  assert.deepEqual(f.win.clarity.q[0], ["consentv2", { analytics_Storage: "granted", ad_Storage: "denied" }]);
+  assert.match(f.scripts[0].src, /^https:\/\/cdn\.inspectlet\.com\/inspectlet\.js\?wid=390286863&r=\d+$/);
+  assert.deepEqual(f.win.__insp, [["wid", 390286863]]);
 });
 
-test("earlier consents never authorize recording account details", () => {
-  for (const oldKey of ["word2you_clarity_consent_v1", "word2you_clarity_consent_v2_documents"]) {
+test("another provider's consents never authorize Inspectlet", () => {
+  for (const oldKey of ["word2you_clarity_consent_v1", "word2you_clarity_consent_v2_documents", "word2you_clarity_consent_v3_account", "word2you_cookie_notice_accepted"]) {
     const f = fixture();
     f.values.set(oldKey, "granted");
     f.controller.sync();
     assert.equal(f.scripts.length, 0);
     f.controller.chooseConsent(true);
-    assert.equal(f.values.get(CLARITY_CONSENT_KEY), "granted");
+    assert.equal(f.values.get(INSPECTLET_CONSENT_KEY), "granted");
     assert.equal(f.scripts.length, 1);
   }
 });
 
-test("private navigation stops before history mutation; revocation reloads without recording", () => {
+test("private navigation reloads before history mutation; revocation reloads without recording", () => {
   const f = fixture(); f.controller.chooseConsent(true);
   f.win.history.pushState({}, "", "/admin-control");
   assert.deepEqual(f.navigation, ["/admin-control"]);
   assert.equal(f.calls.length, 0);
-  assert.deepEqual(f.win.clarity.q.at(-1), ["stop"]);
   f.controller.chooseConsent(false);
-  assert.equal(f.values.get(CLARITY_CONSENT_KEY), "denied");
+  assert.equal(f.values.get(INSPECTLET_CONSENT_KEY), "denied");
   assert.equal(f.navigation.at(-1), "reload");
 });
 
@@ -76,8 +75,8 @@ test("referrers, disabled environments, storage and script failures fail closed"
   assert.doesNotThrow(() => h.controller.sync()); assert.equal(h.scripts.length, 0);
   const j = fixture(); j.doc.head.appendChild = () => { throw Error("CSP"); };
   assert.doesNotThrow(() => j.controller.chooseConsent(true));
-  for (const config of [{ PROD: false }, { PROD: true, VITE_CLARITY_ENABLED: "false" }, { PROD: true, VITE_CLARITY_HOSTS: "mirror.ru" }]) {
-    const k = fixture(); k.values.set(CLARITY_CONSENT_KEY, "granted");
-    createClarityController(k.win, k.doc, config).sync(); assert.equal(k.scripts.length, 0);
+  for (const config of [{ PROD: false }, { PROD: true, VITE_INSPECTLET_ENABLED: "false" }, { PROD: true, VITE_INSPECTLET_HOSTS: "mirror.ru" }]) {
+    const k = fixture(); k.values.set(INSPECTLET_CONSENT_KEY, "granted");
+    createInspectletController(k.win, k.doc, config).sync(); assert.equal(k.scripts.length, 0);
   }
 });
