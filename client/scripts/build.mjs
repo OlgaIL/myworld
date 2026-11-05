@@ -4,12 +4,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { build, normalizePath } from "vite";
 import { PUBLIC_PAGE_SEO } from "../src/publicPageSeo.js";
 import { injectSeoHead } from "../../server/seo.js";
+import { inlineReplayStyles } from "./inlineReplayStyles.mjs";
 
 const root = normalizePath(fileURLToPath(new URL("../", import.meta.url)));
 // Vite's module runner loads the JS config directly. This avoids the config
 // bundler's Windows path/ancestor-directory access and works from any cwd.
 const options = { root, configLoader: "runner" };
 await build(options);
+const indexFile = path.join(root, "dist/index.html");
+const styledTemplate = await inlineReplayStyles(await fs.readFile(indexFile, "utf8"),
+  href => fs.readFile(path.join(root, "dist", href), "utf8"));
+await fs.writeFile(indexFile, styledTemplate);
 await build({ ...options, build: { ssr: "src/prerender.jsx", outDir: "dist-ssr" } });
 const { renderPage } = await import(pathToFileURL(path.join(root, "dist-ssr/prerender.js")));
 const template = await fs.readFile(path.join(root, "dist/index.html"), "utf8");
