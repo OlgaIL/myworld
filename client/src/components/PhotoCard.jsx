@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { AI_UNAVAILABLE_MESSAGE, getPhotoStatusMeta } from "../constants/documentStatuses";
+import { getAiUnavailableMessage, getPhotoStatusMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import HourglassIcon from "./HourglassIcon";
 
@@ -130,7 +130,7 @@ function PhotoCard({
 
           {info?.status === "processed" && (
             <>
-              <h4>{info.title}</h4>
+              <h4>{info.displayTitle || info.title || "Запись"}</h4>
 
               <div className="gallery__summary-row">
                 <p>{info.summary}</p>
@@ -174,8 +174,8 @@ function PhotoCard({
 
           {!isPendingUpload && info?.status === "recognized" && (
             <>
-              <h4>{info.title || "Запись"}</h4>
-              <p>{AI_UNAVAILABLE_MESSAGE}</p>
+              <h4>{info.displayTitle || info.title || "Запись"}</h4>
+              <p>{getAiUnavailableMessage(info.error)}</p>
             </>
           )}
 

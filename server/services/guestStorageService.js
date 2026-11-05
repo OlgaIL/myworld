@@ -6,7 +6,7 @@ import { recordGuestFileRemoval } from "./guestStatisticsService.js";
 
 const contentColumns = [
   "mime_type", "size_bytes", "ocr_provider", "ai_provider", "ocr_text", "title",
-  "summary", "category", "section", "topic", "tags", "clean_text", "formatted_content",
+  "display_title", "summary", "category", "section", "topic", "tags", "clean_text", "formatted_content",
   "formatted_at", "has_table", "has_formulas", "has_recognition_errors", "corrections",
   "text_quality", "ai_notes", "error_message", "processed_at", "created_at"
 ];

@@ -9,7 +9,6 @@ import { userUploadsDir } from "../config/paths.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
 import {
   createPhoto,
-  deletePhoto,
   findPhotoByFilenameAndUser,
   listPhotosByUser,
   updatePhotoCorrectionState,
@@ -29,6 +28,7 @@ import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingGuardError, getUserProductAccess, mapPhotoInfo } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
 import { withAccountOperation } from "../services/accountOperationLocks.js";
+import { deletePhotosForUser } from "../services/photoDeletionService.js";
 import { extractDocumentTables, photoWithTableHeaderRows } from "../services/documentTableService.js";
 import { isTableSuspected } from "../utils/tableDetection.js";
 import { recognizeAndCacheOcr } from "../services/ocrLayoutService.js";
@@ -164,25 +164,29 @@ router.get("/api/photos/:name", requireAuthenticatedUser, async (req, res) => {
   }
 });
 
+router.post("/api/photos/delete-batch", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
+  try {
+    return res.json(await deletePhotosForUser(req.user.id, req.body?.names));
+  } catch (error) {
+    console.error("Delete photos error:", { code: error.code || "PHOTO_DELETE_FAILED" });
+    return res.status(error.status || 500).json({ error: error.status ? error.code : "PHOTO_DELETE_FAILED" });
+  }
+}, { exclusive: true }));
+
 router.delete("/api/photos/:name", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   try {
-    const photo = await findPhotoByFilenameAndUser(req.params.name, req.user.id);
-
-    if (!photo) {
-      return res.status(404).json({ error: "Photo not found" });
+    const result = await deletePhotosForUser(req.user.id, [req.params.name]);
+    if (result.missing.length) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
+    if (result.failed.length) {
+      const code = result.failed[0].code;
+      return res.status(code === "DOCUMENT_BUSY" ? 409 : 500).json({ error: code });
     }
-
-    if (fs.existsSync(photo.storage_path)) {
-      fs.unlinkSync(photo.storage_path);
-    }
-
-    await deletePhoto(photo.id);
-    res.sendStatus(200);
+    return res.json(result);
   } catch (error) {
-    console.error("Delete photo error:", error);
-    res.status(500).json({ error: "PHOTO_DELETE_FAILED" });
+    console.error("Delete photo error:", { code: error.code || "PHOTO_DELETE_FAILED" });
+    return res.status(error.status || 500).json({ error: error.status ? error.code : "PHOTO_DELETE_FAILED" });
   }
-}));
+}, { exclusive: true }));
 
 router.get("/api/photos-metadata", requireAuthenticatedUser, async (req, res) => {
   try {
@@ -391,6 +395,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     return res.json({
       status: photo.status,
       title: photo.title || "",
+      displayTitle: photo.display_title || photo.title || "Запись",
       summary: photo.summary || "",
       category: photo.category || "",
       section: photo.section || "",
@@ -503,6 +508,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
       return res.json({
         status: updatedPhoto.status,
         title: updatedPhoto.title,
+        displayTitle: updatedPhoto.display_title || updatedPhoto.title || "Запись",
         summary: updatedPhoto.summary,
         category: updatedPhoto.category || "",
         section: updatedPhoto.section || "",
@@ -637,6 +643,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     return res.json({
       status: updatedPhoto.status,
       title: updatedPhoto.title,
+      displayTitle: updatedPhoto.display_title || updatedPhoto.title || "Запись",
       summary: updatedPhoto.summary,
       category: updatedPhoto.category || "",
       section: updatedPhoto.section || "",

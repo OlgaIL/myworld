@@ -71,7 +71,8 @@ function App() {
     retryGuestDocument,
     setGuestCorrectionApplied
   } = useGuestDocument(!user);
-  const { photos, addPhoto, removePhoto, reloadPhotos } = usePhotos(Boolean(user), {
+  const { photos, addPhoto, removePhoto, removePhotos, reloadPhotos } = usePhotos(Boolean(user), {
+    ownerKey: user?.id,
     onPhotosChanged: reloadUser
   });
   const [activePhoto, setActivePhoto] = useState(null);
@@ -141,6 +142,9 @@ function App() {
     monthOptions,
     dayOptions,
     filteredPhotos,
+    selectionPhotos,
+    selectionScopeKey,
+    isFiltered,
     hiddenPhotosCount,
     nextPhotosCount,
     showMorePhotos,
@@ -385,11 +389,15 @@ function App() {
             />
           ) : (
             <CabinetHome
+              key={user.id}
               user={user}
               recordsUsed={photosCount}
               photosCount={photosCount}
               pendingPhotos={pendingPhotos}
               filteredPhotos={filteredPhotos}
+              selectionPhotos={selectionPhotos}
+              selectionScopeKey={selectionScopeKey}
+              isFiltered={isFiltered}
               improvementRequestsByDocumentId={improvementRequestsByDocumentId}
               uploadMessage={cabinetUploadMessage}
               uploading={cabinetUploading}
@@ -433,6 +441,7 @@ function App() {
               onOpenImage={setActivePhoto}
               onOpenDocument={openDocument}
               onDelete={removePhoto}
+              onDeleteMany={removePhotos}
               onSelectCategory={selectCategory}
               onSelectTag={selectTag}
             />

@@ -235,7 +235,11 @@ export function uploadPhoto(file, onProgress) {
 }
 
 export function deletePhoto(name) {
-  return axios.delete(`${API_URL}/api/photos/${name}`);
+  return axios.delete(`${API_URL}/api/photos/${encodeURIComponent(name)}`).then(res => res.data);
+}
+
+export function deletePhotos(names) {
+  return axios.post(`${API_URL}/api/photos/delete-batch`, { names }).then(res => res.data);
 }
 
 export function getPhotoUrl(name) {

@@ -25,11 +25,11 @@ export async function acquireAccountOperationLock(userId, { exclusive = false } 
   };
 }
 
-export function withAccountOperation(handler) {
+export function withAccountOperation(handler, { exclusive = false } = {}) {
   return async (req, res, next) => {
     let release;
     try {
-      release = await acquireAccountOperationLock(req.user.id);
+      release = await acquireAccountOperationLock(req.user.id, { exclusive });
       if (!release) return res.status(409).json({ error: "ACCOUNT_BUSY" });
       const current = await query("select id from users where id = $1", [req.user.id]);
       if (!current.rows.length) return res.status(401).json({ error: "UNAUTHORIZED" });

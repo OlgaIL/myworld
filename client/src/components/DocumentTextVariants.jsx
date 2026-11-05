@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { AI_UNAVAILABLE_MESSAGE } from "../constants/documentStatuses";
+import { getAiUnavailableMessage } from "../constants/documentStatuses";
 import { buildManualFormattedContent, formatFormattedLine, nestFormattedLists } from "../utils/formattedText";
 import { FormattedList } from "./FormattedList.js";
 import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
@@ -543,7 +543,7 @@ function DocumentTextVariants({
             </div>
           ) : enrichmentPending && isAuthenticated ? (
             <div className="document-page__format-login">
-              <p>{AI_UNAVAILABLE_MESSAGE}</p>
+              <p>{getAiUnavailableMessage(info?.error)}</p>
             </div>
           ) : (
             <div className="document-page__format-login">

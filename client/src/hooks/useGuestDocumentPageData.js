@@ -21,6 +21,7 @@ export function useGuestDocumentPageData(document) {
         id: document.id,
         status: document.status,
         title: document.title || "Запись",
+        displayTitle: document.displayTitle || document.title || "Запись",
         summary: document.summary || "",
         category: document.category || "",
         section: document.section || "",

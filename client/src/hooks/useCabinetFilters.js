@@ -27,6 +27,7 @@ function normalizeValue(value, fallback = "") {
 function getPhotoSearchText(photo) {
   return [
     photo?.title,
+    photo?.displayTitle,
     photo?.summary,
     photo?.category,
     photo?.section,
@@ -354,6 +355,11 @@ export function useCabinetFilters(photos) {
     monthOptions,
     dayOptions,
     filteredPhotos: visiblePhotos,
+    selectionPhotos: filteredPhotos,
+    selectionScopeKey: JSON.stringify([normalizedSearchQuery, activeCategory, activeSection, activeTopic,
+      activeTag, activeYear, activeMonth, activeDay]),
+    isFiltered: Boolean(normalizedSearchQuery || activeCategory || activeSection || activeTopic || activeTag
+      || activeYear || activeMonth || activeDay),
     hiddenPhotosCount,
     nextPhotosCount,
     showMorePhotos,

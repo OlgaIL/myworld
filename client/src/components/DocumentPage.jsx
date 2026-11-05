@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { AI_UNAVAILABLE_MESSAGE, getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
+import { getAiUnavailableMessage, getPhotoStatusMeta, getTextQualityMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import { canShowGuestDocumentSaveCta } from "../utils/guestSaveCta";
 import DocumentTextVariants, { CopyButton } from "./DocumentTextVariants";
@@ -158,14 +158,14 @@ function DocumentPage({
       <div className="document-page__layout">
         <section className="document-page__content">
           <div className="document-page__field">
-            <h2>{info?.title || "Запись"}</h2>
+            <h2>{info?.displayTitle || info?.title || "Запись"}</h2>
             {info?.title && (
               <CopyButton
                 label="Скопировать название"
                 guideLabel={"Копировать\nзаголовок"}
                 guideAtTail
                 copied={Boolean(copiedMap?.title)}
-                onClick={() => onCopy("title", info.title)}
+                onClick={() => onCopy("title", info.displayTitle || info.title)}
               />
             )}
           </div>
@@ -185,7 +185,7 @@ function DocumentPage({
 
           {(info?.notes || info?.status === "recognized") && (
             <p className="gallery__ai-note">
-              {info?.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : info.notes}
+              {info?.status === "recognized" ? getAiUnavailableMessage(info.error) : info.notes}
             </p>
           )}
 

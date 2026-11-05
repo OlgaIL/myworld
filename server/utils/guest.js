@@ -49,6 +49,7 @@ export function mapGuestDocumentInfo(document) {
     text: document.ocr_text || "",
     cleanText: effective.cleanText || document.clean_text || "",
     title: document.title || "",
+    displayTitle: document.display_title || document.title || "Запись",
     summary: document.summary || "",
     category: document.category || "",
     section: document.section || "",

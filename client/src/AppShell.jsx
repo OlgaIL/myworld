@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import InspectletTracker from "./components/InspectletTracker";
@@ -21,9 +22,14 @@ import { AuthProvider } from "./contexts/AuthContext";
 import PageSeo from "./components/PageSeo";
 import PromoNavigationScroll from "./components/PromoNavigationScroll";
 import DocumentNavigationScroll from "./components/DocumentNavigationScroll";
+const ArchiveDeletionPreview = import.meta.env.DEV ? lazy(() => import("./pages/ArchiveDeletionPreview")) : null;
 
 export default function AppShell() {
-  const isOcrReview = useLocation().pathname === "/admin-control/ocr-check";
+  const pathname = useLocation().pathname;
+  const isOcrReview = pathname === "/admin-control/ocr-check";
+  if (import.meta.env.DEV && pathname === "/preview/archive-deletion") {
+    return <Suspense fallback={<p>Загрузка примера…</p>}><ArchiveDeletionPreview /></Suspense>;
+  }
   return (
     <>
       <PageSeo />

@@ -1,4 +1,11 @@
 export const AI_UNAVAILABLE_MESSAGE = "Описание и оформление временно недоступны. Обработка не списана. Попробуйте повторить обработку.";
+export const AI_CONNECTION_UNAVAILABLE_MESSAGE = "Текст распознан. Из-за проблем со связью описание и оформление временно недоступны. Обработка не списана. Повторите обработку немного позже.";
+
+export function getAiUnavailableMessage(error) {
+  const connectionFailure = typeof error === "string"
+    && /^(?:Timeweb:\s*)?TIMEWEB_(?:NETWORK_ERROR|TIMEOUT)$/.test(error.trim());
+  return connectionFailure ? AI_CONNECTION_UNAVAILABLE_MESSAGE : AI_UNAVAILABLE_MESSAGE;
+}
 
 export const GUEST_DOCUMENT_STATUS_META = {
   uploaded: {

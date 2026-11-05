@@ -35,6 +35,7 @@ export function mapPhotoInfo(photo, { includeTableContent = false } = {}) {
     text: photo.ocr_text || "",
     cleanText: effective.cleanText || photo.clean_text || "",
     title: photo.title || "",
+    displayTitle: photo.display_title || photo.title || "Запись",
     summary: photo.summary || "",
     category: photo.category || "",
     section: photo.section || "",

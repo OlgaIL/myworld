@@ -3,6 +3,7 @@ import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
 import ProcessingPackageOffer from "./ProcessingPackageOffer";
 import BatchUploadHint from "./BatchUploadHint";
+import "./CabinetHome.css";
 
 function PlusIcon() {
   return (
@@ -19,6 +20,9 @@ function CabinetHome({
   photosCount,
   pendingPhotos,
   filteredPhotos,
+  selectionPhotos,
+  selectionScopeKey,
+  isFiltered,
   improvementRequestsByDocumentId,
   uploadMessage,
   uploading,
@@ -62,30 +66,50 @@ function CabinetHome({
   onOpenImage,
   onOpenDocument,
   onDelete,
+  onDeleteMany,
   onSelectCategory,
   onSelectTag
 }) {
   return (
     <>
       {photosCount > 0 && (
-        <section className="upload-panel upload-panel--cabinet">
+        <section className="upload-panel upload-panel--cabinet" aria-label="Загрузка фотографий">
           {recordUploadAllowed && (
-            <button
-              className="guest-upload-button"
-              type="button"
-              onClick={onRequestUpload}
-              disabled={uploading}
-            >
-              Загрузить фото
-            </button>
+            <div className="cabinet-upload-controls">
+              <button
+                className="guest-upload-button"
+                type="button"
+                onClick={onRequestUpload}
+                disabled={uploading}
+              >
+                Загрузить фото
+              </button>
+              <BatchUploadHint user={user} />
+            </div>
           )}
-          <p className="guest-hero__counter upload-panel__counter">
-            Документов в архиве: {recordsUsed}
-          </p>
-          {recordUploadAllowed && <BatchUploadHint user={user} />}
           {!uploading && <ProcessingPackageOffer user={user} reloadUser={reloadUser} />}
         </section>
       )}
+
+      <div className={`cabinet-archive ${photosCount === 0 && pendingPhotos.length > 0 ? "cabinet-first-upload" : ""}`}>
+        <Gallery
+          photos={filteredPhotos}
+          selectionPhotos={selectionPhotos}
+          selectionScopeKey={selectionScopeKey}
+          isFiltered={isFiltered}
+          archiveTotal={recordsUsed}
+          bulkHintScope={`account-${user.id}`}
+          pendingPhotos={pendingPhotos}
+          improvementRequestsByDocumentId={improvementRequestsByDocumentId}
+          onOpen={onOpenImage}
+          onOpenDocument={onOpenDocument}
+          onDelete={onDelete}
+          onDeleteMany={onDeleteMany}
+          uploadMessage={uploadMessage}
+          emptyMessage={photosCount > 0 ? "Ничего не найдено." : ""}
+          onSelectCategory={onSelectCategory}
+          onSelectTag={onSelectTag}
+        >
 
       {photosCount > 0 && (
         <section className="cabinet-filter">
@@ -133,30 +157,7 @@ function CabinetHome({
         </section>
       )}
 
-      {photosCount > 0 || pendingPhotos.length > 0 ? (
-        <div className={photosCount === 0 && pendingPhotos.length > 0 ? "cabinet-first-upload" : ""}>
-          <Gallery
-            photos={filteredPhotos}
-            pendingPhotos={pendingPhotos}
-            improvementRequestsByDocumentId={improvementRequestsByDocumentId}
-            onOpen={onOpenImage}
-            onOpenDocument={onOpenDocument}
-            onDelete={onDelete}
-            uploadMessage={uploadMessage}
-            emptyMessage="Ничего не найдено."
-            onSelectCategory={onSelectCategory}
-            onSelectTag={onSelectTag}
-          />
-          {hiddenPhotosCount > 0 && (
-            <div className="cabinet-gallery-more">
-              <button className="cabinet-gallery-more__button" type="button" onClick={showMorePhotos}>
-                Показать ещё {nextPhotosCount}
-              </button>
-              <span className="cabinet-gallery-more__count">Осталось: {hiddenPhotosCount}</span>
-            </div>
-          )}
-        </div>
-      ) : (
+      {photosCount === 0 && pendingPhotos.length === 0 && (
         <>
           {recordUploadAllowed ? (
             <CabinetEmptyState
@@ -178,6 +179,16 @@ function CabinetHome({
           </div>
         </>
       )}
+        </Gallery>
+        {hiddenPhotosCount > 0 && (
+          <div className="cabinet-gallery-more">
+            <button className="cabinet-gallery-more__button" type="button" onClick={showMorePhotos}>
+              Показать ещё {nextPhotosCount}
+            </button>
+            <span className="cabinet-gallery-more__count">Осталось: {hiddenPhotosCount}</span>
+          </div>
+        )}
+      </div>
 
       <input
         ref={fileInputRef}

@@ -1,0 +1,24 @@
+.cabinet-upload-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.cabinet-archive > .archive-selection-toolbar {
+  margin: 24px 20px 0;
+}
+
+.cabinet-archive > .archive-delete-hint,
+.cabinet-archive > .archive-delete-message,
+.cabinet-archive > .archive-delete-error {
+  margin: 12px 20px;
+}
+
+@media (max-width: 600px) {
+  .cabinet-archive > .archive-selection-toolbar,
+  .cabinet-archive > .archive-delete-hint,
+  .cabinet-archive > .archive-delete-message,
+  .cabinet-archive > .archive-delete-error { margin-left: 0; margin-right: 0; }
+}

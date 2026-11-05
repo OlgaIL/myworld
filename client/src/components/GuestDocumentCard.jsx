@@ -1,4 +1,4 @@
-import { AI_UNAVAILABLE_MESSAGE, getGuestDocumentStatusMeta } from "../constants/documentStatuses";
+import { getAiUnavailableMessage, getGuestDocumentStatusMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import { getGuestDocumentFileUrl } from "../services/api";
 import HourglassIcon from "./HourglassIcon";
@@ -71,7 +71,7 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
         <div className="gallery__content">
           {["processed", "recognized", "claimed"].includes(document.status) && (
             <>
-              <h4>{document.title || "Запись"}</h4>
+              <h4>{document.displayTitle || document.title || "Запись"}</h4>
 
               {document.summary ? (
                 <div className="gallery__summary-row">
@@ -89,7 +89,7 @@ function GuestDocumentCard({ document, cardRef, isReplacing = false, onOpen, onO
 
               {(document.notes || document.status === "recognized") && (
                 <p className="gallery__ai-note">
-                  {document.status === "recognized" ? AI_UNAVAILABLE_MESSAGE : document.notes}
+                  {document.status === "recognized" ? getAiUnavailableMessage(document.error) : document.notes}
                 </p>
               )}
 
