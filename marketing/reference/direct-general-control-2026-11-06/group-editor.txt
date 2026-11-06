@@ -1,0 +1,446 @@
+- link "Логотип Яндекс Директ":
+  - /url: /
+  - img "Логотип Яндекс Директ"
+- button "Добавить":
+  - generic: Добавить
+- button "kukushkina":
+  - generic "kukushkina"
+- button "384,23 ₽ доступен овердрафт до 10 000 ₽ до остановки кампаний 1 день Пополнить":
+  - generic: 384,23 ₽
+  - generic: доступен овердрафт до 10 000 ₽
+  - text: до остановки
+  - text: кампаний 1 день
+  - button "Пополнить":
+    - generic: Пополнить
+- link "Рекомендации 2":
+  - /url: /dna/recommendations?ulogin=kukushkina
+  - text: Рекомендации
+  - generic: "2"
+- link "Обзор":
+  - /url: /wizard/overview/?ulogin=kukushkina
+  - generic: Обзор
+- link "Кампании":
+  - /url: /dna/grid/campaigns?ulogin=kukushkina&filter-reset=true
+  - generic: Кампании
+- button "Конверсии":
+  - generic: Конверсии
+- button "Статистика":
+  - generic: Статистика
+- button "Библиотека":
+  - generic: Библиотека
+- button "Инструменты":
+  - generic: Инструменты
+- button "Информация":
+  - generic: Информация
+- link "Платежи и документы":
+  - /url: //balance.yandex.ru/invoices.xml?service_cc=PPC&ref_service_id=7
+  - generic: Платежи и документы
+- button "Свернуть":
+- navigation:
+  - paragraph:
+    - link "kukushkina":
+      - /url: /dna/grid/campaigns?ulogin=kukushkina
+  - text: Word2you | Поиск | Активные пользователи | Тест 2
+  - button:
+  - paragraph:
+    - text: Кампания
+    - link "№ 713209118":
+      - generic: № 713209118
+  - generic "Остановлено"
+  - article:
+    - link "Настройки кампании":
+      - /url: /dna/campaigns-edit?ulogin=kukushkina&campaigns-ids=713209118
+      - paragraph: Настройки кампании
+  - article:
+    - button:
+    - link "Широкие OCR — низкий приоритет":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015918
+      - paragraph: Широкие OCR — низкий приоритет
+    - button:
+    - link "Группа № 5779015918 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015918
+      - paragraph: Группа № 5779015918
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Рукописный текст и почерк":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015919
+      - paragraph: Рукописный текст и почерк
+    - button:
+    - link "Группа № 5779015919 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015919
+      - paragraph: Группа № 5779015919
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Рабочие документы — несколько страниц":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015920
+      - paragraph: Рабочие документы — несколько страниц
+    - button:
+    - link "Группа № 5779015920 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015920
+      - paragraph: Группа № 5779015920
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Архивные и исторические записи":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015921
+      - paragraph: Архивные и исторические записи
+    - button:
+    - link "Группа № 5779015921 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015921
+      - paragraph: Группа № 5779015921
+      - generic "Остановлено"
+  - article:
+    - button:
+    - paragraph: Общие фото в текст — контроль
+    - button:
+    - paragraph:
+      - text: Группа
+      - link "№ 5796556002":
+        - generic: № 5796556002
+    - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Фото в текст онлайн — бесплатно":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1921603492474585096
+      - paragraph: Фото в текст онлайн — бесплатно
+    - button:
+    - link "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно. № 1921603492474585096 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1921603492474585096
+      - paragraph:
+        - generic: Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно.
+        - generic: № 1921603492474585096
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Скопировать текст с фото онлайн":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1922653369315935876
+      - paragraph: Скопировать текст с фото онлайн
+    - button:
+    - link "Загрузите фото — получите текст для работы. Проверьте результат и скопируйте его. № 1922653369315935876 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1922653369315935876
+      - paragraph:
+        - generic: Загрузите фото — получите текст для работы. Проверьте результат и скопируйте его.
+        - generic: № 1922653369315935876
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Скопировать печатный текст с фото":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1925609098160350162
+      - paragraph: Скопировать печатный текст с фото
+    - button:
+    - link "Загрузите фото страницы или скриншот. Проверьте текст и скопируйте результат. № 1925609098160350162 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1925609098160350162
+      - paragraph:
+        - generic: Загрузите фото страницы или скриншот. Проверьте текст и скопируйте результат.
+        - generic: № 1925609098160350162
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Конспекты и тетради":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556212
+      - paragraph: Конспекты и тетради
+    - button:
+    - link "Группа № 5796556212 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556212
+      - paragraph: Группа № 5796556212
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Таблица с фото — подготовка":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5813162807
+      - paragraph: Таблица с фото — подготовка
+    - button:
+    - link "Группа № 5813162807 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5813162807
+      - paragraph: Группа № 5813162807
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Несколько фото в текст — тест промо":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5818107510
+      - paragraph: Несколько фото в текст — тест промо
+    - button:
+    - link "Группа № 5818107510 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5818107510
+      - paragraph: Группа № 5818107510
+      - generic "Остановлено"
+- main:
+  - main:
+    - heading "Общие фото в текст — контроль" [level=2]:
+      - text: Общие фото в текст — контроль
+      - button:
+    - generic "Остановлено"
+    - paragraph:
+      - text: Группа
+      - link "№ 5796556002":
+        - generic: № 5796556002
+  - complementary:
+    - link "Взаимодействие таргетингов на Поиске":
+      - heading "Взаимодействие таргетингов на Поиске" [level=5]
+      - button:
+    - paragraph: "Условия показа в этой группе сочетаются по следующей логической схеме:"
+    - link "География показов":
+      - paragraph: География показов
+    - paragraph: и
+    - link "Автотаргетинг":
+      - paragraph: Автотаргетинг
+    - paragraph: или
+    - link "Тематические слова":
+      - paragraph: Тематические слова
+    - paragraph: и
+    - link "Сегменты аудитории":
+      - paragraph: Сегменты аудитории
+  - main:
+    - heading "География показов" [level=2]:
+      - text: География показов
+      - button:
+    - generic: Режим ограниченной функциональности
+    - generic: Существующие области и точки по регионам на картах временно не обновляются, данные по ним могут быть неполными. Настройка новых областей и точек недоступна.
+    - button "Закрыть":
+    - radiogroup "radiobox":
+      - radio "Перечислить страны, области, города Регионы, где представлен ваш бизнес, есть филиалы или работает доставка." [checked]
+      - generic: Перечислить страны, области, города
+      - generic: Регионы, где представлен ваш бизнес, есть филиалы или работает доставка.
+      - radio "Указать регион на карте Области на карте, в которых важно показать объявления. Например, область, где до кофейни меньше 5 минут пешком." [disabled]
+      - generic: Указать регион на карте
+      - generic: Области на карте, в которых важно показать объявления. Например, область, где до кофейни меньше 5 минут пешком.
+    - generic "Страны, области, города":
+      - generic: Страны, области, города
+      - button:
+    - generic "Страны, области, города":
+      - button "Россия" [disabled]:
+        - generic: Россия
+        - button [disabled]:
+      - button
+  - complementary
+  - main:
+    - heading "Сценарий группы" [level=2]
+    - generic: Выберите, кому показывать объявления из этой группы.
+    - textbox
+    - button "Вся заинтересованная аудитория":
+      - generic: Вся заинтересованная аудитория
+  - complementary:
+    - generic: "Попробуйте новую возможность — сценарий группы. Теперь можно выбрать, на какую аудиторию настроить таргетинг: только на новую или всю заинтересованную."
+    - button "Закрыть":
+  - main:
+    - heading "Подбор запросов и аудитории" [level=2]
+    - generic: 21 846
+    - generic: Подобрали подходящие поисковые запросы, по которым могут быть показаны объявления. Вы можете дополнить и уточнить список запросов — для этого добавьте важные для вашего бизнеса ключевые фразы.
+    - table:
+      - rowgroup:
+        - row "Автотаргетинг на Поиске Формирует основной объём запросов на основе текстов ваших объявлений и посадочной страницы. 21 846":
+          - cell "Автотаргетинг на Поиске Формирует основной объём запросов на основе текстов ваших объявлений и посадочной страницы. 21 846":
+            - generic: Автотаргетинг на Поиске
+            - generic: Формирует основной объём запросов на основе текстов ваших объявлений и посадочной страницы.
+            - generic: 21 846
+        - row "Ключевые фразы [из фото в текст], фото в текст, скопировать текст с фото, текст с фото -скопировать Редактировать Удалить":
+          - cell "Ключевые фразы [из фото в текст], фото в текст, скопировать текст с фото, текст с фото -скопировать Редактировать Удалить":
+            - generic "Ключевые фразы"
+            - button:
+            - generic "[из фото в текст], фото в текст, скопировать текст с фото, текст с фото -скопировать"
+            - button "Редактировать":
+            - button "Удалить":
+    - heading "Исключение запросов и аудитории" [level=2]
+    - generic: "0"
+    - generic: Уточните условия показа и исключите неподходящие запросы. Для этого можно использовать текстовое описание или категории запросов и настройки бренда, а для точечных исключений — минус-фразы.
+    - table:
+      - rowgroup:
+        - row "Минус-фразы -android, -iphone, -telegram, -айфон, -андроид, -архивный, -аудио, -бот, -вакансии, -видео, -документ, -исторический, -конспект, -купить, -почерк, -приложение, -программа, -работа, -редактор, -рукописный, -скачать, -телеграм, -тетрадь, -фотошоп, -шрифт 0 Редактировать Удалить":
+          - cell "Минус-фразы -android, -iphone, -telegram, -айфон, -андроид, -архивный, -аудио, -бот, -вакансии, -видео, -документ, -исторический, -конспект, -купить, -почерк, -приложение, -программа, -работа, -редактор, -рукописный, -скачать, -телеграм, -тетрадь, -фотошоп, -шрифт 0 Редактировать Удалить":
+            - generic "Минус-фразы"
+            - button:
+            - generic "-android, -iphone, -telegram, -айфон, -андроид, -архивный, -аудио, -бот, -вакансии, -видео, -документ, -исторический, -конспект, -купить, -почерк, -приложение, -программа, -работа, -редактор, -рукописный, -скачать, -телеграм, -тетрадь, -фотошоп, -шрифт"
+            - generic: "0"
+            - button "Редактировать":
+            - button "Удалить":
+        - row "Узкие запросы 0":
+          - cell "Узкие запросы 0":
+            - text: Узкие запросы
+            - button:
+            - generic: "0"
+            - button:
+        - row "Широкие запросы 0":
+          - cell "Широкие запросы 0":
+            - text: Широкие запросы
+            - button:
+            - generic: "0"
+            - button:
+        - row "Сопутствующие запросы 0":
+          - cell "Сопутствующие запросы 0":
+            - text: Сопутствующие запросы
+            - button:
+            - generic: "0"
+            - button:
+        - row "Альтернативные запросы 0":
+          - cell "Альтернативные запросы 0":
+            - text: Альтернативные запросы
+            - button:
+            - generic: "0"
+            - button:
+        - row "Запросы с упоминанием вашего бренда 0":
+          - cell "Запросы с упоминанием вашего бренда 0":
+            - generic: Запросы с упоминанием вашего бренда
+            - generic: "0"
+            - button:
+        - row "Запросы с упоминанием брендов конкурентов 0":
+          - cell "Запросы с упоминанием брендов конкурентов 0":
+            - generic: Запросы с упоминанием брендов конкурентов
+            - generic: "0"
+            - button:
+        - row "Добавить":
+          - cell "Добавить":
+            - button "Добавить":
+              - generic: Добавить
+  - complementary:
+    - heading "Прогноз показов по автотаргетингу на Поиске" [level=4]
+    - generic: Примерное количество показов в месяц без учёта настроек стратегии.
+    - generic: Подобрано
+    - generic: 21 846
+    - generic: Исключено
+    - generic: "0"
+    - generic: Итого
+    - generic: 21 846
+    - button "Примеры запросов":
+      - generic: Примеры запросов
+  - main:
+    - heading "Сегменты аудитории" [level=2]:
+      - text: Сегменты аудитории
+      - button:
+    - generic: Выбор определённых групп пользователей для показа объявлений. Например, тех, которые уже посещали сайт, но не сделали заказ, или похожи по поведению в интернете на ваших клиентов. Также в этом блоке можно настроить ретаргетинг. Сегменты аудитории в Поиске работают с ключевыми фразами и автотаргетингом через логический оператор «И».
+    - generic: Режим ограниченной функциональности
+    - generic: Существующие сегменты аудиторий похожих пользователей временно не обновляются, данные по ним могут быть неполными. Создание новых сегментов недоступно.
+    - button "Закрыть":
+    - button "Подробнее":
+      - generic: Подробнее
+    - table:
+      - rowgroup:
+        - row "Добавить":
+          - cell "Добавить":
+            - button "Добавить":
+              - generic: Добавить
+  - complementary
+  - main:
+    - heading "Дополнительные элементы объявлений" [level=2]
+    - generic: Все настройки дополнительных элементов собраны в одном месте — настраивайте их сразу для всех объявлений группы.
+    - checkbox "Быстрые ссылки" [checked] [disabled]
+    - generic: Быстрые ссылки
+    - checkbox "Уточнения"
+    - generic: Уточнения
+    - checkbox "Промоакция"
+    - generic: Промоакция
+    - heading "Быстрые ссылки" [level=2]:
+      - text: Быстрые ссылки
+      - button:
+    - button:
+    - textbox
+    - button "Использовать быстрые ссылки, заданные в кампании":
+      - generic: Использовать быстрые ссылки, заданные в кампании
+    - table:
+      - rowgroup:
+        - row "Попробовать бесплатно До 5 фото без регистрации Перейти по ссылке":
+          - cell "Попробовать бесплатно До 5 фото без регистрации Перейти по ссылке":
+            - generic: Попробовать бесплатно
+            - generic: До 5 фото без регистрации
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/
+              - button "Перейти по ссылке":
+        - row "Фото в текст Распознать и сохранить запись Перейти по ссылке":
+          - cell "Фото в текст Распознать и сохранить запись Перейти по ссылке":
+            - generic: Фото в текст
+            - generic: Распознать и сохранить запись
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/photo-to-text
+              - button "Перейти по ссылке":
+        - row "Как это работает Личный архив записей Перейти по ссылке":
+          - cell "Как это работает Личный архив записей Перейти по ссылке":
+            - generic: Как это работает
+            - generic: Личный архив записей
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/about
+              - button "Перейти по ссылке":
+        - row "Пакеты обработок 50, 150 или 500 обработок Перейти по ссылке":
+          - cell "Пакеты обработок 50, 150 или 500 обработок Перейти по ссылке":
+            - generic: Пакеты обработок
+            - generic: 50, 150 или 500 обработок
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/packages
+              - button "Перейти по ссылке":
+    - text: Быстрые ссылки переопределены в
+    - link "1 объявлении"
+    - text: .
+    - generic: Вы можете сбросить переопределение и использовать быстрые ссылки, заданные в группе.
+    - button "Сбросить":
+      - generic: Сбросить
+  - complementary
+  - main:
+    - heading "Максимальная ставка для новых и измененных условий показа" [level=2]
+    - spinbutton "₽"
+    - generic: ₽
+    - generic: за клик
+  - complementary
+  - main:
+    - heading "Параметры URL" [level=2]:
+      - text: Параметры URL
+      - button:
+    - generic: Введите параметры или UTM-метки. Они добавятся ко всем ссылкам, указанным в настройках объявлений внутри группы.
+    - textbox:
+      - /placeholder: "Например, utm_term={keyword}"
+    - generic: intent=photo_to_text_control
+    - button "Очистить":
+  - complementary
+  - main:
+    - heading "Корректировки" [level=2]:
+      - text: Корректировки
+      - button:
+    - generic: Изменяйте ставку в зависимости от характеристик пользователя, формата объявления и других условий.
+    - table:
+      - rowgroup:
+        - row "Добавить":
+          - cell "Добавить":
+            - button "Добавить":
+              - generic: Добавить
+  - complementary:
+    - button "Как работают корректировки?":
+      - paragraph: Как работают корректировки?
+  - main
+  - complementary
+  - main:
+    - button "Сохранить изменения":
+      - generic: Сохранить изменения
+    - link "Добавить объявление":
+      - /url: /dna/banners-edit?ulogin=kukushkina&groups-ids=5796556002&is-new=1&campaigns-ids=713209118
+      - button "Добавить объявление":
+        - generic: Добавить объявление
+  - complementary
+- link "Yandex Neuro Ads":
+  - /url: https://ya.ru/project/yna/?utm_source=yandex&utm_medium=direct&utm_campaign=label
+  - generic: Yandex Neuro Ads
+- link "Скачать в App Store":
+  - /url: https://16807.redirect.appmetrica.yandex.com/?appmetrica_tracking_id=894724903234752738
+  - generic: Скачать в App Store
+- link "Скачать в Google Play":
+  - /url: https://16807.redirect.appmetrica.yandex.com?appmetrica_tracking_id=966782499504095285
+  - generic: Скачать в Google Play
+- link "Отдел клиентского сервиса":
+  - /url: //yandex.ru/support/direct/troubleshooting/other.html
+- link "Оферта Яндекс Директ":
+  - /url: //yandex.ru/legal/oferta_direct/?lang=ru
+- link "Справка":
+  - /url: //yandex.ru/support/direct/ru
+- text: © 2001–2026
+- link "ЯНДЕКС":
+  - /url: //ya.ru
+- button "Профиль":
+  - button "Профиль":
+- button "1":
+  - generic: "1"
+- button:
+- button:
+- button:
+- button:
+- textbox
+- button "Тема интерфейса":
+- button:
+- button:

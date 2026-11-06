@@ -1,0 +1,370 @@
+- link "Логотип Яндекс Директ":
+  - /url: /
+  - img "Логотип Яндекс Директ"
+- button "Добавить":
+  - generic: Добавить
+- button "kukushkina":
+  - generic "kukushkina"
+- button "384,23 ₽ доступен овердрафт до 10 000 ₽ до остановки кампаний 1 день Пополнить":
+  - generic: 384,23 ₽
+  - generic: доступен овердрафт до 10 000 ₽
+  - text: до остановки
+  - text: кампаний 1 день
+  - button "Пополнить":
+    - generic: Пополнить
+- link "Рекомендации 2":
+  - /url: /dna/recommendations?ulogin=kukushkina
+  - text: Рекомендации
+  - generic: "2"
+- link "Обзор":
+  - /url: /wizard/overview/?ulogin=kukushkina
+  - generic: Обзор
+- link "Кампании":
+  - /url: /dna/grid/campaigns?ulogin=kukushkina&filter-reset=true
+  - generic: Кампании
+- button "Конверсии":
+  - generic: Конверсии
+- button "Статистика":
+  - generic: Статистика
+- button "Библиотека":
+  - generic: Библиотека
+- button "Инструменты":
+  - generic: Инструменты
+- button "Информация":
+  - generic: Информация
+- link "Платежи и документы":
+  - /url: //balance.yandex.ru/invoices.xml?service_cc=PPC&ref_service_id=7
+  - generic: Платежи и документы
+- button "Свернуть":
+- button:
+- link "Статистика":
+  - /url: /dna/reports?ulogin=kukushkina
+- text: ・
+- link "Библиотека отчётов":
+  - /url: /dna/reports/library?ulogin=kukushkina
+- heading "Отчёт по поисковым запросам" [level=2]
+- button "Обучение":
+  - generic: Обучение
+- button "Обратная связь":
+  - generic: Обратная связь
+- button:
+- button:
+- button "06 нояб 2026":
+  - generic: 06 нояб 2026
+- radiogroup:
+  - button "Сегодня Сегодня":
+    - radio "Сегодня Сегодня" [checked]
+    - text: Сегодня
+  - button "Вчера Вчера":
+    - radio "Вчера Вчера"
+    - text: Вчера
+  - button "Эта неделя Эта неделя":
+    - radio "Эта неделя Эта неделя"
+    - text: Эта неделя
+  - button "7 дней 7 дней":
+    - radio "7 дней 7 дней"
+    - text: 7 дней
+  - button "30 дней 30 дней":
+    - radio "30 дней 30 дней"
+    - text: 30 дней
+  - button:
+- button "Сравнение":
+  - generic: Сравнение
+  - button:
+- button "График":
+  - generic: График
+- button "Группировки и метрики 16":
+  - generic: Группировки и метрики
+  - generic: "16"
+- button "Цели・Все":
+  - generic: Цели・Все
+- button "Атрибуция・Автоматическая":
+  - generic: Атрибуция・Автоматическая
+- checkbox "с НДС"
+- generic: с НДС
+- button "Фильтры 2":
+  - generic: Фильтры
+  - generic: "2"
+- generic: Данные о конверсиях за прошлые периоды могут быть неполными
+- paragraph:
+  - text: Конверсии, совершенные с 11 октября, не связываются с кликами по объявлениям Директа до 11 октября, а в атрибуции к показу — с показами, которые шли с 11 по 22 октября. Такие конверсии не потеряны — они отнесены к другим источникам в данных Метрики. Подробнее — в
+  - link "Справке":
+    - /url: https://yandex.ru/support/direct/special-mode#convers-attrib
+  - text: .
+- button "Закрыть":
+- radiogroup:
+  - button:
+  - button:
+- radiogroup:
+  - button:
+  - button:
+- textbox
+- button "Детализация":
+  - generic "Детализация"
+  - generic "Не задана"
+- button "Суммаризировать":
+  - generic: Суммаризировать
+- button "Развернуть":
+  - generic: Развернуть
+- button "Скачать":
+  - generic: Скачать
+- button:
+- generic "Тип условия показа"
+- generic "Поисковый запрос"
+- button:
+- generic "Категория запроса"
+- generic "Упоминание брендов в запросах"
+- generic "Название кампании"
+- generic "№ кампании"
+- generic "Название группы"
+- generic "№ группы"
+- generic "Ключевая фраза"
+- generic "Тип соответствия"
+- generic "Расход"
+- generic "Показы"
+- generic "Клики"
+- button "> 0":
+  - generic: ">"
+  - generic "0"
+  - button:
+- generic "Конверсии"
+- generic "CR"
+- generic "CPA"
+- generic: Итого
+- generic: 433,02 ₽
+- generic: "317"
+- generic: "166"
+- generic: "95"
+- generic: 57,23 %
+- generic: 4,56 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: фото в текст
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 15,07 ₽
+- generic: "45"
+- generic: "7"
+- generic: "3"
+- generic: 42,86 %
+- generic: 5,02 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: распознать текст с картинки
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 33,57 ₽
+- generic: "41"
+- generic: "13"
+- generic: "9"
+- generic: 69,23 %
+- generic: 3,73 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: текст с фото
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 7,24 ₽
+- generic: "26"
+- generic: "4"
+- generic: "1"
+- generic: 25,00 %
+- generic: 7,24 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: скопировать текст с фото
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 13,15 ₽
+- generic: "16"
+- generic: "6"
+- generic: "2"
+- generic: 33,33 %
+- generic: 6,57 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: из фото в текст
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 11,16 ₽
+- generic: "15"
+- generic: "5"
+- generic: "2"
+- generic: 40,00 %
+- generic: 5,58 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: распознавание текста по фото
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 7,16 ₽
+- generic: "6"
+- generic: "2"
+- generic: "2"
+- generic: 100,00 %
+- generic: 3,58 ₽
+- generic: Автотаргетинг
+- checkbox
+- generic: из картинки в ворд
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 1,96 ₽
+- generic: "5"
+- generic: "1"
+- generic: "0"
+- generic: 0,00 %
+- generic: –
+- generic: Автотаргетинг
+- checkbox
+- generic: из картинки в текст
+- generic: Целевые запросы
+- generic: Запросы без упоминания брендов
+- link "Word2you | Поиск | Активные пользователи | Тест 2":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "713209118":
+  - /url: /wizard/redirect/campaigns/713209118/edit?ulogin=kukushkina
+- button
+- link "Общие фото в текст — контроль":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- link "5796556002":
+  - /url: /wizard/redirect/groups/5796556002/edit?ulogin=kukushkina
+- button
+- generic: –
+- generic: "-"
+- generic: 3,31 ₽
+- generic: "5"
+- generic: "2"
+- generic: "2"
+- generic: 100,00 %
+- generic: 1,66 ₽
+- link "Yandex Neuro Ads":
+  - /url: https://ya.ru/project/yna/?utm_source=yandex&utm_medium=direct&utm_campaign=label
+  - generic: Yandex Neuro Ads
+- link "Скачать в App Store":
+  - /url: https://16807.redirect.appmetrica.yandex.com/?appmetrica_tracking_id=894724903234752738
+  - generic: Скачать в App Store
+- link "Скачать в Google Play":
+  - /url: https://16807.redirect.appmetrica.yandex.com?appmetrica_tracking_id=966782499504095285
+  - generic: Скачать в Google Play
+- link "Отдел клиентского сервиса":
+  - /url: //yandex.ru/support/direct/troubleshooting/other.html
+- link "Оферта Яндекс Директ":
+  - /url: //yandex.ru/legal/oferta_direct/?lang=ru
+- link "Справка":
+  - /url: //yandex.ru/support/direct/ru
+- text: © 2001–2026
+- link "ЯНДЕКС":
+  - /url: //ya.ru
+- button "Профиль":
+  - button "Профиль":
+- button:
+- button:
+- button:
+- button:
+- button:
+- textbox
+- button "Тема интерфейса":
+- button:
+- button:
+- generic: Отключить режим работы с массовыми действиями можно здесь
+- button "Закрыть":

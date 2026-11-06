@@ -1,0 +1,441 @@
+- link "Логотип Яндекс Директ":
+  - /url: /
+  - img "Логотип Яндекс Директ"
+- button "Добавить":
+  - generic: Добавить
+- button "kukushkina":
+  - generic "kukushkina"
+- button "384,23 ₽ доступен овердрафт до 10 000 ₽ до остановки кампаний 1 день Пополнить":
+  - generic: 384,23 ₽
+  - generic: доступен овердрафт до 10 000 ₽
+  - text: до остановки
+  - text: кампаний 1 день
+  - button "Пополнить":
+    - generic: Пополнить
+- link "Рекомендации 2":
+  - /url: /dna/recommendations?ulogin=kukushkina
+  - text: Рекомендации
+  - generic: "2"
+- link "Обзор":
+  - /url: /wizard/overview/?ulogin=kukushkina
+  - generic: Обзор
+- link "Кампании":
+  - /url: /dna/grid/campaigns?ulogin=kukushkina&filter-reset=true
+  - generic: Кампании
+- button "Конверсии":
+  - generic: Конверсии
+- button "Статистика":
+  - generic: Статистика
+- button "Библиотека":
+  - generic: Библиотека
+- button "Инструменты":
+  - generic: Инструменты
+- button "Информация":
+  - generic: Информация
+- link "Платежи и документы":
+  - /url: //balance.yandex.ru/invoices.xml?service_cc=PPC&ref_service_id=7
+  - generic: Платежи и документы
+- button "Свернуть":
+- navigation:
+  - paragraph:
+    - link "kukushkina":
+      - /url: /dna/grid/campaigns?ulogin=kukushkina
+  - text: Word2you | Поиск | Активные пользователи | Тест 2
+  - button:
+  - paragraph:
+    - text: Кампания
+    - link "№ 713209118":
+      - generic: № 713209118
+  - generic "Остановлено"
+  - article:
+    - link "Настройки кампании":
+      - /url: /dna/campaigns-edit?ulogin=kukushkina&campaigns-ids=713209118
+      - paragraph: Настройки кампании
+  - article:
+    - button:
+    - link "Широкие OCR — низкий приоритет":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015918
+      - paragraph: Широкие OCR — низкий приоритет
+    - button:
+    - link "Группа № 5779015918 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015918
+      - paragraph: Группа № 5779015918
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Рукописный текст и почерк":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015919
+      - paragraph: Рукописный текст и почерк
+    - button:
+    - link "Группа № 5779015919 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015919
+      - paragraph: Группа № 5779015919
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Рабочие документы — несколько страниц":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015920
+      - paragraph: Рабочие документы — несколько страниц
+    - button:
+    - link "Группа № 5779015920 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015920
+      - paragraph: Группа № 5779015920
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Архивные и исторические записи":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015921
+      - paragraph: Архивные и исторические записи
+    - button:
+    - link "Группа № 5779015921 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015921
+      - paragraph: Группа № 5779015921
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Общие фото в текст — контроль":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002
+      - paragraph: Общие фото в текст — контроль
+    - button:
+    - link "Группа № 5796556002 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002
+      - paragraph: Группа № 5796556002
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - paragraph: Фото в текст онлайн — бесплатно
+    - button:
+    - paragraph:
+      - generic: Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно.
+      - link "№ 1921603492474585096":
+        - generic: № 1921603492474585096
+    - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Скопировать текст с фото онлайн":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1922653369315935876
+      - paragraph: Скопировать текст с фото онлайн
+    - button:
+    - link "Загрузите фото — получите текст для работы. Проверьте результат и скопируйте его. № 1922653369315935876 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1922653369315935876
+      - paragraph:
+        - generic: Загрузите фото — получите текст для работы. Проверьте результат и скопируйте его.
+        - generic: № 1922653369315935876
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Скопировать печатный текст с фото":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1925609098160350162
+      - paragraph: Скопировать печатный текст с фото
+    - button:
+    - link "Загрузите фото страницы или скриншот. Проверьте текст и скопируйте результат. № 1925609098160350162 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1925609098160350162
+      - paragraph:
+        - generic: Загрузите фото страницы или скриншот. Проверьте текст и скопируйте результат.
+        - generic: № 1925609098160350162
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Конспекты и тетради":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556212
+      - paragraph: Конспекты и тетради
+    - button:
+    - link "Группа № 5796556212 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556212
+      - paragraph: Группа № 5796556212
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Таблица с фото — подготовка":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5813162807
+      - paragraph: Таблица с фото — подготовка
+    - button:
+    - link "Группа № 5813162807 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5813162807
+      - paragraph: Группа № 5813162807
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Несколько фото в текст — тест промо":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5818107510
+      - paragraph: Несколько фото в текст — тест промо
+    - button:
+    - link "Группа № 5818107510 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5818107510
+      - paragraph: Группа № 5818107510
+      - generic "Остановлено"
+- main:
+  - main:
+    - main:
+      - heading "Комбинаторное объявление" [level=2]
+      - generic "Остановлено"
+      - paragraph:
+        - text: Объявление
+        - link "№ 1921603492474585096":
+          - generic: № 1921603492474585096
+      - heading "Ссылка в объявлении" [level=2]:
+        - text: Ссылка в объявлении
+        - button:
+      - textbox:
+        - /placeholder: Ссылка на продвигаемую страницу
+      - generic: https://word2you.ru/photo-to-text
+      - button "Очистить":
+      - img "word2you.ru"
+      - generic: Скопировать текст с фото онлайн — Word2you.
+      - link "Открыть в новой вкладке":
+        - /url: https://word2you.ru/photo-to-text
+        - button "Открыть в новой вкладке":
+      - textbox "Отображаемый домен" [disabled]: word2you.ru
+      - generic: word2you.ru
+      - button "Очистить" [disabled]:
+      - textbox "Отображаемая ссылка": фото-в-текст
+      - generic: фото-в-текст
+      - generic: "8"
+      - button "Очистить":
+      - heading "Параметры URL" [level=2]:
+        - text: Параметры URL
+        - button:
+      - generic: Введите параметры или UTM-метки. Они добавятся ко всем ссылкам, указанным в настройках объявления.
+      - textbox:
+        - /placeholder: "Например, utm_term={keyword}"
+        - text: "Например, utm_term={keyword}"
+      - heading "Тексты" [level=2]:
+        - text: Тексты
+        - button:
+      - text: Правильно составленные заголовки и тексты привлекают пользователей. Расскажите в них о преимуществах, добавьте призыв к действию, используйте
+      - link "ключевые фразы"
+      - text: . Директ составляет из них множество комбинаций и подбирает для каждого показа самую эффективную
+      - paragraph: Заголовки
+      - textbox:
+        - /placeholder: Вариант 1 из 7
+      - generic: Фото в текст онлайн — бесплатно
+      - generic: "25"
+      - button "Очистить":
+      - textbox:
+        - /placeholder: Вариант 2 из 7
+      - generic: Текст из фото за несколько минут
+      - generic: "24"
+      - button "Очистить":
+      - textbox:
+        - /placeholder: Вариант 3 из 7
+      - generic: С телефона — продолжите на компьютере
+      - generic: "19"
+      - button "Очистить":
+      - textbox:
+        - /placeholder: Добавьте 4 из 7
+        - text: Добавьте 4 из 7
+      - paragraph: Тексты
+      - textbox:
+        - /placeholder: Вариант 1 из 3
+      - generic: Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно.
+      - generic: "6"
+      - button "Очистить":
+      - textbox:
+        - /placeholder: Вариант 2 из 3
+      - generic: Сфотографируйте на телефоне — откройте готовый текст на компьютере.
+      - generic: "15"
+      - button "Очистить":
+      - textbox:
+        - /placeholder: Добавьте 3 из 3
+        - text: Добавьте 3 из 3
+      - button "Показать примеры":
+        - generic: Показать примеры
+      - paragraph: В этой кампании включена персонализация
+      - heading "Изображения" [level=2]:
+        - text: Изображения
+        - button:
+      - paragraph: Добавьте до 5 изображений. Рекомендуем загрузить горизонтальные, вертикальные и квадратные, чтобы они хорошо смотрелись в блоках для размещения объявлений с разным соотношением сторон.
+      - status
+      - button "Добавить":
+        - generic: Добавить
+      - generic: Генерация изображений по запросу внутри
+      - heading "Видео" [level=2]:
+        - text: Видео
+        - button:
+      - generic: Добавьте до 6 видео. Рекомендуем загрузить горизонтальные, вертикальные и квадратные, чтобы получить максимум возможных показов объявления с видео.
+      - heading "Горизонтальные" [level=4]
+      - heading "Квадратные" [level=4]
+      - heading "Вертикальные" [level=4]
+      - button "Добавить":
+        - generic: Добавить
+      - generic: Воспользуйтесь функцией генерации прямо в Директе
+      - heading "Карусель" [level=2]:
+        - text: Карусель
+        - button:
+      - generic: Используется в объявлениях Рекламной сети Яндекса. Загрузите от 2 до 10 изображений размером не менее 450×450 пикселей и не более 10 Мбайт.
+      - button "Добавить слайд":
+        - generic: Добавить слайд
+      - heading "Кнопка" [level=2]:
+        - text: Кнопка
+        - button:
+      - generic: Повысьте эффективность объявления в Рекламной сети Яндекса за счёт подходящего призыва к действию и ссылки на кнопке.
+      - textbox
+      - button "Текст на кнопке":
+        - generic "Текст на кнопке"
+        - generic: Текст по умолчанию
+      - heading "Контакты в объявлении" [level=2]:
+        - text: Контакты в объявлении
+        - button:
+      - generic: Привяжите организацию из Яндекс Бизнеса. Тогда в объявлении на Поиске Яндекса покажется ваша контактная информация.
+      - textbox
+      - button "Использовать контакты, заданные в кампании":
+        - generic: Использовать контакты, заданные в кампании
+      - generic: Контакты в кампании не заданы.
+      - textbox
+      - button "Добавить" [disabled]:
+        - generic: Добавить
+      - heading "Цена" [level=2]:
+        - text: Цена
+        - button:
+      - switch
+      - generic: Укажите цену товара или услуги для показа в объявлении в Поиске и Рекламной сети Яндекса, чтобы привлечь больше целевой аудитории.
+      - heading "Уточнения" [level=2]:
+        - text: Уточнения
+        - button:
+      - generic: Короткие тексты для описания преимуществ товара или услуги в объявлениях для Поиска и Рекламной сети. Длина одного уточнения — до 25 символов. Общая длина уточнений — до 132 символов на десктопах и 76 на мобильных устройствах.
+      - textbox
+      - button "Использовать уточнения, заданные в группе":
+        - generic: Использовать уточнения, заданные в группе
+      - generic: Уточнения в группе не заданы
+      - button "Добавить":
+        - generic: Добавить
+      - heading "Быстрые ссылки" [level=2]:
+        - text: Быстрые ссылки
+        - button:
+      - button:
+      - generic: Добавьте до 8 дополнительных ссылок на страницы продвигаемого сайта, социальные сети или Яндекс Маркет, чтобы повысить кликабельность объявления.
+      - textbox
+      - button "Использовать быстрые ссылки, заданные в группе":
+        - generic: Использовать быстрые ссылки, заданные в группе
+      - table:
+        - rowgroup:
+          - row "Попробовать бесплатно До 5 фото без регистрации Перейти по ссылке":
+            - cell "Попробовать бесплатно До 5 фото без регистрации Перейти по ссылке":
+              - generic: Попробовать бесплатно
+              - generic: До 5 фото без регистрации
+              - link "Перейти по ссылке":
+                - /url: https://word2you.ru/
+                - button "Перейти по ссылке":
+          - row "Фото в текст Распознать и сохранить запись Перейти по ссылке":
+            - cell "Фото в текст Распознать и сохранить запись Перейти по ссылке":
+              - generic: Фото в текст
+              - generic: Распознать и сохранить запись
+              - link "Перейти по ссылке":
+                - /url: https://word2you.ru/photo-to-text
+                - button "Перейти по ссылке":
+          - row "Как это работает Личный архив записей Перейти по ссылке":
+            - cell "Как это работает Личный архив записей Перейти по ссылке":
+              - generic: Как это работает
+              - generic: Личный архив записей
+              - link "Перейти по ссылке":
+                - /url: https://word2you.ru/about
+                - button "Перейти по ссылке":
+          - row "Пакеты обработок 50, 150 или 500 обработок Перейти по ссылке":
+            - cell "Пакеты обработок 50, 150 или 500 обработок Перейти по ссылке":
+              - generic: Пакеты обработок
+              - generic: 50, 150 или 500 обработок
+              - link "Перейти по ссылке":
+                - /url: https://word2you.ru/packages
+                - button "Перейти по ссылке":
+      - heading "Описание для ЕРИР" [level=2]:
+        - text: Описание для ЕРИР
+        - button:
+      - generic: Директ автоматически определяет категорию продвигаемых товаров или услуг и передаёт её в ЕРИР. Если категорию определить не удалось, описание объекта продвижения формируется автоматически на основе заголовков и текстов объявлений.
+      - heading "Качество заполнения" [level=2]
+      - paragraph: Объявление может работать недостаточно хорошо
+      - heading "Рекомендации" [level=4]
+      - paragraph: Добавьте больше разнообразных заголовков
+      - paragraph: Используйте разные формулировки, ключевые фразы, факты и числа, преимущества, призывы к действию. Это позволит расширить охват и с большей вероятностью привлечь внимание.
+      - button "Добавить":
+        - generic: Добавить
+      - paragraph: Добавьте больше разнообразных текстов
+      - paragraph: Используйте разные формулировки, ключевые фразы, факты и числа, преимущества, призывы к действию. Это позволит расширить охват и с большей вероятностью привлечь внимание.
+      - button "Добавить":
+        - generic: Добавить
+      - paragraph: Добавьте больше дополнительной информации
+      - paragraph:
+        - text: Заполните
+        - link "контактную информацию"
+        - text: ","
+        - link "уточнения"
+        - text: ","
+        - link "цену"
+        - text: или промоакцию. Это сделает объявление более заметным и увеличит вероятность клика.
+      - button "Показать все":
+        - generic: Показать все
+    - complementary:
+      - tablist:
+        - tab "Превью" [selected]
+        - tab "Условия показа"
+        - tab "Прогноз": Прогноз
+      - tabpanel "Превью":
+        - button:
+        - textbox
+        - button "Мобильный поиск Яндекса":
+          - generic: Мобильный поиск Яндекса
+        - button:
+        - iframe [name="iframe-form-0"]:
+          - link "Фото в текст онлайн — бесплатно word2you.ru › фото-в-текст… Промо":
+            - /url: https://word2you.ru/photo-to-text
+            - heading "Фото в текст онлайн — бесплатно" [level=2]
+            - generic: word2you.ru › фото-в-текст…
+            - generic: Промо
+          - button "Действия":
+          - generic: Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно.
+          - link "Попробовать бесплатно До 5 фото без регистрации":
+            - /url: https://word2you.ru/
+            - text: Попробовать бесплатно
+            - generic: До 5 фото без регистрации
+          - link "Фото в текст Распознать и сохранить запись":
+            - /url: https://word2you.ru/photo-to-text
+            - text: Фото в текст
+            - generic: Распознать и сохранить запись
+          - link "Как это работает Личный архив записей":
+            - /url: https://word2you.ru/about
+            - text: Как это работает
+            - generic: Личный архив записей
+          - link "Пакеты обработок 50, 150 или 500 обработок":
+            - /url: https://word2you.ru/packages
+            - text: Пакеты обработок
+            - generic: 50, 150 или 500 обработок
+      - generic: Прогноз показов теперь тут
+      - generic: Посмотрите, по каким запросам вас ищут пользователи
+      - button "Закрыть":
+    - button "Сохранить изменения":
+      - generic: Сохранить изменения
+    - button "Добавить объявление":
+      - generic: Добавить объявление
+    - link "Добавить группу":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&is-new=1&is-new-empty-group=1
+      - button "Добавить группу":
+        - generic: Добавить группу
+- link "Yandex Neuro Ads":
+  - /url: https://ya.ru/project/yna/?utm_source=yandex&utm_medium=direct&utm_campaign=label
+  - generic: Yandex Neuro Ads
+- link "Скачать в App Store":
+  - /url: https://16807.redirect.appmetrica.yandex.com/?appmetrica_tracking_id=894724903234752738
+  - generic: Скачать в App Store
+- link "Скачать в Google Play":
+  - /url: https://16807.redirect.appmetrica.yandex.com?appmetrica_tracking_id=966782499504095285
+  - generic: Скачать в Google Play
+- link "Отдел клиентского сервиса":
+  - /url: //yandex.ru/support/direct/troubleshooting/other.html
+- link "Оферта Яндекс Директ":
+  - /url: //yandex.ru/legal/oferta_direct/?lang=ru
+- link "Справка":
+  - /url: //yandex.ru/support/direct/ru
+- text: © 2001–2026
+- link "ЯНДЕКС":
+  - /url: //ya.ru
+- button "Профиль":
+  - button "Профиль":
+- button "1":
+  - generic: "1"
+- button:
+- button:
+- button:
+- button:
+- textbox
+- button "Тема интерфейса":
+- button:
+- button:

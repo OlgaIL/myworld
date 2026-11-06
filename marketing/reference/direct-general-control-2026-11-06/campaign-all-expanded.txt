@@ -1,0 +1,599 @@
+- link "Логотип Яндекс Директ":
+  - /url: /
+  - img "Логотип Яндекс Директ"
+- button "Добавить":
+  - generic: Добавить
+- button "kukushkina":
+  - generic "kukushkina"
+- button "384,23 ₽ доступен овердрафт до 10 000 ₽ до остановки кампаний 1 день Пополнить":
+  - generic: 384,23 ₽
+  - generic: доступен овердрафт до 10 000 ₽
+  - text: до остановки
+  - text: кампаний 1 день
+  - button "Пополнить":
+    - generic: Пополнить
+- link "Рекомендации 2":
+  - /url: /dna/recommendations?ulogin=kukushkina
+  - text: Рекомендации
+  - generic: "2"
+- link "Обзор":
+  - /url: /wizard/overview/?ulogin=kukushkina
+  - generic: Обзор
+- link "Кампании":
+  - /url: /dna/grid/campaigns?ulogin=kukushkina&filter-reset=true
+  - generic: Кампании
+- button "Конверсии":
+  - generic: Конверсии
+- button "Статистика":
+  - generic: Статистика
+- button "Библиотека":
+  - generic: Библиотека
+- button "Инструменты":
+  - generic: Инструменты
+- button "Информация":
+  - generic: Информация
+- link "Платежи и документы":
+  - /url: //balance.yandex.ru/invoices.xml?service_cc=PPC&ref_service_id=7
+  - generic: Платежи и документы
+- button "Свернуть":
+- navigation:
+  - paragraph:
+    - link "kukushkina":
+      - /url: /dna/grid/campaigns?ulogin=kukushkina
+  - text: Word2you | Поиск | Активные пользователи | Тест 2
+  - button:
+  - paragraph:
+    - text: Кампания
+    - link "№ 713209118":
+      - generic: № 713209118
+  - generic "Остановлено"
+  - article:
+    - paragraph: Настройки кампании
+  - article:
+    - button:
+    - link "Широкие OCR — низкий приоритет":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015918
+      - paragraph: Широкие OCR — низкий приоритет
+    - button:
+    - link "Группа № 5779015918 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015918
+      - paragraph: Группа № 5779015918
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Рукописный текст и почерк":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015919
+      - paragraph: Рукописный текст и почерк
+    - button:
+    - link "Группа № 5779015919 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015919
+      - paragraph: Группа № 5779015919
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Рабочие документы — несколько страниц":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015920
+      - paragraph: Рабочие документы — несколько страниц
+    - button:
+    - link "Группа № 5779015920 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015920
+      - paragraph: Группа № 5779015920
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Архивные и исторические записи":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015921
+      - paragraph: Архивные и исторические записи
+    - button:
+    - link "Группа № 5779015921 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5779015921
+      - paragraph: Группа № 5779015921
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Общие фото в текст — контроль":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002
+      - paragraph: Общие фото в текст — контроль
+    - button:
+    - link "Группа № 5796556002 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002
+      - paragraph: Группа № 5796556002
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Фото в текст онлайн — бесплатно":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1921603492474585096
+      - paragraph: Фото в текст онлайн — бесплатно
+    - button:
+    - link "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно. № 1921603492474585096 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1921603492474585096
+      - paragraph:
+        - generic: Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно.
+        - generic: № 1921603492474585096
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Скопировать текст с фото онлайн":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1922653369315935876
+      - paragraph: Скопировать текст с фото онлайн
+    - button:
+    - link "Загрузите фото — получите текст для работы. Проверьте результат и скопируйте его. № 1922653369315935876 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1922653369315935876
+      - paragraph:
+        - generic: Загрузите фото — получите текст для работы. Проверьте результат и скопируйте его.
+        - generic: № 1922653369315935876
+      - generic "Остановлено"
+  - article "Комбинаторное":
+    - checkbox
+    - link "Скопировать печатный текст с фото":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1925609098160350162
+      - paragraph: Скопировать печатный текст с фото
+    - button:
+    - link "Загрузите фото страницы или скриншот. Проверьте текст и скопируйте результат. № 1925609098160350162 Остановлено":
+      - /url: /dna/banners-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556002&banners-ids=1925609098160350162
+      - paragraph:
+        - generic: Загрузите фото страницы или скриншот. Проверьте текст и скопируйте результат.
+        - generic: № 1925609098160350162
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Конспекты и тетради":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556212
+      - paragraph: Конспекты и тетради
+    - button:
+    - link "Группа № 5796556212 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5796556212
+      - paragraph: Группа № 5796556212
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Таблица с фото — подготовка":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5813162807
+      - paragraph: Таблица с фото — подготовка
+    - button:
+    - link "Группа № 5813162807 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5813162807
+      - paragraph: Группа № 5813162807
+      - generic "Остановлено"
+  - article:
+    - button:
+    - link "Несколько фото в текст — тест промо":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5818107510
+      - paragraph: Несколько фото в текст — тест промо
+    - button:
+    - link "Группа № 5818107510 Остановлено":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&groups-ids=5818107510
+      - paragraph: Группа № 5818107510
+      - generic "Остановлено"
+- main:
+  - main:
+    - heading "Word2you | Поиск | Активные пользователи | Тест 2" [level=2]:
+      - text: Word2you | Поиск | Активные пользователи | Тест 2
+      - button:
+    - generic "Остановлено"
+    - paragraph:
+      - text: Кампания
+      - link "№ 713209118":
+        - generic: № 713209118
+  - complementary
+  - main:
+    - heading "Объект продвижения" [level=2]
+    - img "word2you.ru"
+    - generic: Фото записи в текст и личный архив — Word2you.
+    - link "Открыть в новой вкладке":
+      - /url: https://word2you.ru/
+      - button "Открыть в новой вкладке":
+  - complementary
+  - main:
+    - heading "Организация из Яндекс Бизнеса" [level=2]
+    - generic: Нужна для продвижения в Картах и в списке организаций в результатах поиска — если вы выбрали эти площадки в местах показа объявлений. Контакты для объявлений тоже добавляются из профиля организации.
+    - textbox
+    - button "Добавить":
+      - generic: Добавить
+  - complementary:
+    - button "Чем полезны контакты и как их добавить?":
+      - paragraph: Чем полезны контакты и как их добавить?
+  - main:
+    - heading "Места показа" [level=2]:
+      - text: Места показа
+      - button:
+    - textbox
+    - button "Ручная настройка":
+      - generic: Ручная настройка
+    - heading "Поиск" [level=4]
+    - checkbox "Товарная галерея на поиске Покажите свои предложения в карусели товаров из разных магазинов, которая появляется над результатами поиска"
+    - generic: Товарная галерея на поиске
+    - generic: Покажите свои предложения в карусели товаров из разных магазинов, которая появляется над результатами поиска
+    - checkbox "Продвижение в поисковой выдаче Разместите свои объявления в специальных блоках на страницах результатов поиска" [checked]
+    - generic: Продвижение в поисковой выдаче
+    - generic: Разместите свои объявления в специальных блоках на страницах результатов поиска
+    - checkbox "Динамические места на поиске Получайте дополнительные конверсии, повышая видимость своих страниц в поиске по товарам и услугам"
+    - text: Динамические места на поиске
+    - generic: Получайте дополнительные конверсии, повышая видимость своих страниц в поиске по товарам и услугам
+    - 'checkbox "Список организаций, отели и галерея услуг Станьте заметнее над результатами поиска среди бизнесов вашей тематики: организаций, отелей или исполнителей"'
+    - text: Список организаций, отели и галерея услуг
+    - generic: "Станьте заметнее над результатами поиска среди бизнесов вашей тематики: организаций, отелей или исполнителей"
+    - heading "Другие площадки" [level=4]
+    - checkbox "Рекламная сеть Яндекса Охватите посетителей десятков тысяч сайтов и приложений, которым могут быть интересны ваши товары и услуги" [disabled]
+    - generic: Рекламная сеть Яндекса
+    - generic: Охватите посетителей десятков тысяч сайтов и приложений, которым могут быть интересны ваши товары и услуги
+    - checkbox "Яндекс Карты Поднимитесь в поиске Карт и выделитесь среди других организаций в Яндекс Картах, на маршруте такси в Яндекс Go" [disabled]
+    - text: Яндекс Карты
+    - generic: Поднимитесь в поиске Карт и выделитесь среди других организаций в Яндекс Картах, на маршруте такси в Яндекс Go
+  - complementary
+  - main:
+    - heading "Стратегия" [level=2]
+    - radiogroup "Стратегия":
+      - button "Обычная Обычная":
+        - radio "Обычная Обычная" [checked]
+        - text: Обычная
+      - button "Пакетная Пакетная":
+        - radio "Пакетная Пакетная"
+        - text: Пакетная
+    - textbox
+    - button "Стратегия":
+      - generic "Стратегия"
+      - generic: Максимум кликов с ручными ставками
+    - textbox
+    - button "С оплатой" [disabled]:
+      - generic "С оплатой"
+      - generic: За клики
+    - textbox
+    - button "Бюджет":
+      - generic "Бюджет"
+      - generic: В неделю
+    - textbox "₽":
+      - /placeholder: Сумма в ₽
+      - text: 3 000
+    - generic: 3 000
+    - generic: ₽
+    - generic: Счётчики Яндекс Метрики
+    - button:
+    - button "word2you.ru • 109386353" [disabled]:
+      - generic: word2you.ru • 109386353
+      - button [disabled]:
+    - button
+    - article:
+      - heading "Целевые действия и их ценность" [level=4]:
+        - generic: Целевые действия и их ценность
+      - generic: Используются для подбора наиболее конверсионного трафика. Ценность — экономическая выгода, получаемая при достижении посетителем этой цели.
+      - paragraph: На вашем сайте
+      - generic: 589425284 • Успешная загрузка записи
+      - generic: word2you.ru • 109386353
+      - textbox
+      - textbox "₽": "100"
+      - generic: "100"
+      - generic: ₽
+      - button:
+      - button "Добавить цель":
+        - generic: Добавить цель
+    - button "Дополнительные настройки" [expanded]:
+      - generic: Дополнительные настройки
+    - heading "Модель атрибуции" [level=4]:
+      - text: Модель атрибуции
+      - button:
+    - textbox
+    - button "Модель атрибуции":
+      - generic: Автоматическая
+  - complementary:
+    - button "Как работает минимальный бюджет?":
+      - paragraph: Как работает минимальный бюджет?
+  - main:
+    - heading "Коллтрекинг" [level=2]:
+      - text: Коллтрекинг
+      - button:
+    - switch
+    - text: Используйте коллтрекинг, чтобы отслеживать звонки и учитывать их при оптимизации кампании. Информация о звонках будет доступна в
+    - link "Журнале звонков":
+      - /url: /wizard/call-log?ulogin=kukushkina
+    - text: .
+    - link "Подробнее"
+  - complementary
+  - main:
+    - heading "Срок проведения кампании" [level=2]:
+      - text: Срок проведения кампании
+      - button:
+    - textbox
+    - button "Начиная с 11.08.2026":
+      - generic: Начиная с 11.08.2026
+  - complementary
+  - main:
+    - heading "Расписание показов" [level=2]:
+      - text: Расписание показов
+      - button:
+    - textbox
+    - button "Каждый день, круглосуточно":
+      - generic: Каждый день, круглосуточно
+  - complementary:
+    - button "В какое время лучше показывать объявления?":
+      - paragraph: В какое время лучше показывать объявления?
+  - main:
+    - heading "Параметры URL" [level=2]:
+      - text: Параметры URL
+      - button:
+    - generic: Введите параметры или UTM-метки. Они добавятся ко всем ссылкам, указанным в настройках объявлений внутри кампании.
+    - textbox:
+      - /placeholder: "Например, utm_term={keyword}"
+    - generic: "utm_source=yandex-direct&utm_medium=cpc&utm_campaign={campaign_id}&utm_content={ad_id}&utm_term={keyword}"
+    - button "Очистить":
+  - complementary
+  - main:
+    - heading "Дополнительные элементы объявлений" [level=2]
+    - generic: Все настройки дополнительных элементов собраны в одном месте — настраивайте их сразу для всех объявлений в кампании.
+    - checkbox "Быстрые ссылки" [checked]
+    - generic: Быстрые ссылки
+    - checkbox "Уточнения"
+    - generic: Уточнения
+    - checkbox "Промоакция"
+    - generic: Промоакция
+    - checkbox "Доставка"
+    - generic: Доставка
+    - checkbox "Резервная посадочная страница Новое"
+    - text: Резервная посадочная страница
+    - generic: Новое
+    - heading "Быстрые ссылки" [level=2]:
+      - text: Быстрые ссылки
+      - button:
+    - button:
+    - table:
+      - rowgroup:
+        - row "Попробовать бесплатно До 5 фото без регистрации Перейти по ссылке Удалить":
+          - cell "Попробовать бесплатно До 5 фото без регистрации Перейти по ссылке Удалить":
+            - button:
+            - generic: Попробовать бесплатно
+            - generic: До 5 фото без регистрации
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/
+              - button "Перейти по ссылке":
+            - button "Удалить":
+        - row "Фото в текст Распознать и сохранить запись Перейти по ссылке Удалить":
+          - cell "Фото в текст Распознать и сохранить запись Перейти по ссылке Удалить":
+            - button:
+            - generic: Фото в текст
+            - generic: Распознать и сохранить запись
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/photo-to-text
+              - button "Перейти по ссылке":
+            - button "Удалить":
+        - row "Как это работает Личный архив записей Перейти по ссылке Удалить":
+          - cell "Как это работает Личный архив записей Перейти по ссылке Удалить":
+            - button:
+            - generic: Как это работает
+            - generic: Личный архив записей
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/about
+              - button "Перейти по ссылке":
+            - button "Удалить":
+        - row "Пакеты обработок 50, 150 или 500 обработок Перейти по ссылке Удалить":
+          - cell "Пакеты обработок 50, 150 или 500 обработок Перейти по ссылке Удалить":
+            - button:
+            - generic: Пакеты обработок
+            - generic: 50, 150 или 500 обработок
+            - link "Перейти по ссылке":
+              - /url: https://word2you.ru/packages
+              - button "Перейти по ссылке":
+            - button "Удалить":
+        - row "Добавить ещё":
+          - cell "Добавить ещё":
+            - button "Добавить ещё":
+              - generic: Добавить ещё
+    - status
+    - text: Быстрые ссылки переопределены в
+    - link "4 объявлениях"
+    - generic: Вы можете сбросить переопределение и использовать быстрые ссылки, заданные в кампании.
+    - button "Сбросить":
+      - generic: Сбросить
+    - generic: Подключите лендинг в качестве резервной посадочной страницы, чтобы пользователи могли переходить по объявлению даже при ограниченном интернет-соединении.
+    - button "Закрыть":
+    - button "Подключить":
+      - generic: Подключить
+  - complementary
+  - main:
+    - heading "Директ помогает" [level=2]
+    - checkbox "Автоматически применять рекомендации Алгоритмы Директа будут анализировать объявления и корректировать настройки. Например, заменят неэффективные изображения, нецелевые тематические слова, добавят счётчик Метрики или цели, начнут продвигать вашу организацию в Картах. Так продвижение станет эффективнее."
+    - text: Автоматически применять рекомендации
+    - button:
+    - generic: Алгоритмы Директа будут анализировать объявления и корректировать настройки. Например, заменят неэффективные изображения, нецелевые тематические слова, добавят счётчик Метрики или цели, начнут продвигать вашу организацию в Картах. Так продвижение станет эффективнее.
+  - complementary
+  - main:
+    - heading "Корректировки" [level=2]:
+      - text: Корректировки
+      - button:
+    - generic: Изменяйте ставку в зависимости от характеристик пользователя, формата объявления и других условий.
+    - table:
+      - rowgroup:
+        - list:
+          - row "select-format-correction select-format-correction-type -100 -100 %":
+            - cell "select-format-correction select-format-correction-type -100 -100 %":
+              - textbox
+              - button "select-format-correction":
+                - generic: Смартфоны
+              - textbox
+              - button "select-format-correction-type":
+                - generic: iOS
+              - textbox "%": "-100"
+              - generic: "-100"
+              - paragraph: "%"
+              - button:
+          - row "select-format-correction 0 0 %":
+            - cell "select-format-correction 0 0 %":
+              - textbox
+              - button "select-format-correction":
+                - generic: Десктопы
+              - textbox "%": "0"
+              - generic: "0"
+              - paragraph: "%"
+              - button:
+          - row "select-format-correction select-format-correction-type -100 -100 %":
+            - cell "select-format-correction select-format-correction-type -100 -100 %":
+              - textbox
+              - button "select-format-correction":
+                - generic: Планшеты
+              - textbox
+              - button "select-format-correction-type":
+                - generic: Android
+              - textbox "%": "-100"
+              - generic: "-100"
+              - paragraph: "%"
+              - button:
+        - row "Добавить":
+          - cell "Добавить":
+            - button "Добавить":
+              - generic: Добавить
+  - complementary:
+    - button "Как работают корректировки?":
+      - paragraph: Как работают корректировки?
+  - main:
+    - button "Скрыть дополнительные настройки" [expanded] [active]:
+      - generic: Скрыть дополнительные настройки
+  - complementary
+  - main:
+    - heading "Персонализация" [level=2]:
+      - text: Персонализация
+      - button:
+    - generic: Yandex Neuro Ads
+    - switch [checked]
+    - paragraph: Объявления будут адаптироваться под запросы и интересы пользователя. Для этого используются только данные из ваших объявлений и посадочной страницы.
+    - paragraph:
+      - text: Для контроля текстов добавьте
+      - link "фразы-исключения"
+      - text: .
+    - generic: +12% к конверсионности кампаний в среднем
+    - generic: Персонализированные объявления привлекают больше заинтересованных пользователей, которые совершают целевые действия.
+  - complementary
+  - main:
+    - heading "Минус-фразы" [level=2]:
+      - text: Минус-фразы
+      - button:
+    - button:
+    - generic: Слова или словосочетания в поисковых запросах, по которым ваши объявления не будут показываться.
+    - textbox:
+      - /placeholder: Введите фразу или список фраз
+    - generic: "-abbyy finereader -rehand -имитация рукописного текста -пдф -печатный текст !в рукописный -сделать текст рукописным -текст !в рукописный -фото !в архив"
+    - generic: Осталось 19879 символов
+  - complementary
+  - main:
+    - heading "Мониторинг сайта" [level=2]:
+      - text: Мониторинг сайта
+      - button:
+    - switch
+    - generic: Если продвигаемый сайт будет недоступен, объявления автоматически остановятся, а вы получите уведомление. Показы возобновятся с восстановлением работы сайта.
+  - complementary
+  - main
+  - complementary
+  - main:
+    - heading "Персональные скидки от Яндекса" [level=2]
+    - switch [disabled]
+    - paragraph: "Покупатели могут получить персональные скидки, а вы — рост конверсии в покупку. Скидки предоставляются Яндексом, поэтому вы получите полную стоимость товара. Скидки доступны интернет-магазинам и появятся в объявлениях, если:"
+    - list:
+      - generic: В магазине есть возможность оплаты через Яндекс Пэй или в Сплит
+      - generic: В местах показа выбран Поиск или Товарная галерея
+      - generic: Установлена стратегия «Максимум конверсий»
+      - generic: Объявление ведёт на товар или страницу каталога
+    - paragraph:
+      - link "Подробнее — в Справке":
+        - /url: //yandex.ru/support/direct/efficiency/discount-pay
+    - generic: Персональные скидки от Яндекса недоступны для вашего сайта
+    - text: Опцию можно включить только для интернет-магазинов с возможностью оплаты
+    - link "через Яндекс Пэй":
+      - /url: https://pay.yandex.ru/business/payments/pay?utm_medium=link&utm_source=yandex_direct&utm_campaign=dd:b2b_ct:direct_lk_pn:pay_rt:link_np:product_nm:direct_lk&utm_content=direct_paylink_lk
+    - text: .
+    - button "Связаться c поддержкой":
+      - generic: Связаться c поддержкой
+  - complementary
+  - main:
+    - heading "A/B–эксперименты" [level=2]:
+      - text: A/B–эксперименты
+      - button:
+    - text: Управляйте экспериментами, в которых участвует эта кампания. Чтобы создать новый эксперимент, перейдите
+    - link "в Библиотеку":
+      - /url: /dna/library/abExperiments?ulogin=kukushkina
+    - text: .
+    - generic: Экспериментов пока нет
+    - generic: Теперь создавать эксперименты можно только в разделе «Библиотека» — добавить из Яндекс Аудиторий больше не получится.
+    - button "Перейти в эксперименты":
+      - generic: Перейти в эксперименты
+  - complementary
+  - main:
+    - heading "Запрет показов" [level=2]
+    - generic "Площадки":
+      - text: Площадки
+      - button:
+      - button:
+      - generic: На указанных площадках не будут отображаться объявления из этой кампании.
+    - generic "Площадки":
+      - generic: Введите площадки через запятую или перенос строки
+      - button
+    - generic "IP-адреса":
+      - text: IP-адреса
+      - button:
+      - button:
+      - generic: Пользователи с указанных адресов не увидят объявления из этой кампании.
+    - generic "IP-адреса":
+      - generic: Введите IP-адреса через запятую или пробел
+      - button
+  - complementary
+  - main:
+    - heading "Приоритизация объявлений" [level=2]:
+      - text: Приоритизация объявлений
+      - button:
+    - generic: "Выберите, какое объявление должно быть показано, если для поискового запроса подошли объявления из разных групп:"
+    - radiogroup:
+      - radio "С лучшим сочетанием показателей Учитываются прогнозируемая кликабельность (CTR), коэффициент качества объявления и ставка для фразы" [checked]
+      - generic: С лучшим сочетанием показателей
+      - generic: Учитываются прогнозируемая кликабельность (CTR), коэффициент качества объявления и ставка для фразы
+      - radio "По фразе, наиболее близкой к запросу Ставка для фразы не учитывается"
+      - generic: По фразе, наиболее близкой к запросу
+      - generic: Ставка для фразы не учитывается
+  - complementary
+  - main
+  - complementary
+  - main:
+    - heading "Уведомления" [level=2]
+    - table:
+      - rowgroup:
+        - row "Почтовые уведомления kukushkina@yandex.ru":
+          - cell "Почтовые уведомления kukushkina@yandex.ru":
+            - generic: Почтовые уведомления
+            - generic: kukushkina@yandex.ru
+    - button "Настроить":
+      - generic: Настроить
+  - complementary
+  - main:
+    - button "Сохранить изменения":
+      - generic: Сохранить изменения
+    - link "Добавить группу":
+      - /url: /dna/groups-edit?ulogin=kukushkina&campaigns-ids=713209118&is-new=1&is-new-empty-group=1
+      - button "Добавить группу":
+        - generic: Добавить группу
+  - complementary
+- link "Yandex Neuro Ads":
+  - /url: https://ya.ru/project/yna/?utm_source=yandex&utm_medium=direct&utm_campaign=label
+  - generic: Yandex Neuro Ads
+- link "Скачать в App Store":
+  - /url: https://16807.redirect.appmetrica.yandex.com/?appmetrica_tracking_id=894724903234752738
+  - generic: Скачать в App Store
+- link "Скачать в Google Play":
+  - /url: https://16807.redirect.appmetrica.yandex.com?appmetrica_tracking_id=966782499504095285
+  - generic: Скачать в Google Play
+- link "Отдел клиентского сервиса":
+  - /url: //yandex.ru/support/direct/troubleshooting/other.html
+- link "Оферта Яндекс Директ":
+  - /url: //yandex.ru/legal/oferta_direct/?lang=ru
+- link "Справка":
+  - /url: //yandex.ru/support/direct/ru
+- text: © 2001–2026
+- link "ЯНДЕКС":
+  - /url: //ya.ru
+- button "Профиль":
+  - button "Профиль":
+- button "1":
+  - generic: "1"
+- button:
+- button:
+- button:
+- button:
+- textbox
+- button "Тема интерфейса":
+- button:
+- button:

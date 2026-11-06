@@ -1,0 +1,311 @@
+- link "Логотип Яндекс Директ":
+  - /url: /
+  - img "Логотип Яндекс Директ"
+- button "Добавить":
+  - generic: Добавить
+- button "kukushkina":
+  - generic "kukushkina"
+- button "384,23 ₽ доступен овердрафт до 10 000 ₽ до остановки кампаний 1 день Пополнить":
+  - generic: 384,23 ₽
+  - generic: доступен овердрафт до 10 000 ₽
+  - text: до остановки
+  - text: кампаний 1 день
+  - button "Пополнить":
+    - generic: Пополнить
+- link "Рекомендации 2":
+  - /url: /dna/recommendations?ulogin=kukushkina
+  - text: Рекомендации
+  - generic: "2"
+- link "Обзор":
+  - /url: /wizard/overview/?ulogin=kukushkina
+  - generic: Обзор
+- link "Кампании":
+  - /url: /dna/grid/campaigns?ulogin=kukushkina&filter-reset=true
+  - generic: Кампании
+- button "Конверсии":
+  - generic: Конверсии
+- button "Статистика":
+  - generic: Статистика
+- button "Библиотека":
+  - generic: Библиотека
+- button "Инструменты":
+  - generic: Инструменты
+- button "Информация":
+  - generic: Информация
+- link "Платежи и документы":
+  - /url: //balance.yandex.ru/invoices.xml?service_cc=PPC&ref_service_id=7
+  - generic: Платежи и документы
+- button "Свернуть":
+- tablist:
+  - tab "Кампании"
+  - tab "Группы"
+  - tab "Объявления"
+  - tab "Ставки и фразы" [selected]
+  - tab "Сегменты аудитории"
+  - tab "Профили пользователей"
+- generic: Данные о конверсиях за прошлые периоды могут быть неполными
+- paragraph:
+  - text: Конверсии, совершенные с 11 октября, не связываются с кликами по объявлениям Директа до 11 октября, а в атрибуции к показу — с показами, которые шли с 11 по 22 октября. Такие конверсии не потеряны — они отнесены к другим источникам в данных Метрики. Подробнее — в
+  - link "Справке":
+    - /url: https://yandex.ru/support/direct/special-mode#convers-attrib
+  - text: .
+- button "Закрыть":
+- button "Добавить фразы":
+  - generic: Добавить фразы
+- textbox:
+  - /placeholder: Поиск
+- textbox
+- button "Фильтр кампаний по статусам":
+  - generic: Все фразы
+- textbox
+- button "Период":
+  - generic "Последние 30 дней"
+- button:
+- button:
+- checkbox
+- generic "Ключевые фразы"
+- generic "№"
+- generic: Итого
+- generic "Объявления"
+- generic "Статус"
+- generic "Ставка, ₽"
+- generic "Списываемая цена, ₽"
+- generic "Ставка (в сетях), ₽/Ставка за тыс. показов, ₽"
+- generic "Прогноз трафика"
+- generic "Показы"
+- generic "Клики"
+- generic "CTR, %"
+- generic "CPC, ₽"
+- generic "Охват, %"
+- generic "Расход, ₽"
+- generic "Конверсии"
+- generic "Доход, ₽"
+- generic "ДРР, %"
+- generic "ROI, %"
+- generic "CPA, ₽"
+- generic "Ср. цена 1000 показов, ₽"
+- generic "Конверсия, %"
+- generic "Отказы, %"
+- generic: 7 266
+- generic: 1 252
+- generic: 17,23
+- generic: 5 111,96
+- checkbox "Выбрать строку"
+- generic "--автотаргетинг":
+  - generic "--автотаргетинг":
+    - heading "--автотаргетинг" [level=3]
+- generic: № 205796556002
+- button "3":
+  - generic: "3"
+- link "№ 1921603492474585096":
+  - generic: № 1921603492474585096
+- button "16+" [disabled]:
+  - generic "16+"
+- link "Фото в текст онлайн — бесплатно":
+  - /url: https://word2you.ru/photo-to-text
+- generic "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно."
+- generic "word2you.ru › фото-в-текст"
+- generic "3 заголовка, 2 текста"
+- generic "Включено"
+- switch [checked] [disabled]
+- generic: Авто
+- generic: –
+- generic: –
+- generic: –
+- generic: 6 186
+- generic: 1 189
+- generic: 19,22
+- generic: 4,15
+- generic: –
+- generic: 4 933,29
+- generic: "721"
+- generic: 0,00
+- generic: –
+- generic: –
+- generic: 6,84
+- generic: –
+- generic: 60,64
+- generic: "16"
+- checkbox "Выбрать строку"
+- button:
+- generic "[из фото в текст]":
+  - generic "[из фото в текст]":
+    - heading "[из фото в текст]" [level=3]
+- generic: № 58006872436
+- link "Редактировать"
+- button "3":
+  - generic: "3"
+- link "№ 1921603492474585096":
+  - generic: № 1921603492474585096
+- button "16+" [disabled]:
+  - generic "16+"
+- link "Фото в текст онлайн — бесплатно":
+  - /url: https://word2you.ru/photo-to-text
+- generic "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно."
+- generic "word2you.ru › фото-в-текст"
+- generic "3 заголовка, 2 текста"
+- generic "Включено"
+- switch [checked]
+- generic: 3,00
+- generic: –
+- generic: –
+- generic: "5"
+- generic: "1"
+- generic: "0"
+- generic: 0,00
+- generic: –
+- generic: –
+- generic: 0,00
+- generic: "0"
+- generic: 0,00
+- generic: –
+- generic: –
+- generic: –
+- generic: –
+- generic: –
+- generic: –
+- checkbox "Выбрать строку"
+- button:
+- generic "фото в текст":
+  - generic "фото в текст":
+    - heading "фото в текст" [level=3]
+- generic: № 58006859019
+- link "Редактировать"
+- button "3":
+  - generic: "3"
+- link "№ 1921603492474585096":
+  - generic: № 1921603492474585096
+- button "16+" [disabled]:
+  - generic "16+"
+- link "Фото в текст онлайн — бесплатно":
+  - /url: https://word2you.ru/photo-to-text
+- generic "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно."
+- generic "word2you.ru › фото-в-текст"
+- generic "3 заголовка, 2 текста"
+- generic "Включено"
+- switch [checked]
+- generic: 3,00
+- generic: –
+- generic: –
+- generic: "5"
+- generic: "141"
+- generic: "3"
+- generic: 2,13
+- generic: 2,56
+- generic: –
+- generic: 7,67
+- generic: "4"
+- generic: 0,00
+- generic: –
+- generic: –
+- generic: 1,92
+- generic: –
+- generic: 133,33
+- generic: "0"
+- checkbox "Выбрать строку"
+- button:
+- generic "текст с фото -скопировать":
+  - generic "текст с фото -скопировать":
+    - heading "текст с фото ・1 минус-слово" [level=3]:
+      - text: текст с фото
+      - generic: ・1 минус-слово
+- generic: № 58006832907
+- link "Редактировать"
+- button "3":
+  - generic: "3"
+- link "№ 1921603492474585096":
+  - generic: № 1921603492474585096
+- button "16+" [disabled]:
+  - generic "16+"
+- link "Фото в текст онлайн — бесплатно":
+  - /url: https://word2you.ru/photo-to-text
+- generic "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно."
+- generic "word2you.ru › фото-в-текст"
+- generic "3 заголовка, 2 текста"
+- generic "Включено"
+- switch [checked]
+- generic: 3,00
+- generic: –
+- generic: –
+- generic: "5"
+- generic: "838"
+- generic: "53"
+- generic: 6,32
+- generic: 2,90
+- generic: –
+- generic: 153,53
+- generic: "23"
+- generic: 0,00
+- generic: –
+- generic: –
+- generic: 6,68
+- generic: –
+- generic: 43,40
+- generic: 30,61
+- checkbox "Выбрать строку"
+- button:
+- generic "скопировать текст с фото":
+  - generic "скопировать текст с фото":
+    - heading "скопировать текст с фото" [level=3]
+- generic: № 58006832906
+- link "Редактировать"
+- button "3":
+  - generic: "3"
+- link "№ 1921603492474585096":
+  - generic: № 1921603492474585096
+- button "16+" [disabled]:
+  - generic "16+"
+- link "Фото в текст онлайн — бесплатно":
+  - /url: https://word2you.ru/photo-to-text
+- generic "Загрузите фото, получите текст и сохраните его в архиве. Попробуйте бесплатно."
+- generic "word2you.ru › фото-в-текст"
+- generic "3 заголовка, 2 текста"
+- generic "Включено"
+- switch [checked]
+- generic: 3,00
+- generic: –
+- generic: –
+- generic: "5"
+- generic: "100"
+- generic: "7"
+- generic: 7,00
+- generic: 2,50
+- generic: –
+- generic: 17,47
+- generic: "7"
+- generic: 0,00
+- generic: –
+- generic: –
+- generic: 2,50
+- generic: –
+- generic: 100,00
+- generic: "0"
+- link "Yandex Neuro Ads":
+  - /url: https://ya.ru/project/yna/?utm_source=yandex&utm_medium=direct&utm_campaign=label
+  - generic: Yandex Neuro Ads
+- link "Скачать в App Store":
+  - /url: https://16807.redirect.appmetrica.yandex.com/?appmetrica_tracking_id=894724903234752738
+  - generic: Скачать в App Store
+- link "Скачать в Google Play":
+  - /url: https://16807.redirect.appmetrica.yandex.com?appmetrica_tracking_id=966782499504095285
+  - generic: Скачать в Google Play
+- link "Отдел клиентского сервиса":
+  - /url: //yandex.ru/support/direct/troubleshooting/other.html
+- link "Оферта Яндекс Директ":
+  - /url: //yandex.ru/legal/oferta_direct/?lang=ru
+- link "Справка":
+  - /url: //yandex.ru/support/direct/ru
+- text: © 2001–2026
+- link "ЯНДЕКС":
+  - /url: //ya.ru
+- button "Профиль":
+  - button "Профиль":
+- button:
+- button:
+- button:
+- button:
+- button:
+- textbox
+- button "Тема интерфейса":
+- button:
+- button:
