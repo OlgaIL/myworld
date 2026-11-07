@@ -68,7 +68,9 @@ export function normalizeFormattedTypography(value) {
 }
 
 export function formatFormattedLine(value) {
-  return capitalizeFormattedLine(normalizeFormattedTypography(value));
+  // These strings are document data, including code, paths and literal symbols.
+  // Formatting belongs to blocks/CSS; display and copying must not rewrite them.
+  return String(value ?? "");
 }
 
 function isLikelyManualHeading(line, hasFollowingLine) {

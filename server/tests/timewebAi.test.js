@@ -158,9 +158,9 @@ test("normalizes only lossless alternative list shapes without inventing item bo
     [{ type: "list", items: [{ text: "3. Первый пункт" }, { text: "4. Второй пункт" }], ordered: true, start: 3 },
       { type: "list", items: ["Первый пункт", "Второй пункт"], ordered: true, start: 3 }, "LIST_TEXT_OBJECTS"],
     [{ type: "list", text: "Первый пункт и его\nпродолжение. Второй пункт." },
-      { type: "paragraph", text: "Первый пункт и его продолжение. Второй пункт." }, "LIST_TEXT_AS_PARAGRAPH"],
+      { type: "paragraph", text: "Первый пункт и его\nпродолжение. Второй пункт." }, "LIST_TEXT_AS_PARAGRAPH"],
     [{ type: "list", items: "Первый пункт.\nВторой пункт." },
-      { type: "paragraph", text: "Первый пункт. Второй пункт." }, "LIST_TEXT_AS_PARAGRAPH"]
+      { type: "paragraph", text: "Первый пункт.\nВторой пункт." }, "LIST_TEXT_AS_PARAGRAPH"]
   ]) {
     const logs = [];
     const blocks = [{ type: "heading", text: "Начало" }, block, { type: "paragraph", text: "Конец" }];

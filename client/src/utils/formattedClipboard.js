@@ -46,7 +46,8 @@ export function getFormattedHtml(content) {
       return listHtml(block);
     }
     const tag = block.type === "heading" ? "h3" : "p";
-    return `<${tag}>${escapeHtml(formatFormattedLine(block.text))}</${tag}>`;
+    const text = escapeHtml(formatFormattedLine(block.text)).replace(/\r\n?|\n/g, "<br>");
+    return `<${tag}>${text}</${tag}>`;
   }).join("\n");
   return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${blocks}</body></html>`;
 }

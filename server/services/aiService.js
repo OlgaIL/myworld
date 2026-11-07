@@ -384,8 +384,10 @@ export function normalizeFormattedContent(value, fallbackText = "") {
 
       if (block.type === "paragraph") {
         return block.text
+          .replace(/\r\n?/g, "\n")
           .split(/\n\s*\n/)
-          .map(normalizeFormattedBlockText)
+          // Keep explicit line boundaries without inferring new headings or paragraphs.
+          .map((part) => part.trim().split("\n").map(normalizeFormattedBlockText).join("\n"))
           .filter(Boolean)
           .map((text) => ({ type: "paragraph", text }));
       }

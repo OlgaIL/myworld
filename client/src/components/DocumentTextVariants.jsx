@@ -341,14 +341,14 @@ function DocumentTextVariants({
   const variants = [
     { id: "text", label: "Текст", text: originalText },
     ...(originalOcrText.trim() && originalOcrText.trim() !== originalText.trim()
-      ? [{ id: "source", label: "Исходный", text: originalOcrText }]
+      ? [{ id: "source", label: "Исходный (без замен)", text: originalOcrText }]
       : []),
     ...(improvedText.trim() && improvedText.trim() !== originalText.trim()
       ? [{ id: "improved", label: "Улучшенный", text: improvedText,
         html: improvedHasRichContent ? getFormattedHtml(improvedContent) : undefined }]
       : []),
     { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
-      html: formattedContent?.blocks.some((block) => ["table", "list"].includes(block.type)) ? getFormattedHtml(formattedContent) : undefined },
+      html: formattedContent ? getFormattedHtml(formattedContent) : undefined },
     ...(info?.hasTable && ["processed", "recognized"].includes(info?.status) ? [{ id: "tables", label: "Таблицы",
       text: tableReady ? getFormattedText(tableContent) : "", tables: true, locked: tableLocked,
       disabled: tableDocumentUnavailable,

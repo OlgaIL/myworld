@@ -130,7 +130,7 @@ test("keeps numbered and bulleted compact lists separate without duplicate numbe
   );
 });
 
-test("separates paragraph blocks and joins wrapped list item lines", () => {
+test("separates paragraphs while preserving their line breaks and joining wrapped list items", () => {
   const content = normalizeFormattedContent({
     blocks: [
       { type: "paragraph", text: "Первый абзац\n\nВторой\nабзац" },
@@ -142,11 +142,32 @@ test("separates paragraph blocks and joins wrapped list item lines", () => {
   assert.deepEqual(content, {
     blocks: [
       { type: "paragraph", text: "Первый абзац" },
-      { type: "paragraph", text: "Второй абзац" },
+      { type: "paragraph", text: "Второй\nабзац" },
       { type: "list", items: ["Длинный пункт, который перенесён на новую строку"] },
       { type: "heading", text: "Общий заголовок" }
     ]
   });
+});
+
+test("keeps explicit paragraph lines without guessing headings or changing symbols", () => {
+  const text = "Произвольное название\nОписание: a_B < 2 & C:\\tmp\\file.txt — 25%.";
+  const result = parseAIResponse(JSON.stringify({
+    formattedContent: { blocks: [
+      { type: "paragraph", text: text.replaceAll("\n", "\r\n") },
+      { type: "paragraph", text: "Обычное предложение\nпродолжается на второй строке." },
+      { type: "heading", text: "Отдельный заголовок" },
+      { type: "paragraph", text: "Отдельное пояснение." }
+    ] },
+    textQuality: "full_text"
+  }));
+  assert.deepEqual(result.formattedContent.blocks, [
+    { type: "paragraph", text },
+    { type: "paragraph", text: "Обычное предложение\nпродолжается на второй строке." },
+    { type: "heading", text: "Отдельный заголовок" },
+    { type: "paragraph", text: "Отдельное пояснение." }
+  ]);
+  assert.equal(result.cleanText, result.formattedContent.blocks.map(block => block.text).join("\n\n"));
+  assert.deepEqual(normalizeFormattedContent(result.formattedContent), result.formattedContent);
 });
 
 test("converts sequential list markers into an ordered list", () => {

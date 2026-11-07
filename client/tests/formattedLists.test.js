@@ -61,3 +61,11 @@ test("explicit bullet lists retain numeric quantities instead of inferring item 
     ordered: false, start: 2, items: ["2 луковицы", "3 морковки"]
   });
 });
+
+test("actual list renderer and clipboard preserve case-sensitive commands", () => {
+  const block = { type: "list", ordered: true, start: 4, items: ["if (ready)", "object.value = java_args.txt;"] };
+  const html = renderToStaticMarkup(createElement(FormattedList, { block }));
+  assert.equal(html, '<ol start="4"><li>if (ready)</li><li>object.value = java_args.txt;</li></ol>');
+  assert.equal(getFormattedText({ blocks: [block] }), "4. if (ready)\n5. object.value = java_args.txt;");
+  assert.match(getFormattedHtml({ blocks: [block] }), /<li>object\.value = java_args\.txt;<\/li>/);
+});

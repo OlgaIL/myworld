@@ -47,8 +47,8 @@ test("restores separator spaces without changing dots used for missing letters",
   assert.equal(normalizeFormattedTypography("1,5 кг;2,5 кг"), "1,5 кг; 2,5 кг");
 });
 
-test("formats a block consistently for display and copying", () => {
-  assert.equal(formatFormattedLine("  «новый\nабзац» "), "«Новый абзац»");
+test("keeps stored block text intact for display and copying", () => {
+  assert.equal(formatFormattedLine("  «новый\nабзац» "), "  «новый\nабзац» ");
 });
 
 test("preserves deliberate lines and headings in manually improved text", () => {

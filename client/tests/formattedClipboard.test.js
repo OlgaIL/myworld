@@ -33,6 +33,33 @@ test("ordered lists retain their starting number in both clipboard formats", () 
   assert.equal(getFormattedText(value), "4. Первый\n5. Второй");
 });
 
+test("formatted code keeps case, punctuation and whitespace in both clipboard formats", () => {
+  const source = "if (ready) {\n  fahrenheit = object.value;\n}\nconst file = 'java_args.txt';";
+  const value = { blocks: [{ type: "paragraph", text: source }] };
+  assert.equal(getFormattedText(value), source);
+  assert.ok(getFormattedHtml(value).includes(`<p>${source.replaceAll("'", "&#39;").replaceAll("\n", "<br>")}</p>`));
+  assert.equal(value.blocks[0].text, source);
+});
+
+test("heading and paragraph HTML preserve explicit lines, order and escaped symbols", () => {
+  const value = { blocks: [
+    { type: "heading", text: "Название <раздела>" },
+    { type: "paragraph", text: "Первая строка\nПояснение: a_B < 2 & 25%." },
+    { type: "paragraph", text: "Самостоятельный абзац." }
+  ] };
+  assert.equal(getFormattedText(value), "Название <раздела>\n\nПервая строка\nПояснение: a_B < 2 & 25%.\n\nСамостоятельный абзац.");
+  assert.match(getFormattedHtml(value), /<h3>Название &lt;раздела&gt;<\/h3>\s*<p>Первая строка<br>Пояснение: a_B &lt; 2 &amp; 25%.<\/p>\s*<p>Самостоятельный абзац.<\/p>/u);
+});
+
+test("plain and HTML clipboard preserve the same case-sensitive table values", () => {
+  const value = { blocks: [{ type: "table", headers: ["variable", "value"], rows: [["fahrenheit", "object.value"]] }] };
+  assert.equal(getFormattedText(value), "variable\tvalue\nfahrenheit\tobject.value");
+  const html = getFormattedHtml(value);
+  assert.match(html, />variable<\/th>/);
+  assert.match(html, />fahrenheit<\/td>/);
+  assert.match(html, />object\.value<\/td>/);
+});
+
 test("one clipboard item carries the selected improved text and its HTML together", async () => {
   let written;
   const environment = {
