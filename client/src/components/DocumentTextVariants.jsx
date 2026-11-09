@@ -3,6 +3,7 @@ import { getAiUnavailableMessage } from "../constants/documentStatuses";
 import { buildManualFormattedContent, formatFormattedLine, nestFormattedLists } from "../utils/formattedText";
 import { FormattedList } from "./FormattedList.js";
 import { getFormattedHtml, getFormattedText } from "../utils/formattedClipboard.js";
+import { isRedundantFormattedVariant } from "../utils/formattedVariantVisibility.js";
 import { mergeFormattedTables, promoteDocumentTitle } from "../utils/mergeFormattedTables.js";
 import { getTableAttemptState, tableFailureMessage } from "../utils/tableAttemptState.js";
 import { getTableHeaderRows } from "../utils/tableHeaders.js";
@@ -335,6 +336,11 @@ function DocumentTextVariants({
     : { content: baseFormattedContent, merged: false };
   const formattedContent = formattedMerge.content;
   const formattedText = getFormattedText(formattedContent);
+  const hideFormatted = isRedundantFormattedVariant({
+    content: formattedContent, text: originalText, isAuthenticated, status: info?.status,
+    enrichmentPending, hasTable: info?.hasTable || currentTableInfo?.hasTable,
+    tableStatus: currentTableInfo?.tableStatus, tableContent
+  });
   const tableLocked = currentTableInfo?.tableStatus !== "ready"
     && (!isAuthenticated || (Number(packageRemaining) + Number(giftRemaining) <= 0 && !tableTrialAvailable));
   const tablePending = tablePendingDocumentId === documentId;
@@ -347,8 +353,8 @@ function DocumentTextVariants({
       ? [{ id: "improved", label: "Улучшенный", text: improvedText,
         html: improvedHasRichContent ? getFormattedHtml(improvedContent) : undefined }]
       : []),
-    { id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
-      html: formattedContent ? getFormattedHtml(formattedContent) : undefined },
+    ...(!hideFormatted ? [{ id: "formatted", label: "Оформленный", text: formattedText, formatted: true, locked: !isAuthenticated,
+      html: formattedContent ? getFormattedHtml(formattedContent) : undefined }] : []),
     ...(info?.hasTable && ["processed", "recognized"].includes(info?.status) ? [{ id: "tables", label: "Таблицы",
       text: tableReady ? getFormattedText(tableContent) : "", tables: true, locked: tableLocked,
       disabled: tableDocumentUnavailable,
