@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { usePublicLimits } from "../contexts/PublicLimitsContext";
+import { freeSignupText } from "../utils/publicLimits";
 import { getAuthProviderMeta } from "../config/authProviders";
 import { trackGoal, trackGoalOnce } from "../services/analytics";
 import {
@@ -13,13 +15,15 @@ const PROVIDER_LABELS = {
 };
 
 function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProviderLogin }) {
+  const { freeProcessingLimit } = usePublicLimits();
   useEffect(() => {
     trackGuestAccountCtaView({
       documentId,
       documentStatus,
+      freeLimit: freeProcessingLimit,
       trackOnce: trackGoalOnce
     });
-  }, [documentId, documentStatus]);
+  }, [documentId, documentStatus, freeProcessingLimit]);
 
   return (
     <section className="guest-document-save-cta" aria-label="Продолжить обработку фотографий">
@@ -41,6 +45,7 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
               onClick={() => {
                 trackGuestAccountCtaClick({
                   provider: provider.id,
+                  freeLimit: freeProcessingLimit,
                   track: trackGoal
                 });
                 onProviderLogin(provider.id, { placement: "document_after_result", source: "guest_result_cta" });
@@ -56,7 +61,7 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
         })}
       </div>
 
-      <p className="guest-document-save-cta__footnote">10 обработок бесплатно · пакетная загрузка после входа · доступ с телефона и компьютера</p>
+      <p className="guest-document-save-cta__footnote">{freeSignupText(freeProcessingLimit)} · пакетная загрузка · доступ с телефона и компьютера</p>
     </section>
   );
 }

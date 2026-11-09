@@ -40,7 +40,8 @@ test("connects the handwriting route and keeps the photo-to-text landing availab
 
 test("has one H1, the correct allowance and product-style upload CTAs without a 30-treatment claim", () => {
   assert.equal((landingSource.match(/<h1>/g) || []).length, 1);
-  assert.match(landingSource, /5 обработок без регистрации · ещё 10 после входа/);
+  assert.match(landingSource, /guestAllowanceText\(guestDocumentLimit\)/);
+  assert.match(landingSource, /usePublicLimits\(\)/);
   assert.doesNotMatch(landingSource, /30\s*(бесплатных\s*)?обработ/iu);
   assert.equal((landingSource.match(/to="\/"/g) || []).length >= 2, true);
   assert.match(landingSource, /handleCtaClick\("hero"\)/);

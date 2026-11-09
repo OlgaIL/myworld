@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
+import { usePublicLimits } from "../contexts/PublicLimitsContext";
+import { guestAllowanceText } from "../utils/publicLimits";
 import { captureAcquisitionContext, getAnalyticsDeviceContext, trackGoal } from "../services/analytics";
 import {
   DEFAULT_INTENT,
@@ -80,6 +82,9 @@ function CarouselArrow({ direction }) {
 }
 
 function HandwritingToTextLanding() {
+  const { guestDocumentLimit, freeProcessingLimit } = usePublicLimits();
+  const allowanceText = `${guestAllowanceText(guestDocumentLimit)} · ${freeProcessingLimit == null
+    ? "Бесплатные обработки после входа" : `ещё ${freeProcessingLimit} после входа`}`;
   const location = useLocation();
   const trackedSearches = useRef(new Set());
   const crossDeviceSectionRef = useRef(null);
@@ -203,7 +208,7 @@ function HandwritingToTextLanding() {
               <UploadIcon />
               Загрузить фото
             </Link>
-            <span>5 обработок без регистрации · ещё 10 после входа · пакетная загрузка после входа</span>
+            <span>{allowanceText} · пакетная загрузка после входа</span>
           </div>
         </div>
 
@@ -453,7 +458,7 @@ function HandwritingToTextLanding() {
       <section className="landing-final">
         <div>
           <h2>Попробуйте распознать первую рукописную запись</h2>
-          <p>5 обработок без регистрации · ещё 10 после входа</p>
+          <p>{allowanceText}</p>
         </div>
         <Link
           className="landing-button handwriting-upload-cta"

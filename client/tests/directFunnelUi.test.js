@@ -11,7 +11,7 @@ test("uses the approved guest result CTA copy without prohibited promises", asyn
   const source = await readFile(componentUrl, "utf8");
 
   assert.match(source, /Сохранить в личный архив/);
-  assert.match(source, /10 обработок бесплатно · пакетная загрузка после входа · доступ с телефона и компьютера/);
+  assert.match(source, /freeSignupText\(freeProcessingLimit\)/);
   assert.match(source, /providers\.map\(\(provider\)/);
   assert.match(source, /source: "guest_result_cta"/);
   assert.match(source, /placement: "document_after_result"/);

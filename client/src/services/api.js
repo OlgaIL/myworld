@@ -4,6 +4,10 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 axios.defaults.withCredentials = true;
 
+export function getPublicLimits() {
+  return axios.get(`${API_URL}/api/public-limits`).then(res => res.data);
+}
+
 export function getCurrentUser() {
   return axios.get(`${API_URL}/api/me`).then((res) => res.data);
 }

@@ -7,9 +7,9 @@ import {
 } from "../services/api";
 
 const DEFAULT_GUEST_ACCESS = {
-  documentLimit: 5,
+  documentLimit: null,
   documentsUsed: 0,
-  documentsRemaining: 5,
+  documentsRemaining: null,
   uploadAllowed: true
 };
 

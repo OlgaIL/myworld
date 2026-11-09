@@ -18,6 +18,7 @@ test("keeps the old and new guest CTA view events with stable deduplication keys
   const input = {
     documentId: "guest-42",
     documentStatus: "processed",
+    freeLimit: 5,
     trackOnce
   };
 
@@ -28,7 +29,7 @@ test("keeps the old and new guest CTA view events with stable deduplication keys
     "guest_save_cta_view",
     "guest_account_cta_view"
   ]);
-  assert.equal(delivered[1].params.free_limit, 10);
+  assert.equal(delivered[1].params.free_limit, 5);
   assert.equal(delivered[1].params.placement, "document_after_result");
   assert.equal(delivered[1].params.route, "guest_document");
   assert.equal("provider" in delivered[1].params, false);
@@ -39,6 +40,7 @@ test("tracks the new guest CTA click without personal data", () => {
 
   trackGuestAccountCtaClick({
     provider: "yandex",
+    freeLimit: 5,
     track: (goal, params) => calls.push({ goal, params })
   });
 
@@ -48,7 +50,7 @@ test("tracks the new guest CTA click without personal data", () => {
       placement: "document_after_result",
       route: "guest_document",
       provider: "yandex",
-      free_limit: 10
+      free_limit: 5
     }
   }]);
 });

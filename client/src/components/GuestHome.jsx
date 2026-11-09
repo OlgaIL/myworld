@@ -3,6 +3,8 @@ import GuestDocumentCard from "./GuestDocumentCard";
 import AuthProviderButtons from "./AuthProviderButtons";
 import LegalConsentText from "./LegalConsentText";
 import UploadZone from "./UploadZone";
+import { usePublicLimits } from "../contexts/PublicLimitsContext";
+import { processingCountText } from "../utils/publicLimits";
 
 function GuestLimitNotice({ authProviders, onProviderLogin }) {
   return (
@@ -32,9 +34,10 @@ function GuestHome({
   authProviders
 }) {
   const documentRefs = useRef(new Map());
+  const limits = usePublicLimits();
   const uploadAllowed = access?.uploadAllowed !== false;
   const documentsUsed = Number(access?.documentsUsed || 0);
-  const documentLimit = Number(access?.documentLimit || 5);
+  const documentLimit = limits.guestDocumentLimit ?? access?.documentLimit;
   const showAuthForError = Boolean(error && error.toLowerCase().includes("войдите"));
 
   useEffect(() => {
@@ -75,7 +78,7 @@ function GuestHome({
             title="Перетащите сюда фото записи или выберите файл"
             description="Распознаем текст и оформим результат. После входа сохраните его в личном архиве"
             actionLabel="Выбрать фото"
-            footnote={`До ${documentLimit} обработок без регистрации`}
+            footnote={documentLimit == null ? "Обработка без регистрации" : `До ${documentLimit} обработок без регистрации`}
             statusMessage={uploadMessage}
             uploading={uploading}
             disabled={uploading || uploadDisabled}
@@ -83,7 +86,9 @@ function GuestHome({
           />
         )}
         {uploadAllowed && (
-          <p className="guest-hero__signup-bonus">После входа — ещё 10 обработок бесплатно и пакетная загрузка фотографий</p>
+          <p className="guest-hero__signup-bonus">{limits.freeProcessingLimit == null
+            ? "После входа доступны бесплатные обработки"
+            : `После входа — ещё ${processingCountText(limits.freeProcessingLimit)} бесплатно`} и пакетная загрузка фотографий</p>
         )}
         {uploadAllowed && <LegalConsentText />}
 
@@ -102,7 +107,7 @@ function GuestHome({
           </div>
         )}
 
-        <p className="guest-hero__counter">Гостевой режим · {documentsUsed}/{documentLimit} записей</p>
+        <p className="guest-hero__counter">Гостевой режим{documentLimit == null ? "" : ` · ${documentsUsed}/${documentLimit} записей`}</p>
 
         {loading ? (
           <section className="guest-placeholder guest-placeholder--embedded">

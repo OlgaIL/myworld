@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
 import { PUBLIC_PAGE_SEO, SITE_ORIGIN } from "../publicPageSeo";
 import "./FeatureLanding.css";
+import { usePublicLimits } from "../contexts/PublicLimitsContext";
+import { guestAllowanceText, processingCountText } from "../utils/publicLimits";
 
 const steps = [
   "Загрузите фото",
@@ -73,6 +75,7 @@ function AboutLogo() {
 }
 
 function AboutPage() {
+  const { guestDocumentLimit, freeProcessingLimit } = usePublicLimits();
   const [lightbox, setLightbox] = useState(null);
 
   useAboutSeo();
@@ -108,7 +111,7 @@ function AboutPage() {
             <Link className="about-button about-button--primary" to="/">
               Попробовать бесплатно
             </Link>
-            <span>5 обработок без регистрации.</span>
+            <span>{guestAllowanceText(guestDocumentLimit)}.</span>
           </div>
         </div>
 
@@ -241,11 +244,11 @@ function AboutPage() {
       <section className="about-limits">
         <div>
           <span>Без регистрации</span>
-          <strong>5 обработок</strong>
+          <strong>{processingCountText(guestDocumentLimit)}</strong>
         </div>
         <div>
           <span>После входа в аккаунт</span>
-          <strong>ещё 10 обработок</strong>
+          <strong>{freeProcessingLimit == null ? "Бесплатные обработки" : `ещё ${processingCountText(freeProcessingLimit)}`}</strong>
         </div>
         <div>
           <span>После входа</span>

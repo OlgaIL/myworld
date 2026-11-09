@@ -41,14 +41,14 @@ after(async () => {
   await closeDatabaseConnection();
 });
 
-test("new users receive a fixed free limit of 10", async () => {
+test("new users receive a fixed free limit of 5", async () => {
   const user = (await query("select * from users where id = $1", [userIds[0]])).rows[0];
-  assert.equal(user.free_processing_limit, 10);
+  assert.equal(user.free_processing_limit, 5);
 
   const access = getUserProductAccess(user, user.records_processed_total);
-  assert.equal(access.freeRemaining, 10);
+  assert.equal(access.freeRemaining, 5);
   assert.equal(access.paidRemaining, 0);
-  assert.equal(access.totalRemaining, 10);
+  assert.equal(access.totalRemaining, 5);
 });
 
 test("keeps a user's stored legacy free limit", async () => {

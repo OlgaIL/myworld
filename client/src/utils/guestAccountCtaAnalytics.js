@@ -1,6 +1,7 @@
 export function trackGuestAccountCtaView({
   documentId,
   documentStatus,
+  freeLimit,
   placement = "document_after_result",
   route = "guest_document",
   trackOnce
@@ -13,16 +14,16 @@ export function trackGuestAccountCtaView({
   trackOnce("guest_account_cta_view", documentId, {
     placement,
     route,
-    free_limit: 10,
+    ...(Number.isSafeInteger(freeLimit) ? { free_limit: freeLimit } : {}),
     document_status: documentStatus
   });
 }
 
-export function trackGuestAccountCtaClick({ provider, placement = "document_after_result", route = "guest_document", track }) {
+export function trackGuestAccountCtaClick({ provider, freeLimit, placement = "document_after_result", route = "guest_document", track }) {
   track("guest_account_cta_click", {
     placement,
     route,
     provider,
-    free_limit: 10
+    ...(Number.isSafeInteger(freeLimit) ? { free_limit: freeLimit } : {})
   });
 }

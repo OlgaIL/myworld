@@ -36,6 +36,7 @@ import {
   isAuthProviderEnabled
 } from "../config/env.js";
 import { DEFAULT_FREE_PROCESSING_LIMIT } from "../config/processingLimits.js";
+import { getPublicLimits } from "../services/publicLimitsService.js";
 import {
   GOOGLE_APPLICATION_CREDENTIALS,
   GOOGLE_CLIENT_ID,
@@ -530,8 +531,11 @@ router.patch("/admin-api/improvement-requests/:id/result", requireAdmin, async (
   return res.json(mapAdminImprovementRequest(request || result.request, { includeDocument: true }));
 });
 
-router.get("/admin-api/settings", requireAdmin, (req, res) => {
-  return res.json(getAdminSettings());
+router.get("/admin-api/settings", requireAdmin, async (req, res) => {
+  const settings = getAdminSettings();
+  const limits = await getPublicLimits();
+  settings.limits.userRecordLimit = limits.freeProcessingLimit;
+  return res.json(settings);
 });
 
 router.patch("/admin-api/access-requests/:id/status", requireAdmin, async (req, res) => {

@@ -77,7 +77,7 @@ export const YANDEX_OCR_LANGUAGE_CODES = (process.env.YANDEX_OCR_LANGUAGE_CODES 
   .map((code) => code.trim())
   .filter(Boolean);
 export const YANDEX_OCR_MODEL = process.env.YANDEX_OCR_MODEL || "";
-export const GUEST_DOCUMENT_LIMIT = Number(process.env.GUEST_DOCUMENT_LIMIT || 5);
+export const GUEST_DOCUMENT_LIMIT = Number(process.env.GUEST_DOCUMENT_LIMIT || 3);
 export const USER_RECORD_LIMIT = Number(process.env.USER_RECORD_LIMIT || 100);
 const guestTtlHours = Number(process.env.GUEST_DOCUMENT_TTL_HOURS || 240);
 if (!Number.isFinite(guestTtlHours) || guestTtlHours <= 0) {

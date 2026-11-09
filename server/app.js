@@ -27,6 +27,7 @@ import clientDiagnosticsRoutes from "./routes/clientDiagnosticsRoutes.js";
 import presenceRoutes from "./routes/presenceRoutes.js";
 import improvementRequestRoutes from "./routes/improvementRequestRoutes.js";
 import { query } from "./db/index.js";
+import { getPublicLimits } from "./services/publicLimitsService.js";
 import { buildCorsOptions } from "./middleware/corsOptions.js";
 import {
   buildNotFoundHtml,
@@ -80,7 +81,8 @@ function normalizePageUrl(req, res, next) {
 export function createApp({
   clientDistDirectory = clientDistDir,
   getDatabaseStatus = () => EMPTY_DATABASE_STATUS,
-  checkMonitorDatabase = () => query({ text: "select 1", query_timeout: 3000 })
+  checkMonitorDatabase = () => query({ text: "select 1", query_timeout: 3000 }),
+  loadPublicLimits = getPublicLimits
 } = {}) {
   const app = express();
   let monitorResult = null;
@@ -108,6 +110,11 @@ export function createApp({
 
   app.get("/sitemap.xml", (req, res) => {
     res.type("application/xml").send(buildSitemapXml());
+  });
+
+  app.get("/api/public-limits", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json(await loadPublicLimits());
   });
 
   app.get("/api/health", (req, res) => {
