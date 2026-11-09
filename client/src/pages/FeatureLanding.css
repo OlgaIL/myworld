@@ -15,3 +15,6 @@
   outline-offset: 3px;
 }
 .landing-page #faq>.landing-section__heading{margin-bottom:32px}
+.batch-promo-actions{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
+.batch-promo-actions .landing-button{white-space:normal;text-align:center;max-width:100%;box-sizing:border-box}
+.batch-promo-actions__secondary{font-size:15px;line-height:1.5;color:#475467;text-underline-offset:3px}

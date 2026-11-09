@@ -31,9 +31,9 @@ export default function ArchiveDeleteDialog({ names, busy, progress, error, onCa
       ref={dialogRef} tabIndex={-1} onKeyDown={handleKeyDown} onClick={event => event.stopPropagation()}>
       <h3 className="confirm-modal__title" id={titleId}>Удалить {recordCountLabel(names.length)}?</h3>
       <div id={descriptionId} className="archive-delete-dialog__description">
-        <p>Будут удалены исходные фотографии и распознанные результаты. Сохраните нужное перед удалением.</p>
-        <p>Аккаунт, покупки и остаток обработок сохранятся. Удаление не возвращает потраченные обработки.</p>
-        <p className="archive-delete-dialog__irreversible">Это действие нельзя отменить.</p>
+        <p>Будут удалены исходные фотографии и распознанные результаты.<br /><strong>Сохраните нужное перед удалением.</strong></p>
+        <p>Аккаунт, покупки и остаток обработок сохранятся.<br />Удаление не возвращает потраченные обработки.</p>
+        <p className="archive-delete-dialog__irreversible">Это действие нельзя отменить.<br />Чтобы снова получить результат, потребуется заново загрузить фотографии и запустить обработку.</p>
       </div>
       {error && <p className="archive-delete-error" role="alert">{error}</p>}
       {busy && <p role="status">Удаляем: {progress} из {names.length}…</p>}

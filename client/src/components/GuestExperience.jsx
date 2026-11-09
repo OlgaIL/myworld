@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import DocumentPage from "./DocumentPage";
 import GuestHome from "./GuestHome";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocumentPageData } from "../hooks/useGuestDocumentPageData";
 import { useGuestUpload } from "../hooks/useGuestUpload";
 import { hasTableIntent } from "../utils/tableFlow";
+import { batchUploadPath, hasBatchTrial } from "../utils/batchFlow";
 
 function GuestExperience({
   documents,
@@ -20,7 +21,9 @@ function GuestExperience({
   onRequestImprovement
 }) {
   const navigate = useNavigate();
-  const tableIntent = hasTableIntent(useLocation().search);
+  const search = useLocation().search;
+  const tableIntent = hasTableIntent(search);
+  const batchTrial = hasBatchTrial(search);
   const { guestDocumentId } = useParams();
   const activeDocumentId = guestDocumentId || null;
   const [scrollTargetDocumentId, setScrollTargetDocumentId] = useState(null);
@@ -80,7 +83,7 @@ function GuestExperience({
   }, [activeDocumentId, resetCopied]);
 
   function openDocument(document) {
-    navigate(`/guest-documents/${encodeURIComponent(document.id)}${tableIntent ? "?view=tables" : ""}`);
+    navigate(`/guest-documents/${encodeURIComponent(document.id)}${tableIntent ? "?view=tables" : batchTrial ? "?intent=batch-trial" : ""}`);
   }
 
   function closeDocument() {
@@ -91,7 +94,9 @@ function GuestExperience({
     const guestResultId = activeDocument?.filename || activeDocument?.id || "";
     onProviderLogin(providerId, {
       placement: "document_after_result", source: "guest_result_cta", ...options,
-      guestResultId
+      guestResultId,
+      ...(batchTrial && !options.restoreTables && (!options.source || options.source === "guest_result_cta")
+        ? { batchUpload: true, source: "batch_trial", placement: "batch_trial_result" } : {})
     });
   }
 
@@ -162,6 +167,13 @@ function GuestExperience({
           onProviderLogin={onProviderLogin}
           authProviders={authProviders}
         />
+      )}
+
+      {batchTrial && documents.some((document) => ["processed", "recognized"].includes(document.status)) && (
+        <aside className="batch-upload-entry">
+          <p>Готовы продолжить с несколькими страницами? После входа выберите несколько файлов одновременно. Каждое фото — отдельная запись и обработка.</p>
+          <Link to={batchUploadPath("batch_trial_result")}>Войти и загрузить несколько фото</Link>
+        </aside>
       )}
 
       <input

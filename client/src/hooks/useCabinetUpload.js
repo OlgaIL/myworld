@@ -9,7 +9,8 @@ export function useCabinetUpload({
   addPhoto,
   reloadPhotos,
   reloadUser,
-  recordUploadAllowed
+  recordUploadAllowed,
+  batchContext = null
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
@@ -31,6 +32,17 @@ export function useCabinetUpload({
     if (files.length === 0) {
       return;
     }
+
+    const batchParams = files.length > 1 ? {
+      file_count: files.length,
+      batch_source: batchContext?.source || "cabinet_upload",
+      batch_placement: batchContext?.placement || "cabinet"
+    } : null;
+    if (batchParams) trackGoal("account_batch_selected", {
+      source: batchParams.batch_source,
+      placement: batchParams.batch_placement,
+      file_count: batchParams.file_count
+    });
 
     if (!recordUploadAllowed) {
       alert("Лимит бесплатного пакета обработок достигнут. Для новых загрузок нужно расширить доступ.");
@@ -99,7 +111,7 @@ export function useCabinetUpload({
 
             const processingResult = await processPhoto(uploadedPhotoName);
             if (processingResult?.status === "processed") {
-              trackGoal("account_upload_success", { source: "cabinet_upload" });
+              trackGoal("account_upload_success", { source: "cabinet_upload", ...batchParams });
               try {
                 const postAuthProcessingOrdinal = Number(
                   window.sessionStorage.getItem("word2you_post_auth_follow_up") || 0

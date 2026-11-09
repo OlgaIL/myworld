@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
+import BatchUploadEntry from "../components/BatchUploadEntry";
 import DocumentPage from "../components/DocumentPage";
 import GuestExperience from "../components/GuestExperience";
 import ImprovementRequestModal from "../components/ImprovementRequestModal";
@@ -22,6 +23,7 @@ import { trackGoal } from "../services/analytics";
 import { getPhotoUrl, processPhoto, setPhotoCorrectionApplied } from "../services/api";
 import { clearPendingGuestResult, getPendingGuestResult, rememberPendingGuestResult } from "../utils/guestResultHandoff";
 import { clearPendingTableRestore, getPendingTableRestore, hasTableIntent, rememberPendingTableRestore } from "../utils/tableFlow";
+import { BATCH_TRIAL_PATH, clearPendingBatchUpload, consumePendingBatchUpload, getBatchRouteContext, getPendingBatchUpload } from "../utils/batchFlow";
 
 const PENDING_IMPROVEMENT_DOCUMENT_KEY = "word2you_pending_improvement_document";
 
@@ -54,7 +56,9 @@ function App() {
   const tableIntent = hasTableIntent(search);
   const navigate = useNavigate();
   const { documentName } = useParams();
-  const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser } = useAuthContext();
+  const { user, authProviders, authLoading, loginWithProvider, logout, reloadUser, batchAuthError, dismissBatchAuthError, emailAuthOpen } = useAuthContext();
+  const batchRouteContext = getBatchRouteContext(search);
+  const [batchUploadContext, setBatchUploadContext] = useState(null);
   const pendingTableRestore = getPendingTableRestore();
   const {
     legalAgreementOpen,
@@ -99,7 +103,8 @@ function App() {
     addPhoto,
     reloadPhotos,
     reloadUser,
-    recordUploadAllowed
+    recordUploadAllowed,
+    batchContext: batchUploadContext
   });
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
@@ -174,7 +179,7 @@ function App() {
     requestLegalAgreement(() => {
       clearPendingTableRestore();
       clearPendingGuestResult();
-      if (options.guestResultId) {
+      if (options.guestResultId && !options.batchUpload) {
         rememberPendingGuestResult(options.guestResultId);
         if (options.restoreTables) rememberPendingTableRestore(options.guestResultId);
       }
@@ -183,10 +188,51 @@ function App() {
       }
       loginWithProvider(providerId, {
         source: options.source || (options.placement ? "guest_result" : "app_login"),
-        placement: options.placement || "app"
+        placement: options.placement || "app",
+        batchUpload: Boolean(options.batchUpload)
       });
     });
   }, [guestDocuments.length, loginWithProvider, requestLegalAgreement, user]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    const context = (pathname === "/" ? getBatchRouteContext(search) : null) || getPendingBatchUpload();
+    if (!user || !context) {
+      if (pathname !== "/" || tableIntent) {
+        if (!emailAuthOpen) clearPendingBatchUpload();
+        setBatchUploadContext(null);
+      }
+      return;
+    }
+    consumePendingBatchUpload();
+    clearPendingGuestResult();
+    clearPendingTableRestore();
+    setBatchUploadContext(context);
+    const params = new URLSearchParams(search);
+    if (params.get("intent") === "batch" || pathname !== "/") {
+      params.delete("intent");
+      params.delete("placement");
+      navigate({ pathname: "/", search: params.toString() ? `?${params}` : "" }, { replace: true });
+    }
+  }, [authLoading, emailAuthOpen, navigate, pathname, search, tableIntent, user]);
+
+  function cancelBatchUpload() {
+    clearPendingBatchUpload();
+    dismissBatchAuthError();
+    setBatchUploadContext(null);
+    navigate(user ? "/" : BATCH_TRIAL_PATH, { replace: true });
+  }
+
+  function requestBatchLogin(providerId) {
+    const context = batchRouteContext || batchAuthError || { source: "batch_promo", placement: "batch_entry" };
+    requestProviderLogin(providerId, { ...context, batchUpload: true });
+  }
+
+  function handleBatchAwareUpload(event) {
+    const upload = handleUpload(event);
+    if (event.target.files?.length) setBatchUploadContext(null);
+    return upload;
+  }
 
   useEffect(() => {
     if (!user) {
@@ -338,7 +384,14 @@ function App() {
         logoLinkEnabled={Boolean(documentName)}
       />
 
-      {!user && (
+      {!user && pathname === "/" && (batchRouteContext || batchAuthError) ? (
+        <BatchUploadEntry
+          providers={authProviders}
+          onProviderLogin={requestBatchLogin}
+          onCancel={cancelBatchUpload}
+          authError={Boolean(batchAuthError)}
+        />
+      ) : !user && (
         <GuestExperience
           documents={guestDocuments}
           access={guestAccess}
@@ -390,6 +443,7 @@ function App() {
           ) : (
             <CabinetHome
               key={user.id}
+              batchUploadIntent={Boolean(batchUploadContext)}
               user={user}
               recordsUsed={photosCount}
               photosCount={photosCount}
@@ -437,7 +491,8 @@ function App() {
               showMorePhotos={showMorePhotos}
               fileInputRef={fileInputRef}
               onRequestUpload={requestCabinetUpload}
-              handleUpload={handleUpload}
+              handleUpload={handleBatchAwareUpload}
+              onCancelUpload={() => setBatchUploadContext(null)}
               onOpenImage={setActivePhoto}
               onOpenDocument={openDocument}
               onDelete={removePhoto}

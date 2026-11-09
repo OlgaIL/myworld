@@ -17,14 +17,16 @@ import {
   trackGoal
 } from "../services/analytics";
 import { LEGAL_AGREEMENT_VERSION } from "../constants/legalAgreement";
+import { clearPendingBatchUpload, getPendingBatchUpload, rememberPendingBatchUpload } from "../utils/batchFlow";
 
 const AUTH_PENDING_STORAGE_KEY = "word2you_auth_pending";
 
-function rememberPendingAuth(providerId, source = "") {
+function rememberPendingAuth(providerId, source = "", placement = "") {
   try {
     window.sessionStorage.setItem(AUTH_PENDING_STORAGE_KEY, JSON.stringify({
       provider: providerId || "unknown",
-      ...(source ? { source } : {})
+      ...(source ? { source } : {}),
+      ...(placement ? { placement } : {})
     }));
   } catch {
     // Authentication must continue even when session storage is unavailable.
@@ -53,7 +55,8 @@ function trackCompletedAuth(user) {
     window.sessionStorage.removeItem(AUTH_PENDING_STORAGE_KEY);
     trackGoal("account_authenticated", {
       provider: authContext.provider || "unknown",
-      ...(authContext.source ? { source: authContext.source } : {})
+      ...(authContext.source ? { source: authContext.source } : {}),
+      ...(authContext.placement ? { placement: authContext.placement } : {})
     });
   } catch {
     // A storage restriction should not affect the authenticated session.
@@ -65,6 +68,7 @@ export function useAuth() {
   const [authProviders, setAuthProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [emailAuthOpen, setEmailAuthOpen] = useState(false);
+  const [batchAuthError, setBatchAuthError] = useState(null);
 
   async function loadUser({ showLoading = true } = {}) {
     try {
@@ -90,8 +94,19 @@ export function useAuth() {
           getAuthProviders().catch(() => [])
         ]);
         setUser(currentUser);
+        const failedReturn = new URLSearchParams(window.location.search).has("auth_error");
+        if (failedReturn) {
+          const pendingBatch = getPendingBatchUpload();
+          if (pendingBatch) setBatchAuthError(pendingBatch);
+        }
+        // A guest returning from an aborted provider flow must explicitly retry.
+        if (!currentUser || failedReturn) clearPendingBatchUpload();
         trackCompletedAuth(currentUser);
         setAuthProviders(Array.isArray(providers) ? providers : []);
+      } catch {
+        const pendingBatch = getPendingBatchUpload();
+        if (pendingBatch) setBatchAuthError(pendingBatch);
+        clearPendingBatchUpload();
       } finally {
         setLoading(false);
       }
@@ -124,9 +139,12 @@ export function useAuth() {
   }, [user?.id]);
 
   const defaultProvider = authProviders[0];
-  const loginWithProvider = (providerId, { source = "", placement = "" } = {}) => {
+  const loginWithProvider = (providerId, { source = "", placement = "", batchUpload = false } = {}) => {
+    setBatchAuthError(null);
+    if (batchUpload) rememberPendingBatchUpload({ source, placement });
+    else clearPendingBatchUpload();
     trackGoal("auth_start", { provider: providerId, ...(source ? { source } : {}), ...(placement ? { placement } : {}) });
-    rememberPendingAuth(providerId, source);
+    rememberPendingAuth(providerId, source, placement);
 
     if (providerId === "email") {
       setEmailAuthOpen(true);
@@ -165,7 +183,12 @@ export function useAuth() {
     login: defaultLogin,
     loginWithProvider,
     emailAuthOpen,
-    closeEmailAuth: () => setEmailAuthOpen(false),
+    batchAuthError,
+    dismissBatchAuthError: () => setBatchAuthError(null),
+    closeEmailAuth: () => {
+      clearPendingBatchUpload();
+      setEmailAuthOpen(false);
+    },
     requestEmailLoginCode,
     verifyEmailLoginCode,
     logout,

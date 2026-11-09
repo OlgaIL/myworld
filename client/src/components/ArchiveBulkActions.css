@@ -22,7 +22,7 @@
 .archive-selectable__checkbox { width:18px; height:18px; margin:0; accent-color:#475467; cursor:pointer; }
 .archive-delete-message { margin:0 0 12px; font-size:14px; color:#475467; }
 .archive-delete-error { color:#b42318; font-size:14px; }
-.archive-delete-dialog { width:min(100%,480px); max-height:calc(100dvh - 40px); overflow:auto; }
+.confirm-modal__content.archive-delete-dialog { width:min(100%,500px); max-height:calc(100dvh - 40px); overflow:auto; }
 .archive-delete-dialog__description { color:#5b6476; font-size:14px; line-height:1.55; }
 .archive-delete-dialog__description p { margin:12px 0 0; }
 .archive-delete-dialog__irreversible { color:#344054; }

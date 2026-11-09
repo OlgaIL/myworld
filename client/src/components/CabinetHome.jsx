@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import CabinetArchiveNavigation from "./CabinetArchiveNavigation";
 import CabinetEmptyState from "./CabinetEmptyState";
 import Gallery from "./Gallery";
@@ -16,6 +17,7 @@ function PlusIcon() {
 
 function CabinetHome({
   user,
+  batchUploadIntent = false,
   recordsUsed,
   photosCount,
   pendingPhotos,
@@ -63,6 +65,7 @@ function CabinetHome({
   fileInputRef,
   onRequestUpload,
   handleUpload,
+  onCancelUpload,
   onOpenImage,
   onOpenDocument,
   onDelete,
@@ -70,12 +73,16 @@ function CabinetHome({
   onSelectCategory,
   onSelectTag
 }) {
+  const uploadAreaRef = useRef(null);
+  useEffect(() => {
+    if (batchUploadIntent) uploadAreaRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }, [batchUploadIntent, photosCount]);
   return (
     <>
       {photosCount > 0 && (
         <section className="upload-panel upload-panel--cabinet" aria-label="Загрузка фотографий">
           {recordUploadAllowed && (
-            <div className="cabinet-upload-controls">
+            <div className="cabinet-upload-controls" ref={uploadAreaRef}>
               <button
                 className="guest-upload-button"
                 type="button"
@@ -161,6 +168,7 @@ function CabinetHome({
         <>
           {recordUploadAllowed ? (
             <CabinetEmptyState
+              uploadAreaRef={uploadAreaRef}
               uploading={uploading}
               uploadAllowed
               onUpload={onRequestUpload}
@@ -169,7 +177,6 @@ function CabinetHome({
             <ProcessingPackageOffer user={user} reloadUser={reloadUser} />
           )}
           <div className="cabinet-empty-state__meta">
-            {recordUploadAllowed && <BatchUploadHint user={user} />}
             <p className="guest-hero__counter upload-panel__counter">
               Документов в архиве: {recordsUsed}
             </p>
@@ -197,6 +204,7 @@ function CabinetHome({
         accept="image/jpeg,image/png,image/webp"
         multiple
         onChange={handleUpload}
+        onCancel={onCancelUpload}
         disabled={uploading || !recordUploadAllowed}
       />
 

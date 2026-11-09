@@ -50,7 +50,7 @@ export default function AppShell() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/handwriting-to-text" element={<HandwritingToTextLanding />} />
         <Route path="/photo-to-text" element={<PhotoToTextLanding />} />
-        <Route path="/batch-photo-to-text" element={<FeatureLanding kind="batch" />} />
+        <Route path="/batch-photo-to-text" element={<AuthProvider><FeatureLanding kind="batch" /></AuthProvider>} />
         <Route path="/table-from-photo" element={<FeatureLanding kind="tables" />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route
