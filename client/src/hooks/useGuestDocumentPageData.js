@@ -32,6 +32,7 @@ export function useGuestDocumentPageData(document) {
         textQuality: document.textQuality || "",
         notes: document.notes || "",
         formattedContent: document.formattedContent || null,
+        formattedIsRedundant: document.formattedIsRedundant === true,
         hasTable: Boolean(document.hasTable),
         hasFormulas: Boolean(document.hasFormulas),
         hasRecognitionErrors: Boolean(document.hasRecognitionErrors),

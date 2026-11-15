@@ -1,5 +1,6 @@
 import { GUEST_DOCUMENT_LIMIT, GUEST_DOCUMENT_TTL_HOURS } from "../config/env.js";
 import { formatAiNotesForDisplay } from "./aiNotes.js";
+import { arePlainParagraphsIdentical, canAssessFormattedDuplicate, promoteDocumentTitle } from "../../shared/formattedVariantRules.mjs";
 import {
   getEffectiveTextContent,
   getStoredTextCorrections,
@@ -41,13 +42,20 @@ export function mapGuestDocumentInfo(document) {
     : null;
   const corrections = getStoredTextCorrections(document.corrections);
   const effective = getEffectiveTextContent(storedContent, corrections);
+  const cleanText = effective.cleanText || document.clean_text || "";
+  const formattedIsRedundant = canAssessFormattedDuplicate({
+    status: document.status, hasTable: document.has_table,
+    tableStatus: document.table_status, tableContent: document.table_content
+  }) && arePlainParagraphsIdentical(
+    promoteDocumentTitle(effective.formattedContent, document.title), cleanText || document.ocr_text || ""
+  );
 
   return {
     id: String(document.id),
     filename: document.filename,
     status: document.status,
     text: document.ocr_text || "",
-    cleanText: effective.cleanText || document.clean_text || "",
+    cleanText,
     title: document.title || "",
     displayTitle: document.display_title || document.title || "Запись",
     summary: document.summary || "",
@@ -57,7 +65,8 @@ export function mapGuestDocumentInfo(document) {
     tags: Array.isArray(document.tags) ? document.tags : [],
     textQuality: document.text_quality || "",
     notes: formatAiNotesForDisplay(document.ai_notes),
-    formattedContent: effective.formattedContent,
+    formattedContent: null,
+    formattedIsRedundant,
     hasTable: Boolean(document.has_table),
     hasFormulas: Boolean(document.has_formulas),
     hasRecognitionErrors: Boolean(document.has_recognition_errors),

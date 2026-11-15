@@ -338,6 +338,8 @@ function DocumentTextVariants({
   const formattedText = getFormattedText(formattedContent);
   const hideFormatted = isRedundantFormattedVariant({
     content: formattedContent, text: originalText, isAuthenticated, status: info?.status,
+    formattedIsRedundant: originalText === (processedText || ocrText) && !improvedText.trim()
+      && info?.formattedIsRedundant === true,
     enrichmentPending, hasTable: info?.hasTable || currentTableInfo?.hasTable,
     tableStatus: currentTableInfo?.tableStatus, tableContent
   });
