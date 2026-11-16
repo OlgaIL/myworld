@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { INSPECTLET_CONSENT_KEY, inspectletController } from "../services/inspectlet";
+import { CLARITY_CONSENT_KEY, clarityController } from "../services/clarity";
 
 const COOKIE_NOTICE_KEY = "word2you_cookie_notice_accepted";
 
@@ -10,7 +10,7 @@ function CookieNotice() {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       try {
-        setVisible(!localStorage.getItem(INSPECTLET_CONSENT_KEY));
+        setVisible(!localStorage.getItem(CLARITY_CONSENT_KEY));
       } catch {
         setVisible(true);
       }
@@ -19,7 +19,7 @@ function CookieNotice() {
   }, []);
 
   function acceptCookies(granted) {
-    inspectletController?.chooseConsent(granted);
+    clarityController?.chooseConsent(granted);
     try { localStorage.setItem(COOKIE_NOTICE_KEY, "true"); } catch { /* Optional storage. */ }
     setVisible(false);
   }

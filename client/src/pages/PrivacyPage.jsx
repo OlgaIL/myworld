@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import PageFooter from "../components/PageFooter";
-import { inspectletController } from "../services/inspectlet";
+import { clarityController } from "../services/clarity";
 
 function PrivacyPage() {
   return (
@@ -199,11 +199,11 @@ function PrivacyPage() {
             <li>корректной работы сайта.</li>
           </ul>
           <p>
-            Для аналитики использования сайта и улучшения его работы используются Яндекс Метрика и Inspectlet,
+            Для аналитики использования сайта и улучшения его работы используются Яндекс Метрика и Clarity,
             которые используют файлы cookie.
           </p>
-          <button type="button" onClick={() => inspectletController?.chooseConsent(true)}>Разрешить Inspectlet</button>{" "}
-          <button type="button" onClick={() => inspectletController?.chooseConsent(false)}>Отключить Inspectlet</button>
+          <button type="button" onClick={() => clarityController?.chooseConsent(true)}>Разрешить Clarity</button>{" "}
+          <button type="button" onClick={() => clarityController?.chooseConsent(false)}>Отключить Clarity</button>
           <p>
             Пользователь может изменить настройки использования файлов cookie в своем браузере. При этом отдельные
             функции сервиса могут работать некорректно.
