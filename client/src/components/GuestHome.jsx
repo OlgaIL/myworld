@@ -5,13 +5,19 @@ import LegalConsentText from "./LegalConsentText";
 import UploadZone from "./UploadZone";
 import { usePublicLimits } from "../contexts/PublicLimitsContext";
 import { processingCountText } from "../utils/publicLimits";
+import "./GuestHome.css";
 
-function GuestLimitNotice({ authProviders, onProviderLogin }) {
+function GuestLimitNotice({ authProviders, onProviderLogin, freeProcessingLimit }) {
   return (
-    <div className="guest-auth-notice">
-      <span>Гостевая загрузка без входа уже использована. Чтобы загрузить новую запись, войдите в аккаунт.</span>
+    <section className="guest-limit-notice" aria-label="Продолжить после входа">
+      <p className="guest-limit-notice__benefit">{freeProcessingLimit == null
+        ? "После входа доступны бесплатные обработки"
+        : `После входа — ещё ${processingCountText(freeProcessingLimit)} бесплатно`}
+        <br />и пакетная загрузка фотографий.
+      </p>
+      <p className="guest-limit-notice__invitation">Войдите в аккаунт, чтобы продолжить.</p>
       <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
-    </div>
+    </section>
   );
 }
 
@@ -92,17 +98,18 @@ function GuestHome({
         )}
         {uploadAllowed && <LegalConsentText />}
 
-        {(error || !uploadAllowed) && (
+        {!uploadAllowed && <GuestLimitNotice authProviders={authProviders} onProviderLogin={onProviderLogin}
+          freeProcessingLimit={limits.freeProcessingLimit} />}
+
+        {error && (uploadAllowed || !showAuthForError) && (
           <div className="guest-hero__notice">
-            {showAuthForError ? (
+            {uploadAllowed && showAuthForError ? (
               <div className="guest-auth-notice">
                 <span>{error}</span>
                 <AuthProviderButtons providers={authProviders} onProviderLogin={onProviderLogin} />
               </div>
-            ) : error ? (
-              <p>{error}</p>
             ) : (
-              <GuestLimitNotice authProviders={authProviders} onProviderLogin={onProviderLogin} />
+              <p>{error}</p>
             )}
           </div>
         )}
@@ -143,18 +150,6 @@ function GuestHome({
               </div>
             </section>
           </>
-        ) : !uploadAllowed ? (
-          <section className="guest-placeholder guest-placeholder--embedded">
-            <p className="guest-placeholder__title">Гостевая загрузка без входа уже использована.</p>
-            <p className="guest-placeholder__text">
-              Чтобы попробовать еще раз и сохранить новые записи, войдите в аккаунт.
-            </p>
-            <AuthProviderButtons
-              className="auth-provider-buttons--center"
-              providers={authProviders}
-              onProviderLogin={onProviderLogin}
-            />
-          </section>
         ) : null}
       </div>
     </section>
