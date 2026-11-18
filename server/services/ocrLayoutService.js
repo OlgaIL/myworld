@@ -3,6 +3,25 @@ import { query } from "../db/index.js";
 import { matchesOcrLayout } from "../utils/ocrLayout.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { recognizeWithPipeline } from "./processingPipelineService.js";
+import { isRequisiteLayoutEnabled } from "./requisiteProcessingService.js";
+
+// Retrying formatting must only read an existing, owned cache: never invoke OCR.
+export async function loadRequisiteOcrLayout(document, { guest = false, runQuery = query,
+  readImage = fs.readFile, env = process.env } = {}) {
+  if (!isRequisiteLayoutEnabled(env) || !document?.id || !document.storage_path) return null;
+  const ownerId = guest ? document.guest_session_id : document.user_id;
+  if (!ownerId) return null;
+  const parent = guest ? "guest_documents" : "photos";
+  const owner = guest ? "guest_session_id" : "user_id";
+  const column = guest ? "guest_document_id" : "photo_id";
+  try {
+    const cached = await runQuery(`select l.artifact from document_ocr_layouts l
+      join ${parent} d on d.id = l.${column} where d.id = $1 and d.${owner} = $2`, [document.id, ownerId]);
+    const layout = cached.rows[0]?.artifact;
+    if (!layout) return null;
+    return matchesOcrLayout(layout, await readImage(document.storage_path)) ? layout : null;
+  } catch { return null; }
+}
 
 export async function loadPhotoOcrLayout(photo, runQuery = query) {
   if (!photo?.id || !photo.user_id) return null;

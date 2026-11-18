@@ -180,7 +180,8 @@ function FormattedContent({ content, highlightedText }) {
                   <tr key={rowIndex}>{row.map((cell, cellIndex) => (
                     <td key={cellIndex}
                       className={block.unverifiedCells?.some(cell=>cell.row===rowIndex&&cell.col===cellIndex)?"document-page__cell-review":undefined}
-                      title={block.unverifiedCells?.some(cell=>cell.row===rowIndex&&cell.col===cellIndex)?"Сверьте эту ячейку с фото":undefined}
+                      title={block.unverifiedCells?.find(review=>review.row===rowIndex&&review.col===cellIndex)?.reason
+                        || (block.unverifiedCells?.some(cell=>cell.row===rowIndex&&cell.col===cellIndex)?"Сверьте эту ячейку с фото":undefined)}
                     >{renderHighlightedText(cell, highlightedText)}</td>
                   ))}</tr>
                 ))}</tbody>
@@ -204,7 +205,8 @@ function FormattedContent({ content, highlightedText }) {
         }
 
         return (
-          <p key={`${block.type}-${index}`}>
+          <p key={`${block.type}-${index}`} className={block.needsReview ? "document-page__field-review" : undefined}
+            title={block.needsReview ? block.reviewReason || "Сверьте эту строку с фото" : undefined}>
             {renderHighlightedText(formatFormattedLine(block.text), highlightedText)}
           </p>
         );

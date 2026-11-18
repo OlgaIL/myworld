@@ -1,0 +1,9 @@
+.modal.modal--zoomable { justify-content: center; }
+.modal--zoomable .modal__content { width: min(1100px, 100%); }
+.modal--zoomable .modal__toolbar { flex-wrap: wrap; }
+.modal--zoomable .modal__tool, .modal--zoomable .modal__close { flex-shrink: 0; }
+.modal__scale { min-width: 42px; color: #fff; font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+.modal--zoomable .modal__image-frame { overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.modal__image-stage { position: relative; min-width: 100%; min-height: 100%; margin: 0 auto; }
+.modal--zoomable .modal__image { transition: none; }
+.modal--zoomable .modal__image-frame:focus-visible { outline: 2px solid #b2c9ff; outline-offset: -2px; }

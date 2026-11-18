@@ -28,7 +28,7 @@ import {
 } from "../services/processingPipelineService.js";
 import { getGuestDocumentAccess, getGuestDocumentExpiryDate, getGuestUploadGuardError, GUEST_SESSION_COOKIE_NAME, isGuestDocumentExpired, mapGuestDocumentInfo, parseCookies } from "../utils/guest.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
-import { recognizeAndCacheOcr } from "../services/ocrLayoutService.js";
+import { recognizeAndCacheOcr, loadRequisiteOcrLayout } from "../services/ocrLayoutService.js";
 import { createRequestTimer } from "../utils/performanceLog.js";
 import { getProcessingServiceGuardError } from "../utils/photos.js";
 import { buildRecognizedResult, canRetryStoredEnrichment } from "../services/partialProcessingService.js";
@@ -217,7 +217,7 @@ async function findReplaceableGuestDocument(req, guestSession) {
   return document;
 }
 
-async function enrichGuestDocumentWithAi({ text, timer, trigger = "upload" }) {
+async function enrichGuestDocumentWithAi({ text, timer, trigger = "upload", layout = null, document = null }) {
   const pipeline = getProcessingPipelineForUser(null, { audience: "guest" });
   const serviceGuardError = getProcessingServiceGuardError(pipeline);
 
@@ -235,7 +235,8 @@ async function enrichGuestDocumentWithAi({ text, timer, trigger = "upload" }) {
     textLength: text.trim().length
   });
 
-  const aiResult = await enrichWithPipeline(text, pipeline, { trigger });
+  const savedLayout = layout || (document ? await loadRequisiteOcrLayout(document, { guest: true }) : null);
+  const aiResult = await enrichWithPipeline(text, pipeline, { trigger, layout: savedLayout });
 
   timer.log("ai_finished", {
     pipeline: pipeline.pipeline,
@@ -439,7 +440,7 @@ router.post("/api/guest/documents/:id/retry-processing", async (req, res) => {
     await updateGuestDocumentStatus(guestDocument.id, "processing", null);
     processingDocumentId = guestDocument.id;
     const text = guestDocument.ocr_text || "";
-    const aiResult = await enrichGuestDocumentWithAi({ text, timer, trigger: "retry" });
+    const aiResult = await enrichGuestDocumentWithAi({ text, timer, trigger: "retry", document: guestDocument });
 
     if (aiResult.error) {
       await updateGuestDocumentProcessingResult(
@@ -776,7 +777,7 @@ router.post("/api/guest/upload", (req, res) => {
 
       const aiResult = await enrichGuestDocumentWithAi({
         text,
-        timer
+        timer, layout: ocrResult.layout || null
       });
 
       if (aiResult.error) {

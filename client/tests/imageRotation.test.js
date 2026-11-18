@@ -43,3 +43,18 @@ test("waits for both the image and frame measurements", () => {
     rotation: 0
   }), { width: 0, height: 0, scale: 1 });
 });
+
+test("zoom makes a tall photo larger than the frame for scrolling", () => {
+  const fit = getRotatedImageFit({ naturalWidth: 900, naturalHeight: 2400,
+    frameWidth: 600, frameHeight: 600, rotation: 0, zoom: 4 });
+  assert.equal(fit.width, 900);
+  assert.equal(fit.height, 2400);
+  assert.equal(fit.scale, 1);
+});
+
+test("zoom preserves the bounds after rotation", () => {
+  const fit = getRotatedImageFit({ naturalWidth: 900, naturalHeight: 2400,
+    frameWidth: 600, frameHeight: 600, rotation: 90, zoom: 4 });
+  assert.equal(fit.width, 900);
+  assert.equal(fit.height, 2400);
+});

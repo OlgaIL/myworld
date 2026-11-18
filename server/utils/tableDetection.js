@@ -30,6 +30,10 @@ function hasUncaptionedTable(text) {
 
 // These signals unlock a reviewable extraction attempt, not an invented table.
 export function isTableSuspected(photo) {
+  // These field tables are already assembled locally; do not offer another
+  // paid table extraction for the same content.
+  if (photo?.formatted_content?.requisiteLayout?.source === "google_coordinates"
+    && photo.formatted_content.requisiteLayout.version === 1) return false;
   return Boolean(photo?.has_table || photo?.table_status === "ready"
     || /(?:^|\n)\s*таблица\s*\d{1,3}\s*[—–-]\s*\S/imu.test(String(photo?.ocr_text || ""))
     || hasUncaptionedTable(photo?.ocr_text));

@@ -49,6 +49,7 @@ export function createOcrReviewService({ manifestPath = process.env.OCR_REVIEW_M
       || !(await fs.stat(filename)).isFile()) throw new Error("UNSAFE_CASE_IMAGE");
     return { path: filename, mime };
   }
+  const layouts = new WeakMap();
   return {
     async list() {
       return { cases: (await dataset()).cases.map((item) => ({ id: String(item.id), name: String(item.name || `Фото ${item.id}`) })),
@@ -61,7 +62,7 @@ export function createOcrReviewService({ manifestPath = process.env.OCR_REVIEW_M
       const pipeline = getPipeline({}, { audience });
       const startedAt = Date.now();
       const options = { persistMetrics: async () => {} };
-      let text = "", result;
+      let text = "", result, layout;
       if (canProcessImageWithPipeline(pipeline)) {
         result = await processImage(file.path, pipeline, options);
         text = result.ocrText || result.cleanText || "";
@@ -70,19 +71,23 @@ export function createOcrReviewService({ manifestPath = process.env.OCR_REVIEW_M
           return { info: mapOcrReviewResult(id, text, {}, "no_text"), pipeline, durationMs: Date.now() - startedAt };
         }
       } else {
-        const ocr = normalizeOcrResult(await recognize(file.path, pipeline));
+        const ocr = normalizeOcrResult(await recognize(file.path, pipeline, { captureLayout: true }));
         if (ocr.error) throw new Error("OCR_FAILED");
         text = ocr.text;
+        layout = ocr.layout;
         if (text.trim().length < 10) return { info: mapOcrReviewResult(id, text, {}, "no_text"), pipeline, durationMs: Date.now() - startedAt };
-        result = await enrich(text, pipeline, options);
+        result = await enrich(text, pipeline, { ...options, layout });
       }
       const info = mapOcrReviewResult(id, text, result, result.error ? "recognized" : "processed");
+      if (layout) layouts.set(info, layout);
       return { info, pipeline, durationMs: Date.now() - startedAt };
     },
     async tables(id, info) {
       const file = await image(id);
-      const result = await extractTables({ storage_path: file.path, mime_type: file.mime, ocr_text: info.text },
-        { resolveImage: async () => (await image(id)).path });
+      const result = await extractTables({ storage_path: file.path, mime_type: file.mime, ocr_text: info.text,
+        formatted_content: info.formattedContent },
+        { layout: layouts.get(info), loadLayout: async () => null,
+          resolveImage: async () => (await image(id)).path });
       return { ...info, tableStatus: result.status, tableContent: result.content || null, tableErrorCode: result.code || null };
     }
   };

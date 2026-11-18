@@ -31,7 +31,7 @@ import { withAccountOperation } from "../services/accountOperationLocks.js";
 import { deletePhotosForUser } from "../services/photoDeletionService.js";
 import { extractDocumentTables, photoWithTableHeaderRows } from "../services/documentTableService.js";
 import { isTableSuspected } from "../utils/tableDetection.js";
-import { recognizeAndCacheOcr } from "../services/ocrLayoutService.js";
+import { recognizeAndCacheOcr, loadRequisiteOcrLayout } from "../services/ocrLayoutService.js";
 import { tableFailurePolicy } from "../utils/tableFailurePolicy.js";
 
 const router = Router();
@@ -521,8 +521,10 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     }
 
     let text = photo.ocr_text || "";
+    let ocrLayout = null;
 
     if (retryStoredEnrichment) {
+      ocrLayout = await loadRequisiteOcrLayout({ ...photo, storage_path: imagePath });
       timer.log("ocr_reused", {
         textLength: text.trim().length
       });
@@ -557,6 +559,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
       }
 
       text = ocrResult.text || "";
+      ocrLayout = ocrResult.layout || null;
     }
 
     if (text.trim().length < 10) {
@@ -581,7 +584,7 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     });
 
     const aiResult = await enrichWithPipeline(text, pipeline, {
-      trigger: retryStoredEnrichment ? "retry" : "upload"
+      trigger: retryStoredEnrichment ? "retry" : "upload", layout: ocrLayout
     });
 
     timer.log("ai_finished", {

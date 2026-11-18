@@ -27,6 +27,7 @@ import { safeTimewebSettings } from "../config/timeweb.js";
 import * as aiService from "./aiService.js";
 import { runMeasuredLlmAttempt } from "./llmAttemptMetricsService.js";
 import ocrService from "./ocrService.js";
+import { applyLocalRequisiteResult } from "./requisiteProcessingService.js";
 
 export const PROCESSING_PIPELINES = {
   FAST: "fast",
@@ -190,8 +191,8 @@ export async function recognizeWithPipeline(imagePath, pipeline, { captureLayout
   });
 }
 
-export async function enrichWithPipeline(text, pipeline, { trigger = "upload", persistMetrics } = {}) {
-  return runMeasuredLlmAttempt({
+export async function enrichWithPipeline(text, pipeline, { trigger = "upload", persistMetrics, layout = null } = {}) {
+  const result = await runMeasuredLlmAttempt({
     pipeline,
     trigger,
     inputKind: "text",
@@ -207,6 +208,7 @@ export async function enrichWithPipeline(text, pipeline, { trigger = "upload", p
       model: OPENAI_MODEL
     })
   });
+  return applyLocalRequisiteResult(text, result, layout, { pipeline });
 }
 
 export async function recognizeWithCurrentPipeline(imagePath) {

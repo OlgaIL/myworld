@@ -7,7 +7,8 @@ export function getRotatedImageFit({
   naturalHeight,
   frameWidth,
   frameHeight,
-  rotation
+  rotation,
+  zoom = 1
 }) {
   const width = Number(naturalWidth) || 0;
   const height = Number(naturalHeight) || 0;
@@ -25,7 +26,7 @@ export function getRotatedImageFit({
     availableWidth / rotatedWidth,
     availableHeight / rotatedHeight,
     1
-  );
+  ) * zoom;
 
   return {
     width: Math.max(1, Math.floor(width * scale)),

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getRotatedImageFit, normalizeRotation } from "../utils/imageRotation";
+import "./Modal.css";
 
 function RotateLeftIcon() {
   return (
@@ -22,8 +23,15 @@ function RotateRightIcon() {
 function Modal({ src, onClose }) {
   const frameRef = useRef(null);
   const [rotation, setRotation] = useState(0);
+  const [zoom, setZoom] = useState(1);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -63,13 +71,27 @@ function Modal({ src, onClose }) {
     naturalHeight: imageSize.height,
     frameWidth: frameSize.width,
     frameHeight: frameSize.height,
-    rotation: normalizedRotation
+    rotation: normalizedRotation,
+    zoom
   });
+  const sideways = normalizedRotation % 180 === 90;
+  function showWhole() {
+    setZoom(1);
+    frameRef.current?.scrollTo({ top: 0, left: 0 });
+  }
 
   return (
-    <div className="modal" onClick={onClose}>
-      <div className="modal__content">
+    <div className="modal modal--zoomable" onClick={onClose}>
+      <div className="modal__content" role="dialog" aria-modal="true" aria-label="Просмотр фото" onClick={event => event.stopPropagation()}>
         <div className="modal__toolbar" aria-label="Управление изображением" onClick={(event) => event.stopPropagation()}>
+          <button className="modal__tool" type="button" title="Уменьшить" aria-label="Уменьшить" disabled={zoom <= 1} onClick={() => setZoom(value => Math.max(1, value / 1.5))}>−</button>
+          <output className="modal__scale" aria-label="Масштаб">{Math.round(fit.scale * 100)}%</output>
+          <button className="modal__tool" type="button" title="Увеличить" aria-label="Увеличить" disabled={zoom >= 16} onClick={() => setZoom(value => Math.min(16, value * 1.5))}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15l5 5M7 10h6M10 7v6"/></svg>
+          </button>
+          <button className="modal__tool" type="button" title="Показать целиком" aria-label="Показать целиком" onClick={showWhole}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+          </button>
           <button
             className="modal__tool"
             type="button"
@@ -103,7 +125,8 @@ function Modal({ src, onClose }) {
           </button>
         </div>
 
-        <div className="modal__image-frame" ref={frameRef}>
+        <div className="modal__image-frame" ref={frameRef} tabIndex={0} role="region" aria-label="Фото с прокруткой">
+          <div className="modal__image-stage" style={{ width: sideways ? fit.height : fit.width, height: sideways ? fit.width : fit.height }}>
           <img data-clarity-unmask="true"
             src={src}
             className="modal__image"
@@ -123,6 +146,7 @@ function Modal({ src, onClose }) {
               transform: `translate(-50%, -50%) rotate(${normalizedRotation}deg)`
             } : undefined}
           />
+          </div>
         </div>
       </div>
     </div>

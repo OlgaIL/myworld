@@ -91,3 +91,9 @@
   font-size: 12px;
   font-weight: 700;
 }
+.document-page__formatted-content .document-page__field-review {
+  background: #fff3cd;
+  border-left: 3px solid #b88721;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
