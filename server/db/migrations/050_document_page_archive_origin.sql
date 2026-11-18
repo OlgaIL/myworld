@@ -1,4 +1,8 @@
+-- db:migrate applies pending files in one transaction. The 049 backfill queues
+-- deferred foreign-key checks on document_pages; drain them before its DDL.
+set constraints all immediate;
 alter table document_pages add column if not exists added_from_archive boolean not null default false;
+set constraints all deferred;
 
 -- Restore provenance for assemblies made before this flag existed. Merge
 -- receipts cover pages already present at that moment; archive-append receipts

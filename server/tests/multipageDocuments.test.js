@@ -101,15 +101,19 @@ test("multi-page documents: migration, ownership, structure, receipts and deleti
     await query("update users set records_processed_total=17,processing_used=3,documents_created_total=8 where id=$1", [oldUser.id]);
     const oldPhotos = await snapshot(oldUser);
     const oldAccount = (await query("select * from users where id=$1", [oldUser.id])).rows[0];
-    for (const name of migrations.filter(n => n >= "049_"))
-      await withTransaction(client => fs.readFile(new URL(`../db/migrations/${name}`, import.meta.url), "utf8").then(sql => client.query(sql)));
+    // Match db:migrate: all pending migrations share one transaction, including
+    // legacy-photo backfill and the following document_pages ALTER TABLE.
+    await withTransaction(async client => {
+      for (const name of migrations.filter(n => n >= "049_"))
+        await client.query(await fs.readFile(new URL(`../db/migrations/${name}`, import.meta.url), "utf8"));
+    });
     const app = express(); app.use(express.json());
     app.use((req,res,next) => { if (req.headers["x-test-user"]) req.user = { id: req.headers["x-test-user"] }; next(); });
     app.use(documentRoutes); app.use(documentUploadRoutes); app.use(photoRoutes); app.use(authRoutes);
     server = await new Promise(resolve => { const s = app.listen(0,"127.0.0.1",()=>resolve(s)); });
     base = `http://127.0.0.1:${server.address().port}`;
 
-    await t.test("migration preserves every old photo field, balances, historical counters and archive dates", async () => {
+    await t.test("batched migrations preserve every old photo field, balances, historical counters and archive dates", async () => {
       assert.deepEqual(await snapshot(oldUser), oldPhotos);
       assert.deepEqual((await query("select * from users where id=$1", [oldUser.id])).rows[0], oldAccount);
       const list = await request(oldUser, "/api/documents"); assert.equal(list.status, 200);
