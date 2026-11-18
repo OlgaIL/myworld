@@ -408,7 +408,7 @@ function HandwritingToTextLanding() {
         </div>
         <div className="landing-usecases">
           <article className="landing-usecase">
-            <h3>Для каждой фотографии — отдельная запись</h3>
+            <h3>Страницы одного документа или отдельные записи</h3>
             <p>Изображения обрабатываются по очереди в пределах доступного остатка обработок. Проверьте результат каждой страницы по оригиналу, прежде чем копировать текст в свой документ.</p>
           </article>
           <article className="landing-usecase">

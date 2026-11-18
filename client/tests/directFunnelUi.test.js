@@ -25,7 +25,7 @@ test("shows the post-auth step without opening the file chooser automatically", 
     readFile(appUrl, "utf8")
   ]);
 
-  assert.match(documentPage, /Обработать ещё фото/);
+  assert.match(documentPage, /Обработать несколько фото/);
   assert.match(documentPage, /post_auth_process_another_view/);
   assert.match(documentPage, /post_auth_process_another_click/);
   assert.match(app, /const handlePostAuthProcessAnother[\s\S]*?closeDocument\(\);[\s\S]*?\}, \[closeDocument\]\);/);

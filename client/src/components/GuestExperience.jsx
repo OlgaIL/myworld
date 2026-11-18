@@ -171,7 +171,7 @@ function GuestExperience({
 
       {batchTrial && documents.some((document) => ["processed", "recognized"].includes(document.status)) && (
         <aside className="batch-upload-entry">
-          <p>Готовы продолжить с несколькими страницами? После входа выберите несколько файлов одновременно. Каждое фото — отдельная запись и обработка.</p>
+          <p>Готовы продолжить с несколькими страницами? После входа выберите несколько файлов одновременно: страницы одного документа или отдельные документы. 1 фото — 1 обработка.</p>
           <Link to={batchUploadPath("batch_trial_result")}>Войти и загрузить несколько фото</Link>
         </aside>
       )}

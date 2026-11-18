@@ -22,6 +22,8 @@ import adminRoutes from "./routes/adminRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import photoRoutes from "./routes/photoRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
+import documentUploadRoutes from "./routes/documentUploadRoutes.js";
 import processingHistoryRoutes from "./routes/processingHistoryRoutes.js";
 import clientDiagnosticsRoutes from "./routes/clientDiagnosticsRoutes.js";
 import presenceRoutes from "./routes/presenceRoutes.js";
@@ -165,6 +167,8 @@ export function createApp({
   app.use(guestRoutes);
   app.use(paymentRoutes);
   app.use(photoRoutes);
+  app.use(documentRoutes);
+  app.use(documentUploadRoutes);
   app.use(processingHistoryRoutes);
   app.use(improvementRequestRoutes);
 

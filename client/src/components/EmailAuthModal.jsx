@@ -131,9 +131,9 @@ function EmailAuthModal({ onClose, onRequestCode, onVerifyCode }) {
               />
             </label>
             {error && <p className="email-auth-modal__error" role="alert">{error}</p>}
-            <button className="email-auth-modal__primary" type="submit" disabled={loading || !email.trim()}>
+            <div className="dialog-actions dialog-actions--email"><button className="email-auth-modal__primary" type="submit" disabled={loading || !email.trim()}>
               {loading ? "Отправляем..." : "Получить код"}
-            </button>
+            </button></div>
           </form>
         ) : (
           <form onSubmit={verifyCode}>
@@ -156,7 +156,7 @@ function EmailAuthModal({ onClose, onRequestCode, onVerifyCode }) {
               />
             </label>
             {error && <p className="email-auth-modal__error" role="alert">{error}</p>}
-            <button className="email-auth-modal__primary" type="submit" disabled={loading || code.length !== 6}>
+            <div className="dialog-actions dialog-actions--email"><button className="email-auth-modal__primary" type="submit" disabled={loading || code.length !== 6}>
               {loading ? "Проверяем..." : "Продолжить"}
             </button>
             <button
@@ -167,6 +167,7 @@ function EmailAuthModal({ onClose, onRequestCode, onVerifyCode }) {
             >
               {resendSeconds > 0 ? `Отправить ещё раз через ${resendSeconds} с` : "Отправить код ещё раз"}
             </button>
+            </div>
           </form>
         )}
       </div>

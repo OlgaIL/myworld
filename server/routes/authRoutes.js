@@ -2,7 +2,7 @@ import { Router } from "express";
 import { CLIENT_URL } from "../config/env.js";
 import { getConfiguredAuthProviders, isAuthProviderConfigured } from "../auth/providers.js";
 import { requireAuthenticatedUser } from "../middleware/requireAuthenticatedUser.js";
-import { countPhotosByUser } from "../repositories/photosRepository.js";
+import { countDocumentStorage } from "../repositories/documentsRepository.js";
 import { hasSuccessfulPackagePayment } from "../repositories/paymentsRepository.js";
 import {
   mapUserForSession,
@@ -293,7 +293,8 @@ router.get("/api/me", async (req, res) => {
   }
 
   const processingAccess = getUserProcessingAccess(req.user);
-  const recordsStored = await countPhotosByUser(req.user.id);
+  const storageCounts = await countDocumentStorage(req.user.id);
+  const recordsStored = storageCounts.pagesStored;
   const recordsUsed = Number(req.user.recordsProcessedTotal || 0);
   const recordAccess = getUserProductAccess(req.user, recordsUsed);
   const pipeline = getProcessingPipelineForUser(req.user);
@@ -302,6 +303,7 @@ router.get("/api/me", async (req, res) => {
   return res.send({
     ...req.user,
     recordsStored,
+    ...storageCounts,
     processingAllowed: !getProcessingGuardError(req.user, pipeline),
     processingMode: pipeline.pipeline,
     processingUnlimited: processingAccess.processingUnlimited,

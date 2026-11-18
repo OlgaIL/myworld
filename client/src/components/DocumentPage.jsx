@@ -6,6 +6,7 @@ import DocumentTextVariants, { CopyButton } from "./DocumentTextVariants";
 import GuestDocumentSaveCta from "./GuestDocumentSaveCta";
 import HourglassIcon from "./HourglassIcon";
 import { trackGoal, trackGoalOnce } from "../services/analytics";
+import { getDocumentDisplayTitle } from "../utils/documentTitle";
 
 function PostAuthNextStep({ userId, processingOrdinal, onProcessAnother }) {
   useEffect(() => {
@@ -20,7 +21,7 @@ function PostAuthNextStep({ userId, processingOrdinal, onProcessAnother }) {
   return (
     <section className="post-auth-next-step" aria-label="Следующий шаг">
       <h2>Готово — текст сохранён в вашем архиве</h2>
-      <p>Теперь можно добавить следующую фотографию.</p>
+      <p>Теперь можно загрузить остальные страницы: выберите несколько фотографий за один раз в кабинете.</p>
       <button type="button" onClick={() => {
         try {
           window.sessionStorage.setItem("word2you_post_auth_follow_up", String(processingOrdinal));
@@ -33,7 +34,7 @@ function PostAuthNextStep({ userId, processingOrdinal, onProcessAnother }) {
         });
         onProcessAnother?.();
       }}>
-        Обработать ещё фото
+        Обработать несколько фото
       </button>
     </section>
   );
@@ -93,7 +94,14 @@ function DocumentPage({
   showPostAuthNextStep = false,
   postAuthUserId = "",
   postAuthProcessingOrdinal = 0,
-  onProcessAnother
+  onProcessAnother,
+  embedded = false,
+  metaActions,
+  activeTextTab,
+  onTextTabChange,
+  onTextVariantReady,
+  textOverride,
+  sideFooter
 }) {
   if (!photo || !info) {
     return (
@@ -107,6 +115,7 @@ function DocumentPage({
   }
 
   const statusMeta = getPhotoStatusMeta(info?.status);
+  const Container = embedded ? "div" : "main";
   const textQualityMeta = getTextQualityMeta(info?.textQuality);
   const createdAtLabel = formatCreatedAt(info?.createdAt);
   const processedText = info?.cleanText || "";
@@ -135,12 +144,14 @@ function DocumentPage({
     && (!improvementRequest || improvementRequest.status === "cancelled");
 
   return (
-    <main className="document-page">
-      <button className="document-page__back" type="button" onClick={onBack}>
+    <Container className="document-page">
+      {!embedded && <><button className="document-page__back" type="button" onClick={onBack}>
         Назад к списку
       </button>
 
-      <div className="document-page__meta">
+      <div className={metaActions ? "document-page__meta-layout" : undefined}>
+      <div className={`document-page__meta${metaActions ? " document-page__meta--actions" : ""}`}>
+        <div className="document-page__meta-details">
         {createdAtLabel && <p className="gallery__date">{createdAtLabel}</p>}
         {statusMeta && (
           <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
@@ -153,12 +164,14 @@ function DocumentPage({
             {improvementStatusMeta.cardLabel}
           </p>
         )}
-      </div>
+        </div>
+        {metaActions && <div className="document-page__meta-actions">{metaActions}</div>}
+      </div></div></>}
 
-      <div className="document-page__layout">
+      <div className={`document-page__layout${sideFooter ? " document-page__layout--side-footer" : ""}`}>
         <section className="document-page__content">
-          <div className="document-page__field">
-            <h2 data-clarity-unmask="true">{info?.displayTitle || info?.title || "Запись"}</h2>
+          {!embedded && <><div className="document-page__field">
+            <h2 data-clarity-unmask="true">{getDocumentDisplayTitle(info)}</h2>
             {info?.title && (
               <CopyButton
                 label="Скопировать название"
@@ -182,6 +195,7 @@ function DocumentPage({
               />
             </div>
           )}
+          </>}
 
           {(info?.notes || info?.status === "recognized") && (
             <p data-clarity-unmask="true" className="gallery__ai-note">
@@ -203,7 +217,7 @@ function DocumentPage({
             </section>
           )}
 
-          <DocumentTextVariants
+          {textOverride ?? <DocumentTextVariants
             documentId={photo.name}
             info={info}
             improvementRequest={improvementRequest}
@@ -221,6 +235,10 @@ function DocumentPage({
             tableTrialAvailable={tableTrialAvailable}
             onTableReady={onTableReady}
             initialTab={initialTextTab}
+            activeTab={activeTextTab}
+            onTabChange={onTextTabChange}
+            onVariantReady={onTextVariantReady}
+            promoteTitle={!embedded}
             autoRestoreTables={autoRestoreTables}
             enrichmentPending={enrichmentPending}
             improvementSection={showImprovementSection ? (
@@ -244,7 +262,7 @@ function DocumentPage({
                 )}
               </section>
             ) : null}
-          />
+          />}
 
           {showGuestSaveCta && (
             <GuestDocumentSaveCta
@@ -307,9 +325,10 @@ function DocumentPage({
               )}
             </div>
           )}
+          {sideFooter && <div className="document-page__side-footer">{sideFooter}</div>}
         </aside>
       </div>
-    </main>
+    </Container>
   );
 }
 

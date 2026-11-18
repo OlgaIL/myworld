@@ -34,7 +34,8 @@ function getPhotoSearchText(photo) {
     photo?.topic,
     Array.isArray(photo?.tags) ? photo.tags.join(" ") : "",
     photo?.cleanText,
-    photo?.text
+    photo?.text,
+    photo?.searchText
   ]
     .filter(Boolean)
     .join(" ")

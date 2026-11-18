@@ -282,6 +282,10 @@ function DocumentTextVariants({
   tableTrialAvailable = false,
   onTableReady,
   initialTab = "text",
+  activeTab: controlledTab,
+  onTabChange,
+  onVariantReady,
+  promoteTitle = true,
   autoRestoreTables = false,
   improvementSection,
   enrichmentPending,
@@ -312,7 +316,7 @@ function DocumentTextVariants({
       ? improvedContent
       : storedFormattedContent || buildFallbackFormattedContent(originalText)
     : null;
-  const baseFormattedContent = promoteDocumentTitle(rawFormattedContent, info?.title);
+  const baseFormattedContent = promoteTitle ? promoteDocumentTitle(rawFormattedContent, info?.title) : rawFormattedContent;
   const currentTableInfo = tableResult.documentId === documentId
     && (tableResult.info?.tableStatus === "ready" || info?.tableStatus !== "ready")
     ? tableResult.info : info;
@@ -364,8 +368,15 @@ function DocumentTextVariants({
       disabled: tableDocumentUnavailable,
       html: tableReady ? getFormattedHtml(tableContent) : undefined }] : [])
   ];
-  const activeTab = tabSelection.documentId === documentId ? tabSelection.tab : initialTab;
+  const activeTab = controlledTab ?? (tabSelection.documentId === documentId ? tabSelection.tab : initialTab);
   const activeVariant = variants.find((variant) => variant.id === activeTab && !variant.disabled) || variants[0];
+  const variantId=activeVariant.id,variantText=activeVariant.text,variantHtml=activeVariant.html;
+  const copyPending=Boolean(tablePending || (["tables","formatted"].includes(variantId)
+    && currentTableInfo?.tableStatus === "ready" && !tableContent && !visibleTableError));
+  const formattedAvailable=variants.some(v=>v.id==="formatted"&&!v.disabled&&!v.locked);
+  useEffect(()=>{
+    onVariantReady?.({id:variantId,text:variantText,html:variantHtml,formattedAvailable,pending:copyPending});
+  },[variantId,variantText,variantHtml,formattedAvailable,copyPending,onVariantReady]);
   useEffect(() => {
     if (tableDocumentUnavailable || !["tables", "formatted"].includes(activeTab) || !isAuthenticated || info?.tableStatus !== "ready"
       || info?.tableContent?.blocks?.length
@@ -453,7 +464,7 @@ function DocumentTextVariants({
               title={variant.disabled ? "Сначала повторите обработку документа." : variant.tables && !isAuthenticated ? "Войдите, чтобы восстановить таблицу" : variant.tables && tableAttempts.failed ? "Не получилось собрать таблицы" : variant.tables && currentTableInfo?.tableStatus !== "ready"
                 ? "Таблицы не собраны. Собрать?" : undefined}
               key={variant.id}
-              onClick={() => setTabSelection({ documentId, tab: variant.id })}
+              onClick={() => {setTabSelection({ documentId, tab: variant.id });onTabChange?.(variant.id);}}
             >
               {variant.label}
               {variant.tables && !variant.disabled && tableAttempts.failed && <span className="document-page__table-failed" aria-hidden="true">!</span>}

@@ -61,6 +61,7 @@ function PhotoCard({
   onSelectCategory,
   onSelectTag,
   improvementRequest,
+  pageCount = 1,
 }) {
   const statusMeta = getPhotoStatusMeta(info?.status);
   const improvementStatusMeta = getImprovementRequestStatusMeta(improvementRequest?.status);
@@ -79,6 +80,7 @@ function PhotoCard({
 
   return (
     <article
+      data-upload-name={isPendingUpload?photo.name:undefined}
       className={`gallery__item ${isPendingUpload ? "gallery__item--uploading" : ""} ${canOpenDocument ? "gallery__item--clickable" : ""}`}
       onClick={handleCardClick}
     >
@@ -123,7 +125,7 @@ function PhotoCard({
         <div className="gallery__content">
           {isPendingUpload && (
             <>
-              <h4>Новая запись</h4>
+              <h4>Загружается новая запись…</h4>
               <p>{uploadMessage || "Загружаем запись..."}</p>
             </>
           )}
@@ -215,6 +217,11 @@ function PhotoCard({
                     Открыть текст
                   </button>
                 )}
+                {hasReadableText && pageCount > 1 && (
+                  <span className="gallery__page-count">
+                    {pageCount} {pageCount % 100 >= 11 && pageCount % 100 <= 14 ? "страниц" : pageCount % 10 === 1 ? "страница" : [2, 3, 4].includes(pageCount % 10) ? "страницы" : "страниц"}
+                  </span>
+                )}
                 {canDeleteFromContent && (
                   <button
                     className="gallery__open-document"
@@ -273,6 +280,7 @@ function arePhotoCardPropsEqual(prev, next) {
     prev.photo?.name === next.photo?.name &&
     prev.photo?.url === next.photo?.url &&
     prev.photo?.isPendingUpload === next.photo?.isPendingUpload &&
+    prev.pageCount === next.pageCount &&
     prev.info === next.info &&
     prev.uploadMessage === next.uploadMessage &&
     prev.onOpen === next.onOpen &&

@@ -70,6 +70,7 @@ function CabinetHome({
   onOpenDocument,
   onDelete,
   onDeleteMany,
+  onMerge,
   onSelectCategory,
   onSelectTag
 }) {
@@ -112,6 +113,7 @@ function CabinetHome({
           onOpenDocument={onOpenDocument}
           onDelete={onDelete}
           onDeleteMany={onDeleteMany}
+          onMerge={onMerge}
           uploadMessage={uploadMessage}
           emptyMessage={photosCount > 0 ? "Ничего не найдено." : ""}
           onSelectCategory={onSelectCategory}

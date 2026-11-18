@@ -14,7 +14,7 @@ export default function BatchUploadEntry({ providers, onProviderLogin, onCancel,
     {authError && <p role="alert">Не удалось завершить вход. Выберите способ входа ещё раз или вернитесь к одному фото.</p>}
       <AuthProviderButtons providers={providers} onProviderLogin={onProviderLogin} source="batch_entry" />
       {providers.length === 0 && <p role="status">Способы входа сейчас недоступны. Попробуйте обновить страницу позже.</p>}
-    <p>Каждое фото — отдельная запись и обработка. Фотографии обрабатываются по очереди в пределах доступного остатка.</p>
+    <p>Фотографии можно загрузить в один документ или отдельно. 1 фото — 1 обработка. Перед началом проверим, что обработок хватает на весь выбор.</p>
     <button className="batch-upload-entry__cancel" type="button" onClick={onCancel}>Сначала попробовать одно фото без входа</button>
     </section>
   </div></section>;

@@ -91,6 +91,7 @@ router.post("/api/photos/:id/improvement-requests", requireAuthenticatedUser, as
       .json(mapImprovementRequest(result.request, photo.filename));
   } catch (error) {
     console.error("Create improvement request error:", error);
+    if (error.code === "55P03") return res.status(409).json({ error: "ACCOUNT_BUSY" });
     return res.status(500).json({ error: "IMPROVEMENT_REQUEST_CREATE_FAILED" });
   }
 });

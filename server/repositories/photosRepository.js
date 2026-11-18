@@ -29,8 +29,8 @@ export async function createPhoto({
   errorMessage = null,
   processedAt = null,
   corrections = []
-}) {
-  return withTransaction(async (client) => {
+}, { transaction = withTransaction } = {}) {
+  return transaction(async (client) => {
     const result = await client.query(
       `
       insert into photos (

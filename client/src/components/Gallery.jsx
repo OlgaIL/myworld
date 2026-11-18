@@ -34,7 +34,7 @@ function getPhotoListInfo(photo) {
 }
 
 function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequestsByDocumentId = {}, onOpen, onOpenDocument, onDelete, uploadMessage = "", emptyMessage = "Пока тут пусто. Загрузите ваши фото.", onSelectCategory, onSelectTag,
-  onDeleteMany, selectionPhotos = photos, selectionScopeKey = "all", bulkHintScope = "archive", isFiltered = false, archiveTotal = selectionPhotos.length, children }) {
+  onDeleteMany, onMerge, selectionPhotos = photos, selectionScopeKey = "all", bulkHintScope = "archive", isFiltered = false, archiveTotal = selectionPhotos.length, children }) {
   const [infoMap, setInfoMap] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
   const bulkEnabled = typeof onDeleteMany === "function";
@@ -44,11 +44,11 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequests
   );
   const visiblePhotos = useMemo(() => {
     const pendingServerNames = new Set(pendingQueue.map((photo) => photo.serverName).filter(Boolean));
-    return photos.filter((photo) => !pendingServerNames.has(photo.name));
+    return photos.filter((photo) => !pendingServerNames.has(photo.coverName || photo.name));
   }, [pendingQueue, photos]);
   const selectablePhotos = useMemo(() => {
     const pendingNames = new Set(pendingQueue.map(photo => photo.serverName).filter(Boolean));
-    return selectionPhotos.filter(photo => !pendingNames.has(photo.name));
+    return selectionPhotos.filter(photo => !pendingNames.has(photo.coverName || photo.name));
   }, [pendingQueue, selectionPhotos]);
   const bulk = useArchiveDeletion({ photos: selectablePhotos, scope: selectionScopeKey, hintScope: bulkHintScope, onDelete, onDeleteMany });
 
@@ -58,6 +58,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequests
 
     async function hydratePhotoInfo() {
       const photosToRefresh = visiblePhotos.filter((photo) => {
+        if(photo.documentId)return false;
         const info = infoMap[photo.name] || getPhotoListInfo(photo);
 
         if (!info) {
@@ -158,6 +159,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequests
           <div className="archive-selection-toolbar__actions">
             {bulk.selecting ? <>
               <span className="archive-selection-toolbar__count">Выбрано: {bulk.selectedNames.length}</span>
+              {onMerge&&<button className="archive-action" type="button" disabled={bulk.busy||bulk.selectedNames.length<2} onClick={()=>onMerge(bulk.selectedNames,bulk.cancelSelection)}>Объединить в один документ</button>}
               <button className="archive-action archive-action--danger" type="button" onClick={() => bulk.requestDelete(bulk.selectedNames, true)} disabled={bulk.busy || !bulk.selectedNames.length}>
                 Удалить выбранное{bulk.selectedNames.length ? ` (${bulk.selectedNames.length})` : ""}</button>
               <button className="archive-action archive-action--link" type="button" onClick={bulk.cancelSelection} disabled={bulk.busy}>Отмена</button>
@@ -191,6 +193,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequests
             key={photo.name}
             photo={photo}
             info={info}
+            pageCount={photo.pageCount}
             onOpen={onOpen}
             onOpenDocument={bulkEnabled ? (...args) => { bulk.resetStreak(); onOpenDocument(...args); } : onOpenDocument}
             onRequestDelete={bulkEnabled ? name => bulk.requestDelete([name]) : setPendingDelete}
@@ -200,7 +203,7 @@ function Gallery({ photos, pendingPhoto, pendingPhotos = [], improvementRequests
           />
           );
           if (!bulkEnabled) return card;
-          return <div key={photo.name} className={`archive-selectable ${bulkEnabled && bulk.selecting ? "archive-selectable--active" : ""} ${bulkEnabled && bulk.selectedNames.includes(photo.name) ? "archive-selectable--selected" : ""}`}>
+          return <div key={photo.name} className={`archive-selectable ${photo.pageCount>1?"archive-selectable--multipage":""} ${bulkEnabled && bulk.selecting ? "archive-selectable--active" : ""} ${bulkEnabled && bulk.selectedNames.includes(photo.name) ? "archive-selectable--selected" : ""}`}>
             {bulk.selecting && <button type="button" className="archive-selectable__surface" tabIndex={-1} aria-hidden="true"
               onClick={() => bulk.toggle(photo.name)} disabled={bulk.busy} />}
             {bulkEnabled && bulk.selecting && <label className="archive-selectable__label">

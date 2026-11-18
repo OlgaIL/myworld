@@ -21,7 +21,8 @@ export function validateDeletionNames(names) {
 // same transaction as deletion; never unlink a surviving document on rollback.
 // The existing durable file worker retries IO failures and survives restarts.
 export async function deletePhotosForUser(userId, names, {
-  transaction = withTransaction, inspectFile = managedFile, cleanup = cleanupAccountDeletion
+  transaction = withTransaction, inspectFile = managedFile, cleanup = cleanupAccountDeletion,
+  allowDocumentPages = false
 } = {}) {
   const targets = validateDeletionNames(names);
   const result = await transaction(async client => {
@@ -37,8 +38,17 @@ export async function deletePhotosForUser(userId, names, {
         const row = await client.query("select * from photos where user_id = $1 and filename = $2 for update", [userId, name]);
         const photo = row.rows[0];
         if (!photo) { missing.push(name); await client.query("release savepoint delete_document"); continue; }
+        if (!allowDocumentPages) {
+          const container = await client.query(`select dp.document_id,
+            (select count(*) from document_pages p where p.document_id = dp.document_id) as page_count,
+            exists(select 1 from document_upload_batches b where b.target_document_id = dp.document_id
+              and b.state = 'active' and b.lease_until > now()) as uploading
+            from document_pages dp where dp.photo_id = $1 and dp.user_id = $2`, [photo.id, userId]);
+          if (Number(container.rows[0]?.page_count) > 1) throw refusal("DOCUMENT_PAGE_IN_GROUP");
+          if (container.rows[0]?.uploading) throw refusal("UPLOAD_BATCH_ACTIVE");
+        }
         const reviews = await client.query("select id, user_id, status from recognition_improvement_requests where photo_id = $1 for update", [photo.id]);
-        if (photo.status === "processing" || reviews.rows.some(r => r.status === "in_review")) throw refusal("DOCUMENT_BUSY");
+        if (photo.status === "processing" || photo.table_status === "processing" || reviews.rows.some(r => r.status === "in_review")) throw refusal("DOCUMENT_BUSY");
         if (reviews.rows.some(r => String(r.user_id) !== String(userId))) throw refusal("DOCUMENT_SHARED_DATA");
         const claims = await client.query("select * from guest_document_claims where photo_id = $1 for update", [photo.id]);
         const guests = await client.query(`select d.*, s.converted_user_id from guest_documents d
@@ -78,7 +88,7 @@ export async function deletePhotosForUser(userId, names, {
       } catch (error) {
         await client.query("rollback to savepoint delete_document");
         await client.query("release savepoint delete_document");
-        const code = ["DOCUMENT_BUSY", "DOCUMENT_SHARED_DATA"].includes(error.code) ? error.code
+        const code = ["DOCUMENT_BUSY", "DOCUMENT_SHARED_DATA", "DOCUMENT_PAGE_IN_GROUP", "UPLOAD_BATCH_ACTIVE"].includes(error.code) ? error.code
           : String(error.code).startsWith("UNSAFE_") ? "UNSAFE_DOCUMENT_FILE" : "PHOTO_DELETE_FAILED";
         failed.push({ name, code });
       }

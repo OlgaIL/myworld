@@ -89,9 +89,9 @@ function ImprovementRequestModal({
 
             {error && <p className="improvement-modal__error" role="alert">{error}</p>}
 
-            <button className="improvement-modal__submit" type="submit" disabled={!consent || submitting}>
+            <div className="dialog-actions"><button className="improvement-modal__submit" type="submit" disabled={!consent || submitting}>
               {submitting ? "Отправляем..." : "Отправить запрос"}
-            </button>
+            </button></div>
           </form>
         )}
       </div>

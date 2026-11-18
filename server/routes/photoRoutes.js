@@ -33,6 +33,7 @@ import { extractDocumentTables, photoWithTableHeaderRows } from "../services/doc
 import { isTableSuspected } from "../utils/tableDetection.js";
 import { recognizeAndCacheOcr, loadRequisiteOcrLayout } from "../services/ocrLayoutService.js";
 import { tableFailurePolicy } from "../utils/tableFailurePolicy.js";
+import { findUserById, mapUserForSession } from "../repositories/usersRepository.js";
 
 const router = Router();
 
@@ -179,7 +180,7 @@ router.delete("/api/photos/:name", requireAuthenticatedUser, withAccountOperatio
     if (result.missing.length) return res.status(404).json({ error: "PHOTO_NOT_FOUND" });
     if (result.failed.length) {
       const code = result.failed[0].code;
-      return res.status(code === "DOCUMENT_BUSY" ? 409 : 500).json({ error: code });
+      return res.status(["DOCUMENT_BUSY", "DOCUMENT_PAGE_IN_GROUP", "UPLOAD_BATCH_ACTIVE"].includes(code) ? 409 : 500).json({ error: code });
     }
     return res.json(result);
   } catch (error) {
@@ -371,6 +372,11 @@ router.patch("/api/photos/:id/corrections/:correctionId", requireAuthenticatedUs
 
 router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOperation(async (req, res) => {
   const timer = createRequestTimer("photo-process");
+  // Read access after acquiring the exclusive account lock: another tab may
+  // have spent the last credit since this request's session was deserialized.
+  const currentUser = await findUserById(req.user.id);
+  if (!currentUser) return res.status(401).json({ error: "UNAUTHORIZED" });
+  req.user = mapUserForSession(currentUser);
   const photo = await findPhotoByFilenameAndUser(req.params.id, req.user.id);
 
   if (!photo) {
@@ -386,9 +392,12 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     sizeBytes: photo.size_bytes
   });
 
-  const alreadyProcessed =
-    photo.status === "processed" &&
-    (photo.title?.trim() || photo.summary?.trim() || (Array.isArray(photo.tags) && photo.tags.length > 0));
+  if (photo.status === "processing" || photo.table_status === "processing")
+    return res.status(409).json({ error: "DOCUMENT_BUSY" });
+  const review = await query("select 1 from recognition_improvement_requests where photo_id=$1 and status='in_review' limit 1", [photo.id]);
+  if (review.rowCount) return res.status(409).json({ error: "DOCUMENT_BUSY" });
+
+  const alreadyProcessed = photo.status === "processed";
 
   if (alreadyProcessed) {
     timer.log("already_processed");
@@ -407,6 +416,9 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     });
   }
 
+  const access = getUserProductAccess(currentUser, Number(currentUser.records_processed_total || 0));
+  if (!access.unlimitedAccess && !access.extendedAccessActive && access.totalRemaining <= 0)
+    return res.status(403).json({ error: "USER_RECORD_LIMIT_REACHED", access });
   const pipeline = getProcessingPipelineForUser(req.user);
   const guardError = getProcessingGuardError(req.user, pipeline);
 
@@ -681,6 +693,6 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
       error: errorMessage
     });
   }
-}));
+}, { exclusive: true }));
 
 export default router;

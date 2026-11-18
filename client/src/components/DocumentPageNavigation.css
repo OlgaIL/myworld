@@ -1,0 +1,24 @@
+.document-navigation-layout { max-width:984px; }
+.document-navigation-layout__pages { min-width:0; }
+.document-navigation { position:sticky; top:8px; z-index:25; display:flex; align-items:center; gap:8px; margin:12px 0 18px; padding:6px; border:1px solid #d0d5dd; border-radius:12px; background:#fff; color:#344054; box-shadow:0 3px 10px rgba(15,23,42,.06); }
+.document-navigation button { flex-shrink:0; min-width:36px; min-height:36px; border:1px solid transparent; border-radius:8px; background:#fff; color:inherit; font:inherit; font-size:14px; cursor:pointer; }
+.document-navigation button:hover:not(:disabled) { background:#f2f4f7; border-color:#d0d5dd; }
+.document-navigation button:disabled { color:#b4bbc6; cursor:default; }
+.document-navigation .document-navigation__arrow { border-color:#d0d5dd; font-size:20px; }
+.document-navigation > .document-navigation__arrow:last-child { margin-left:auto; }
+.document-navigation__select { position:relative; flex-shrink:0; min-height:36px; border-radius:8px; }
+.document-navigation__select > span { display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 8px; font-size:14px; white-space:nowrap; }
+.document-navigation__chevron { width:16px; height:16px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.document-navigation__select select { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+.document-navigation__select:focus-within,.document-navigation button:focus-visible { outline:2px solid #667085; outline-offset:2px; }
+.document-navigation__numbers { position:relative; display:flex; flex:1; gap:4px; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.document-navigation__numbers::-webkit-scrollbar { display:none; }
+.document-navigation__numbers button[aria-current="page"] { border-color:#c8cfda; background:#eef1f7; color:#111827; font-weight:700; }
+[data-multipage-preview].multipage-document--navigable .multipage-preview__page,
+[data-multipage-preview].multipage-document--navigable .multipage-document__pending,
+[data-multipage-preview].multipage-document--navigable .document-page__text { scroll-margin-top:74px; }
+@media(max-width:700px) {
+  .document-navigation { gap:6px; }
+  .document-navigation__numbers { display:none; }
+  .document-navigation__select { flex:1; min-width:0; }
+}

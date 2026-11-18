@@ -61,7 +61,7 @@ function GuestDocumentSaveCta({ documentId, documentStatus, providers, onProvide
         })}
       </div>
 
-      <p className="guest-document-save-cta__footnote">{freeSignupText(freeProcessingLimit)} · пакетная загрузка · доступ с телефона и компьютера</p>
+      <p className="guest-document-save-cta__footnote">{freeSignupText(freeProcessingLimit)}. После входа страницы можно сохранить в одном документе или отдельно.</p>
     </section>
   );
 }

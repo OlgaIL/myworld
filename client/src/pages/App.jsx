@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import CabinetHome from "../components/CabinetHome";
@@ -12,7 +12,12 @@ import PageFooter from "../components/PageFooter";
 import PublicHomePreview from "../components/PublicHomePreview";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useCabinetFilters } from "../hooks/useCabinetFilters";
-import { useCabinetUpload } from "../hooks/useCabinetUpload";
+import { useDocumentUpload } from "../hooks/useDocumentUpload";
+import { useDocuments, archiveDocumentPhotos } from "../hooks/useDocuments";
+import DocumentUploadDialog from "../components/DocumentUploadDialog";
+import MultipageDocument from "../components/MultipageDocument";
+import ArchiveMergeDialog from "../components/ArchiveMergeDialog";
+import ArchiveMergeWarningDialog from "../components/ArchiveMergeWarningDialog";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { useGuestDocument } from "../hooks/useGuestDocument";
 import { useImprovementRequest } from "../hooks/useImprovementRequest";
@@ -75,11 +80,15 @@ function App() {
     retryGuestDocument,
     setGuestCorrectionApplied
   } = useGuestDocument(!user);
-  const { photos, addPhoto, removePhoto, removePhotos, reloadPhotos } = usePhotos(Boolean(user), {
+  const { photos, reloadPhotos: reloadRawPhotos } = usePhotos(Boolean(user), {
     ownerKey: user?.id,
     onPhotosChanged: reloadUser
   });
   const [activePhoto, setActivePhoto] = useState(null);
+  const {documents, error:documentsError,reloadDocuments,removeDocuments}=useDocuments(user?.id,photos);
+  const archivePhotos=useMemo(()=>archiveDocumentPhotos(documents,photos),[documents,photos]);
+  const reloadPhotos=useCallback(async(options)=>{await reloadRawPhotos(options);await reloadDocuments();},[reloadRawPhotos,reloadDocuments]);
+  const [mergeSelection,setMergeSelection]=useState(null),[archiveError,setArchiveError]=useState("");
   const [improvementModalMode, setImprovementModalMode] = useState(null);
   const [guestImprovementDocumentId, setGuestImprovementDocumentId] = useState("");
   const [retryingDocument, setRetryingDocument] = useState(false);
@@ -89,23 +98,24 @@ function App() {
   const [showPostAuthNextStep, setShowPostAuthNextStep] = useState(false);
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
-  const photosCount = Array.isArray(photos) ? photos.length : 0;
+  const photosCount = archivePhotos.length;
   const recordLimit = Number(user?.recordLimit || 0);
   const recordsUsed = Number(user?.recordsUsed ?? 0);
   const recordUploadAllowed = user?.recordUploadAllowed !== false;
+  const documentUpload = useDocumentUpload({user,reloadPhotos,reloadUser,recordUploadAllowed,batchContext:batchUploadContext,
+    onDocumentCreated:id=>navigate(`/documents/d-${id}`),
+    onPageReady:(id,pageId,{first})=>navigate(`/documents/d-${id}?page=${pageId}`,{replace:!first||Boolean(documentName)})});
   const {
     uploading: cabinetUploading,
     uploadMessage: cabinetUploadMessage,
     pendingPhotos,
     handleUpload
-  } = useCabinetUpload({
-    user,
-    addPhoto,
-    reloadPhotos,
-    reloadUser,
-    recordUploadAllowed,
-    batchContext: batchUploadContext
-  });
+  } = documentUpload;
+  const pendingUploadName=documentUpload.activeUpload?.pendingName;
+  useEffect(()=>{
+    if(documentName||!pendingUploadName)return;
+    document.querySelector(`[data-upload-name="${pendingUploadName}"]`)?.scrollIntoView({block:"start"});
+  },[documentName,pendingUploadName]);
   const activeDocumentPhoto = user && documentName
     ? photos.find((photo) => photo.name === documentName)
     : null;
@@ -120,7 +130,7 @@ function App() {
     submitting: improvementRequestSubmitting,
     error: improvementRequestError,
     submitRequest: submitImprovementRequest
-  } = useImprovementRequest(documentName, Boolean(user && documentName), {
+  } = useImprovementRequest(documentName, Boolean(user && documentName && !documentName.startsWith("d-")), {
     onRequestChanged: upsertImprovementRequest
   });
 
@@ -166,7 +176,20 @@ function App() {
     selectMonth,
     selectDay,
     toggleTags
-  } = useCabinetFilters(photos);
+  } = useCabinetFilters(archivePhotos);
+
+  async function removeArchiveDocuments(names,onProgress){
+    const result=await removeDocuments(names,onProgress);
+    await Promise.allSettled([reloadRawPhotos(),reloadUser()]);return result;
+  }
+  function requestMerge(names,onSuccess){
+    setArchiveError("");
+    const sources=archivePhotos.filter(p=>names.includes(p.name));
+    if(sources.some(p=>p.pageCount!==1)){setArchiveError("Пока можно объединять только одностраничные документы. Уберите многостраничные из выбора.");return;}
+    if(sources.some(p=>!p.availableActions.merge)){setArchiveError("Дождитесь завершения загрузки, обработки или проверки заявки.");return;}
+    sources.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)||(BigInt(a.coverPageId)<BigInt(b.coverPageId)?-1:1));
+    setMergeSelection({sources,onSuccess});
+  }
 
   const requestProviderLogin = useCallback((providerId, options = {}) => {
     if (!user && guestDocuments.length > 0) {
@@ -408,8 +431,11 @@ function App() {
 
       {user && (
         <>
+          {(documentsError||documentUpload.error)&&<p className="document-improvement__error" role="alert">{documentsError||documentUpload.error}</p>}
           {documentName ? (
-            <DocumentPage
+            <MultipageDocument key={documentName} name={documentName} user={user} onBack={closeDocument} onOpenImage={setActivePhoto}
+              reloadPhotos={reloadPhotos} reloadUser={reloadUser} upload={documentUpload} initialTextTab={tableIntent?"tables":"text"}
+              autoRestoreTables={pendingTableRestore===documentName} fallback={<DocumentPage
               photo={activeDocumentPhoto}
               info={activeDocumentInfo}
               copiedMap={documentCopiedMap}
@@ -439,8 +465,9 @@ function App() {
               postAuthUserId={user.id}
               postAuthProcessingOrdinal={Number(user.recordsProcessedTotal || user.recordsUsed || 0) + 1}
               onProcessAnother={handlePostAuthProcessAnother}
-            />
+            />} />
           ) : (
+            documents===null?<p className="document-page__empty">{documentsError||"Загружаем архив…"}</p>:
             <CabinetHome
               key={user.id}
               batchUploadIntent={Boolean(batchUploadContext)}
@@ -493,16 +520,21 @@ function App() {
               onRequestUpload={requestCabinetUpload}
               handleUpload={handleBatchAwareUpload}
               onCancelUpload={() => setBatchUploadContext(null)}
-              onOpenImage={setActivePhoto}
+              onOpenImage={name=>setActivePhoto(archivePhotos.find(p=>p.name===name)?.coverName||name)}
               onOpenDocument={openDocument}
-              onDelete={removePhoto}
-              onDeleteMany={removePhotos}
+              onDelete={name=>removeArchiveDocuments([name])}
+              onDeleteMany={removeArchiveDocuments}
+              onMerge={requestMerge}
               onSelectCategory={selectCategory}
               onSelectTag={selectTag}
             />
           )}
         </>
       )}
+
+      {user&&<DocumentUploadDialog upload={documentUpload}/>}
+      {user&&<ArchiveMergeWarningDialog message={archiveError} onClose={()=>setArchiveError("")}/>}
+      {user&&mergeSelection&&<ArchiveMergeDialog selection={mergeSelection} onClose={()=>setMergeSelection(null)} onMerged={async()=>{mergeSelection.onSuccess?.();setMergeSelection(null);await Promise.all([reloadPhotos(),reloadUser()]);}}/>}
 
       {activePhoto && (
         <Modal
