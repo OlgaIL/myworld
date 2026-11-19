@@ -8,12 +8,14 @@ import PhotoCard from "../components/PhotoCard.jsx";
 import Modal from "../components/Modal.jsx";
 import ArchiveMergeWarningDialog from "../components/ArchiveMergeWarningDialog.jsx";
 import DocumentPageNavigation from "../components/DocumentPageNavigation.jsx";
+import MultipageDocument from "../components/MultipageDocument.jsx";
 import { getPhotoStatusMeta } from "../constants/documentStatuses.js";
 import "../index.css";
 import "../components/ArchiveBulkActions.css";
 import "../components/MultipageDocument.css";
 
 const user = { displayName: "Учебный профиль", recordLimit: 5, totalRemaining: 3 };
+const uploadPreview={pageLimit:25,uploading:true,session:{mode:"group",active:true,items:Array.from({length:4},(_,index)=>({itemId:`preview-${index+1}`,ordinal:index+1,phase:index?"queued":"preparing"}))}};
 function image(number) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="470"><rect width="360" height="470" fill="white"/><g fill="#344054" font-family="Arial" font-size="13"><text x="30" y="50">ДОГОВОР ОКАЗАНИЯ УСЛУГ</text><text x="30" y="82">Учебная страница ${number}</text></g><g stroke="#98a2b3">${Array.from({ length: 17 }, (_, i) => `<path d="M30 ${116 + i * 16}h${i % 3 === 0 ? 245 : 295}"/>`).join("")}</g><text x="170" y="445" fill="#667085" font-family="Arial">${number}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -76,14 +78,14 @@ export default function MultipagePreview() {
   const documentRef = useRef(null);
   const [documents, setDocuments] = useState(initialDocuments);
   const [activeId, setActiveId] = useState("contract");
-  const [scene, setScene] = useState("document");
+  const [scene, setScene] = useState(()=>new URLSearchParams(window.location.search).get("scene")||"document");
   const [dialog, setDialog] = useState(null);
   const [draft, setDraft] = useState([]);
   const [selected, setSelected] = useState([]);
   const [selectionMode, setSelectionMode] = useState(false);
   const [variants, setVariants] = useState({});
   const [message, setMessage] = useState("");
-  const [mode, setMode] = useState("separate");
+  const [mode, setMode] = useState("group");
   const [openImage, setOpenImage] = useState(null);
   const active = documents.find(d => d.id === activeId) || documents[0] || { id: null, title: "", summary: "", pages: [] };
   const shownPages = active.pages.map((p, i) => i === 2 && ["error", "no_text", "processing"].includes(scene)
@@ -138,9 +140,10 @@ export default function MultipagePreview() {
         <option value="document">Документ</option><option value="processing">Идёт обработка</option><option value="error">Страница с ошибкой</option>
         <option value="no_text">Фото без текста</option><option value="upload">Выбор загрузки</option>
         <option value="balance">Не хватает обработок</option><option value="archive">Архив</option><option value="navigation25">Навигация · 25 страниц</option>
+        <option value="pending">Все выбранные страницы · загрузка</option>
       </select></label>
     </div>
-    {scene === "archive" ? <main className="document-page">
+    {scene === "pending" ? <MultipageDocument name="upload" user={user} upload={uploadPreview} onBack={()=>changeScene("archive")} reloadPhotos={async()=>{}} reloadUser={async()=>{}}/> : scene === "archive" ? <main className="document-page">
       <div className={`archive-selection-toolbar${selectionMode ? " archive-selection-toolbar--active" : ""}`}>
         <span className="archive-selection-toolbar__count">{selectionMode ? `Выбрано: ${selected.length}` : `Документов в архиве: ${documents.length}`}</span>
         <div className="archive-selection-toolbar__actions">{selectionMode ? <>

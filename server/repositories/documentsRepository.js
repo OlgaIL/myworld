@@ -14,7 +14,17 @@ export async function loadDocuments(userId, ids = null, execute = query) {
     select jsonb_agg(to_jsonb(p) || jsonb_build_object('id', p.id::text, 'position', dp.position, 'addedFromArchive', dp.added_from_archive) order by dp.position)
     from document_pages dp join photos p on p.id = dp.photo_id and p.user_id = dp.user_id
     where dp.document_id = d.id and dp.user_id = d.user_id
-  ), '[]'::jsonb) as pages from documents d
+  ), '[]'::jsonb) as pages, (
+    select jsonb_build_object('batchId', b.id, 'mode', b.mode,
+      'state', case when b.state = 'active' and b.lease_until <= now() then 'expired' else b.state end,
+      'items', (select coalesce(jsonb_agg(jsonb_build_object(
+        'itemId', i.item_id, 'ordinal', i.ordinal, 'state',
+        case when i.state = 'stored' and i.photo_id is null then 'removed' else i.state end,
+        'photoId', i.photo_id::text, 'filename', p.filename) order by i.ordinal), '[]'::jsonb)
+        from document_upload_items i left join photos p on p.id = i.photo_id where i.batch_id = b.id))
+    from document_upload_batches b where b.target_document_id = d.id and b.user_id = d.user_id
+      and b.mode in ('group', 'append') order by b.created_at desc, b.id desc limit 1
+  ) as upload_progress from documents d
     where d.user_id = $1 and ($2::uuid[] is null or d.id = any($2::uuid[]))
     order by d.archive_at desc, d.id`, [userId, ids]);
   return result.rows;

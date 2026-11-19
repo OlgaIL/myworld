@@ -11,6 +11,8 @@ import * as api from "../services/documentsApi";
 import { combineDocumentCopy } from "../utils/documentCopy";
 import { getDocumentDisplayTitle } from "../utils/documentTitle";
 import { getPhotoStatusMeta } from "../constants/documentStatuses";
+import { documentUploadView } from "../utils/documentUploadProgress";
+import { DocumentUploadProgress, PendingDocumentPage } from "./DocumentUploadProgress";
 import "./MultipageDocument.css";
 
 const pageCount=n=>`${n} ${n%100>=11&&n%100<=14?"страниц":n%10===1?"страница":[2,3,4].includes(n%10)?"страницы":"страниц"}`;
@@ -18,7 +20,7 @@ export function CopyAllButton({disabled,label="Скопировать всё",co
   return <button className="multipage-preview__copy-all multipage-preview__layered" disabled={disabled} onClick={onClick}>
     <svg viewBox="0 0 24 24" aria-hidden="true">{copied?<path d="M5 12l4 4L19 6"/>:<><rect x="9" y="9" width="10" height="10" rx="2" /><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" /></>}</svg><span className="multipage-preview__copy-label"><span aria-hidden="true" className="multipage-preview__copy-label-space">{label}</span><span aria-live="polite">{copied?"Скопировано":label}</span></span></button>;
 }
-function GroupPage({page,user,embedded,onOpenImage,onBack,reload,onReport,tab,onTab,initialTab,autoRestoreTables,onReplace,metaActions,processingMessage,sideFooter}) {
+function GroupPage({page,user,embedded,onOpenImage,onBack,reload,onReport,tab,onTab,initialTab,autoRestoreTables,onReplace,metaActions,processingMessage,sideFooter,blocked=false}) {
   const {copiedMap,copyText}=useCopyFeedback();
   const improvement=useImprovementRequest(page.filename,true);
   const [requestOpen,setRequestOpen]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState("");
@@ -30,11 +32,13 @@ function GroupPage({page,user,embedded,onOpenImage,onBack,reload,onReport,tab,on
   const reloadImprovement=improvement.reloadRequest;
   useEffect(()=>{const timer=setInterval(reloadImprovement,20000);return()=>clearInterval(timer);},[reloadImprovement]);
   const textOverride=noText?<section className="document-page__text"><p role={processingMessage||page.status==="processing"?"status":undefined} aria-live="polite">{processingMessage||page.status==="processing"?"Обрабатываем фото…":page.status==="no_text"?"На фото не найден текст.":page.status==="uploaded"?"Фотография загружена. Обработка ещё не запущена.":"Не удалось обработать страницу."}</p>
+    {page.uploadMessage&&<p className="document-improvement__error">{page.uploadMessage}</p>}
     {["error","no_text"].includes(page.status)&&<p>Обработка не списана.</p>}
     {error&&<p className="document-improvement__error" role="alert">{error}</p>}
-    <div className="multipage-preview__actions">{["error","uploaded"].includes(page.status)&&<button className="document-improvement__button" disabled={working} onClick={()=>act(()=>processPhoto(page.filename))}>{working?"Обрабатываем…":"Повторить обработку"}</button>}
-      {["error","no_text"].includes(page.status)&&<button className="document-page__back" disabled={working} onClick={()=>onReplace(page)}>Заменить фото</button>}</div></section>:undefined;
+    <div className="multipage-preview__actions">{["error","uploaded"].includes(page.status)&&<button className="document-improvement__button" disabled={working||blocked} onClick={()=>act(()=>processPhoto(page.filename))}>{working?"Обрабатываем…":"Повторить обработку"}</button>}
+      {["error","no_text"].includes(page.status)&&<button className="document-page__back" disabled={working||blocked} onClick={()=>onReplace(page)}>Заменить фото</button>}</div></section>:undefined;
   return <><DocumentPage photo={{...page,name:page.filename,url:page.url||getPhotoUrl(page.filename)}} info={page} embedded={embedded} metaActions={metaActions} sideFooter={sideFooter}
+    previewBusy={Boolean(processingMessage)||page.status==="processing"||working}
     onBack={onBack} onOpenImage={onOpenImage} copiedMap={copiedMap} onCopy={copyText} isAuthenticated
     packageRemaining={Number(user.packageRemaining||0)} giftRemaining={Number(user.giftRemaining||0)} tableTrialAvailable={Boolean(user.tableTrialAvailable)}
     improvementRequest={improvement.request} improvementRequestLoading={improvement.loading} improvementRequestError={improvement.error}
@@ -43,7 +47,7 @@ function GroupPage({page,user,embedded,onOpenImage,onBack,reload,onReport,tab,on
     updatingCorrectionId={working?"pending":""} correctionError={error} onTableReady={reload}
     activeTextTab={tab} onTextTabChange={changeTab} onTextVariantReady={report} textOverride={textOverride}
     initialTextTab={initialTab} autoRestoreTables={autoRestoreTables} />
-    {!noText&&["error","no_text"].includes(page.status)&&<div className="multipage-preview__actions"><span>Обработка не списана.</span>{page.status==="error"&&<button className="document-improvement__button" disabled={working} onClick={()=>act(()=>processPhoto(page.filename))}>Повторить обработку</button>}<button className="document-page__back" disabled={working} onClick={()=>onReplace(page)}>Заменить фото</button></div>}
+    {!noText&&["error","no_text"].includes(page.status)&&<div className="multipage-preview__actions"><span>Обработка не списана.</span>{page.status==="error"&&<button className="document-improvement__button" disabled={working||blocked} onClick={()=>act(()=>processPhoto(page.filename))}>Повторить обработку</button>}<button className="document-page__back" disabled={working||blocked} onClick={()=>onReplace(page)}>Заменить фото</button></div>}
     {requestOpen&&<ImprovementRequestModal submitting={improvement.submitting} error={improvement.error} onClose={()=>setRequestOpen(false)}
       onSubmit={async body=>{try{await improvement.submitRequest(body);setRequestOpen(false);await reload();}catch{/* Existing modal shows the error. */}}} />}
   </>;
@@ -57,13 +61,17 @@ export default function MultipageDocument({name,user,onBack,onOpenImage,reloadPh
   const progress=upload.activeUpload,progressPageId=progress?.pageId,progressPhase=progress?.phase;
   const readSequence=useRef(0);
   const invalidate=useCallback(()=>{epoch.current+=1;},[]);
-  const [data,setData]=useState(null),[loadError,setLoadError]=useState("");
+  const [loadedData,setData]=useState(null),[loadError,setLoadError]=useState("");
+  const isDraft=name==="upload";
+  const data=isDraft&&upload.session?{document:{id:"upload",archiveAt:new Date().toISOString(),structureVersion:"1",pageLimit:upload.pageLimit,
+    availableActions:{delete:false,append:false}},pages:[]}:loadedData;
   const [dialog,setDialog]=useState(null),[draft,setDraft]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
   const [tabs,setTabs]=useState({}),[reports,setReports]=useState({});
   const [archive,setArchive]=useState([]),[archiveIds,setArchiveIds]=useState([]);
   const [archiveAddedPages,setArchiveAddedPages]=useState([]);
   const {copiedMap:copyAllMap,copyText}=useCopyFeedback({durationMs:5000});
   const refresh=useCallback(async()=>{
+    if(name==="upload")return null;
     const current=epoch.current;
     const sequence=++readSequence.current;
     const location=name.startsWith("d-")?{documentId:name.slice(2)}:await api.getDocumentLocation(name);
@@ -75,7 +83,7 @@ export default function MultipageDocument({name,user,onBack,onOpenImage,reloadPh
   useEffect(()=>{
     invalidate();let cancelled=false;
     refresh().catch(e=>{if(!cancelled)setLoadError(api.documentErrorMessage(e));});
-    const timer=setInterval(()=>refresh().catch(()=>{}),10000);
+    const timer=setInterval(()=>refresh().catch(e=>{if(!cancelled)setLoadError(api.documentErrorMessage(e));}),10000);
     return()=>{cancelled=true;invalidate();clearInterval(timer);};
   },[refresh,invalidate,upload.uploading,progressPageId,progressPhase]);
   const reload=useCallback(async()=>{await Promise.all([refresh(),reloadPhotos(),reloadUser()]);},[refresh,reloadPhotos,reloadUser]);
@@ -87,21 +95,24 @@ export default function MultipageDocument({name,user,onBack,onOpenImage,reloadPh
   useEffect(()=>{
     if(!activeDocumentId)return;
     const anchor=new URLSearchParams(search).get("page")||progressPageId||anchorPageId;
-    const pending=pageRoot.current?.querySelector('[data-upload-pending]');
+    const currentItem=upload.session?.items.find(i=>i.name===progressPendingName);
+    const pending=currentItem?pageRoot.current?.querySelector(`[data-upload-pending="${currentItem.pageId||`upload-${currentItem.itemId}`}"]`):null;
     const target=progressPendingName&&pending?pending:anchor?(document.getElementById(`document-page-${anchor}`)||pageRoot.current?.querySelector('.document-page__text')):null;
     const key=`${activeDocumentId}:${progressPendingName||anchor}:${progressPendingName&&pending?"pending":"page"}`;
     if(target&&lastScrolled.current!==key){target.scrollIntoView({block:"start"});lastScrolled.current=key;}
-  },[activeDocumentId,anchorPageId,search,progressPageId,progressPendingName,pageIds]);
-  if(!data)return <main className="document-page"><button className="document-page__back" onClick={onBack}>Назад к списку</button><p>{loadError||"Загружаем документ…"}</p>{loadError&&<button className="document-page__back" onClick={()=>refresh().catch(e=>setLoadError(api.documentErrorMessage(e)))}>Повторить</button>}</main>;
+  },[activeDocumentId,anchorPageId,search,progressPageId,progressPendingName,pageIds,upload.session?.items]);
+  if(!data)return <main className="document-page"><button className="document-page__back" onClick={onBack}>Назад к списку</button><p>{isDraft?"Сведения о выбранных фотографиях доступны только во вкладке, где началась загрузка. Проверьте документ в архиве.":loadError||"Загружаем документ…"}</p>{loadError&&<button className="document-page__back" onClick={()=>refresh().catch(e=>setLoadError(api.documentErrorMessage(e)))}>Повторить</button>}</main>;
   const {document:doc}=data;
   const pageProcessing=page=>progress?.filename===page.filename&&(progress.phase==="processing"
     ||progress.phase==="stored"&&progress.label&&["uploaded","processing"].includes(page.status));
-  const pages=data.pages.map(page=>pageProcessing(page)?{...page,status:"processing"}:page);
+  const uploadView=documentUploadView(doc,data.pages,upload.session);
+  const rows=uploadView.rows;
+  const pages=rows.filter(page=>!page.placeholder).map(page=>pageProcessing(page)?{...page,status:"processing"}:page);
   const processingMessage=page=>pageProcessing(page)?progress.label:undefined;
-  const pendingInDocument=upload.uploading&&progress?.documentId===doc.id&&["preparing","uploading","processing"].includes(progress.phase)
-    &&!data.pages.some(page=>page.filename===progress.filename);
   const uploadFooterMessage=progress?.documentId===doc.id?"":upload.uploadMessage;
   const blocked=busy||upload.uploading||!doc.availableActions.delete;
+  const blockedHint=upload.uploading?"Дождитесь окончания загрузки.":busy?"Дождитесь завершения действия.":uploadView.reason;
+  const singleLayout=rows.length===1&&!uploadView.visible;
   const processed=pages.filter(p=>p.status==="processed").length;
   const available=pages.filter(p=>reports[p.filename]?.text?.trim());
   const missing=available.length!==pages.length;
@@ -150,31 +161,33 @@ export default function MultipageDocument({name,user,onBack,onOpenImage,reloadPh
       if(dialog.kind==="split")onBack();else if(dialog.kind==="extract")setMessage("Страница убрана из документа и сохранена отдельно в архиве.");
     }catch(e){setError(api.documentErrorMessage(e));await refresh().catch(()=>{});}finally{setBusy(false);}
   }
-  const appendButton=<button className="document-page__back multipage-preview__layered" disabled={blocked||!doc.availableActions.append} onClick={()=>open("append")}>+ Добавить страницы</button>;
-  const fab=<button className="fab-upload" disabled={blocked||!doc.availableActions.append} aria-label="Добавить страницы" title="Добавить страницы" onClick={()=>open("append")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>;
+  const appendButton=<span className="document-upload-disabled" title={blockedHint||undefined}><button className="document-page__back multipage-preview__layered" disabled={blocked||!doc.availableActions.append} aria-describedby={blockedHint?"document-upload-blocked":undefined} onClick={()=>open("append")}>+ Добавить страницы</button></span>;
+  const fab=<button className="fab-upload" disabled={blocked||!doc.availableActions.append} aria-label="Добавить страницы" aria-describedby={blockedHint?"document-upload-blocked":undefined} title={blockedHint||"Добавить страницы"} onClick={()=>open("append")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>;
   const useFallback=pages.length===1&&!name.startsWith("d-")&&fallback&&!processingMessage(pages[0]);
-  const content=pages.length===1?(useFallback?cloneElement(fallback,{metaActions:appendButton}):<GroupPage page={pages[0]} user={user} embedded={false} onBack={onBack} onOpenImage={onOpenImage} reload={reload}
+  const content=singleLayout?(useFallback?cloneElement(fallback,{metaActions:appendButton}):<GroupPage page={pages[0]} user={user} blocked={blocked} embedded={false} onBack={onBack} onOpenImage={onOpenImage} reload={reload}
     onReport={onReport} onTab={onTab} tab={tabs[pages[0].filename]} initialTab={initialTextTab} autoRestoreTables={autoRestoreTables} metaActions={appendButton} onReplace={page=>open("replace",{page})} processingMessage={processingMessage(pages[0])}/>):
     <main className="document-page"><button className="document-page__back" onClick={onBack}>Назад к списку</button>
       <div className="document-page__meta multipage-preview__meta"><div className="document-page__meta-details"><p className="gallery__date">{new Intl.DateTimeFormat("ru-RU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(doc.archiveAt))}</p>
-        <p className={`gallery__status-badge ${status.badgeClassName}`}>{processed===pages.length?status.label:pages.some(p=>p.status==="processing")?status.label:"Готово частично"}</p><span className="multipage-preview__page-count">{pageCount(pages.length)}</span></div><div className="document-page__meta-actions">{appendButton}</div></div>
-      <section className="document-page__content multipage-preview__heading"><div className="multipage-preview__title-row"><h2>{getDocumentDisplayTitle({...doc,status:pages[0]?.status},"Документ")}</h2><CopyAllButton disabled={blocked} copied={Boolean(copyAllMap.all)} onClick={openCopy} label={missing?"Скопировать доступный текст":"Скопировать всё"}/></div><p className="document-page__summary">{doc.summary}</p></section>
-      <div className="multipage-preview__actions"><button className="document-page__back" disabled={blocked} onClick={()=>{setDraft([...pages]);open("order");}}>Изменить порядок страниц</button><button className="document-page__back" disabled={blocked} onClick={()=>open("split")}>Разделить на документы</button></div>
-      <p className="multipage-preview__counts">Загружено: {pages.length}, обработано: {processed}.</p>
+        <p className={`gallery__status-badge ${uploadView.active?"gallery__status-badge--processing":status.badgeClassName}`}>{uploadView.active?"Загружается":processed===rows.length?status.label:pages.some(p=>p.status==="processing")?status.label:"Готово частично"}</p><span className="multipage-preview__page-count">{pageCount(rows.length)}</span></div><div className="document-page__meta-actions">{appendButton}</div></div>
+      <section className="document-page__content multipage-preview__heading"><div className="multipage-preview__title-row"><h2>{getDocumentDisplayTitle({...doc,status:pages[0]?.status},"Название загружается…")}</h2><CopyAllButton disabled={blocked||!pages.length} copied={Boolean(copyAllMap.all)} onClick={openCopy} label={missing?"Скопировать доступный текст":"Скопировать всё"}/></div><p className="document-page__summary">{doc.summary}</p></section>
+      {pages.length>1&&<div className="multipage-preview__actions"><button className="document-page__back" disabled={blocked} onClick={()=>{setDraft([...pages]);open("order");}}>Изменить порядок страниц</button><button className="document-page__back" disabled={blocked} onClick={()=>open("split")}>Разделить на документы</button></div>}
+      <DocumentUploadProgress view={{...uploadView,reason:blockedHint}}/>
+      {loadError&&<p role="alert" className="document-improvement__error">Не удалось обновить статусы. {loadError}</p>}
+      {!uploadView.visible&&<p className="multipage-preview__counts">Загружено: {pages.length}, обработано: {processed}.</p>}
       <div className="document-navigation-layout">
-      <DocumentPageNavigation pages={pages.map((page,index)=>({id:`document-page-${page.pageId}`,title:getDocumentDisplayTitle(page,`Страница ${index+1}`)}))}/>
+      <DocumentPageNavigation pages={rows.map((page,index)=>({id:`document-page-${page.pageId}`,title:page.placeholder?`Страница ${index+1}: загрузка`:getDocumentDisplayTitle(page,`Страница ${index+1}`)}))}/>
       <div className="document-navigation-layout__pages">
-      {pages.map((page,index)=><section className="multipage-preview__page" key={page.filename} id={`document-page-${page.pageId}`}>
-        <header className="multipage-preview__page-header">{index>0&&<div className="multipage-preview__page-description"><h3>{getDocumentDisplayTitle(page,`Страница ${index+1}`)}</h3>{page.summary&&<p className="document-page__summary">{page.summary}</p>}</div>}<div className="multipage-preview__page-tools"><strong>Страница {index+1} из {pages.length}</strong><button className="archive-action archive-action--link" disabled={blocked} onClick={()=>open("extract",{page,number:index+1})}>Убрать из документа</button></div></header>
+      {rows.map((row,index)=>{const page=pages.find(p=>p.pageId===row.pageId)||row;return page.placeholder?<PendingDocumentPage key={page.pageId} page={page} index={index} total={rows.length}/>:<section className="multipage-preview__page" key={page.pageId} id={`document-page-${page.pageId}`}>
+        <header className="multipage-preview__page-header">{index>0&&<div className="multipage-preview__page-description"><h3>{getDocumentDisplayTitle(page,`Страница ${index+1}`)}</h3>{page.summary&&<p className="document-page__summary">{page.summary}</p>}</div>}<div className="multipage-preview__page-tools"><strong>Страница {index+1} из {rows.length}</strong>{pages.length>1&&<button className="archive-action archive-action--link" disabled={blocked} onClick={()=>open("extract",{page,number:index+1})}>Убрать из документа</button>}</div></header>
         <div className="multipage-document__added-status" role="status"><span className={`gallery__status-badge ${getPhotoStatusMeta(page.status)?.badgeClassName||""}`}>{getPhotoStatusMeta(page.status)?.label||page.status}</span>{(page.addedFromArchive||archiveAddedPages.includes(page.pageId))&&<><span className="gallery__status-badge gallery__status-badge--processed">✓ Добавлена из архива</span><span>Обработки не списаны.</span></>}</div>
-        <div className="multipage-document__embedded"><GroupPage page={page} user={user} embedded onBack={onBack} onOpenImage={onOpenImage} reload={reload} onReport={onReport} onTab={onTab} tab={tabs[page.filename]} initialTab={initialTextTab==="tables"&&(data.anchorPageId?page.pageId===data.anchorPageId:index===0)?"tables":"text"} autoRestoreTables={false} onReplace={page=>open("replace",{page})} processingMessage={processingMessage(page)} sideFooter={index===pages.length-1?<CopyAllButton disabled={blocked} copied={Boolean(copyAllMap.all)} onClick={openCopy} label={missing?"Скопировать доступный текст":"Скопировать всё"}/>:undefined}/></div>
-      </section>)}
+        <div className="multipage-document__embedded"><GroupPage page={page} user={user} blocked={blocked} embedded onBack={onBack} onOpenImage={onOpenImage} reload={reload} onReport={onReport} onTab={onTab} tab={tabs[page.filename]} initialTab={initialTextTab==="tables"&&(data.anchorPageId?page.pageId===data.anchorPageId:index===0)?"tables":"text"} autoRestoreTables={false} onReplace={page=>open("replace",{page})} processingMessage={processingMessage(page)} sideFooter={index===rows.length-1?<CopyAllButton disabled={blocked} copied={Boolean(copyAllMap.all)} onClick={openCopy} label={missing?"Скопировать доступный текст":"Скопировать всё"}/>:undefined}/></div>
+      </section>})}
 
       </div></div>
     </main>;
-  return <div data-multipage-preview className={pages.length>1?"multipage-document--navigable":undefined} ref={pageRoot}>
+  return <div data-multipage-preview className={rows.length>1?"multipage-document--navigable":undefined} ref={pageRoot}>
     {content}
-    {pendingInDocument&&<section className="document-page multipage-document__pending" data-upload-pending><div className="document-page__layout"><div className="document-page__text"><p role="status" aria-live="polite">{progress.label}</p></div><aside className="document-page__side"><img className="multipage-document__pending-image" src={progress.url} alt="Загружаемая страница"/></aside></div></section>}
+    {singleLayout&&blockedHint&&<p id="document-upload-blocked" className="document-page multipage-document__message">{blockedHint}</p>}
     {fab}<input ref={input} className="upload-input" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={event=>upload.handleUpload(event,inputContext.current)}/>
     {(message||error||loadError||uploadFooterMessage)&&<p className={`multipage-document__message ${error||loadError?"document-improvement__error":""}`} role="status">{error||loadError||uploadFooterMessage||message}</p>}
     {dialog&&<DocumentActionDialog title={dialog.kind==="copy"?"Скопировать текст?":dialog.kind==="append"?"Добавить страницы":dialog.kind==="replace"?"Заменить фото страницы?":dialog.kind==="extract"?`Убрать страницу ${dialog.number} из документа?`:dialog.kind==="order"?"Изменить порядок страниц":dialog.kind==="archive"?"Добавить из архива":"Разделить на отдельные документы?"} onClose={()=>setDialog(null)} busy={busy} scrollBody={dialog.kind==="archive"} footer={<>

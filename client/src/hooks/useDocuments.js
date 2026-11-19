@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listDocuments, deleteDocuments } from "../services/documentsApi";
 import { getPhotoUrl } from "../services/api";
+import { documentUploadView } from "../utils/documentUploadProgress";
 
-export function archiveDocumentPhotos(documents,photos) {
+export function archiveDocumentPhotos(documents,photos,session=null) {
   if(!documents)return [];
   const byName=new Map(photos.map(p=>[p.name,p]));
   return documents.map(doc=>{
     const cover=byName.get(doc.coverFilename)||{};
     const counts=doc.statusCounts||{};
     const status=counts.processing?"processing":counts.processed===doc.pageCount?"processed":counts.processed||counts.recognized?"recognized":Object.keys(counts)[0]||"uploaded";
-    return {...cover,...doc,name:`d-${doc.id}`,documentId:doc.id,coverName:doc.coverFilename,url:doc.coverUrl||cover.url||getPhotoUrl(doc.coverFilename),
+    const progress=documentUploadView(doc,(doc.searchPages||[]).map(p=>({...p,status:p.status||byName.get(p.filename)?.status})),session);
+    return {...cover,...doc,uploadView:progress,name:`d-${doc.id}`,documentId:doc.id,coverName:doc.coverFilename,url:doc.coverUrl||cover.url||getPhotoUrl(doc.coverFilename),
       status,createdAt:doc.archiveAt,searchText:doc.searchPages?.map(p=>[p.title,p.summary,p.text,p.cleanText,...(p.tags||[])].join(" ")).join(" ")||""};
   });
 }
@@ -28,6 +30,7 @@ export function useDocuments(userId,photos) {
   },[userId]);
   useEffect(()=>{invalidate();docsRef.current=[];setDocuments(null);setError("");return invalidate;},[userId,invalidate]);
   useEffect(()=>{if(userId)reloadDocuments().catch(()=>setError("Не удалось загрузить документы. Обновите страницу."));},[userId,photos,reloadDocuments]);
+  useEffect(()=>{if(!userId)return;const timer=setInterval(()=>reloadDocuments().catch(()=>{}),10000);return()=>clearInterval(timer);},[userId,reloadDocuments]);
   async function removeDocuments(names,onProgress=()=>{}) {
     const selected=new Set(names),sources=docsRef.current.filter(d=>selected.has(`d-${d.id}`));
     const result={deleted:[],missing:names.filter(n=>!sources.some(d=>`d-${d.id}`===n)),failed:[],cleanupPending:false};

@@ -45,6 +45,8 @@ export function mapDocument(row, { detail = false } = {}) {
     pageCount: pages.length, coverPageId: pages[0] ? String(pages[0].id) : null,
     coverFilename: pages[0]?.filename ?? null, statusCounts: counts,
     pageLimit: DOCUMENT_PAGE_LIMIT,
+    activity: { uploading: Boolean(row.upload_active), processing: Boolean(row.processing_active), reviewing: Boolean(row.review_active) },
+    uploadProgress: row.upload_progress || null,
     availableActions: {
       merge: !busy && pages.length === 1,
       reorder: !busy && pages.length > 1,
@@ -56,7 +58,7 @@ export function mapDocument(row, { detail = false } = {}) {
   };
   if (!detail) return { ...document, searchPages: pages.map(p => {
     const info = mapPhotoInfo(p);
-    return { pageId: String(p.id), title: info.title, summary: info.summary,
+    return { pageId: String(p.id), filename: p.filename, status: p.status, title: info.title, summary: info.summary,
       text: info.text, cleanText: info.cleanText, tags: info.tags };
   }) };
   return { document, pages: pages.map(p => ({ ...mapPhotoInfo(p), pageId: String(p.id), position: p.position, addedFromArchive: Boolean(p.addedFromArchive) })) };

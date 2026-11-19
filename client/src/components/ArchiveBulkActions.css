@@ -12,7 +12,12 @@
 .archive-action:focus-visible,.archive-selectable__checkbox:focus-visible { outline:2px solid #98a2b3; outline-offset:3px; }
 .archive-delete-hint { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px; margin:0 0 12px; border:1px solid #d7dce5; border-radius:10px; background:#f8fafc; }
 .archive-delete-hint p { margin:4px 0 0; color:#667085; font-size:14px; }
-.archive-selectable { position:relative; min-width:0; }
+.archive-selectable { position:relative; min-width:0; display:flex; margin-bottom:8px; }
+.archive-selectable > div { display:flex; flex:1; min-width:0; }
+.archive-selectable .gallery__item { flex:1; min-width:0; }
+.archive-selectable .gallery__body { flex:1; }
+.archive-selectable .gallery__content { align-self:stretch; }
+.archive-selectable .gallery__text-section { margin-top:auto; }
 .archive-selectable--active .gallery__item { padding-left:54px; }
 .archive-selectable--active .gallery__delete-button,.archive-selectable--active .gallery__text-section { display:none; }
 .archive-selectable__surface { position:absolute; inset:0; z-index:1; border:0; border-radius:14px; background:transparent; cursor:pointer; }

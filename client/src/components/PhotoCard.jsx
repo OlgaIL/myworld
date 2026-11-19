@@ -2,6 +2,7 @@ import { memo } from "react";
 import { getAiUnavailableMessage, getPhotoStatusMeta } from "../constants/documentStatuses";
 import { getImprovementRequestStatusMeta } from "../constants/improvementRequestStatuses";
 import HourglassIcon from "./HourglassIcon";
+import { DocumentUploadProgress } from "./DocumentUploadProgress";
 
 function CloseIcon() {
   return (
@@ -35,7 +36,7 @@ function formatCreatedAt(value) {
   return formatted.replace(".", "");
 }
 
-function IconButton({ className = "", label, title, onClick, children }) {
+function IconButton({ className = "", label, title, onClick, children, disabled=false }) {
   const classes = ["icon-button", className].filter(Boolean).join(" ");
 
   return (
@@ -43,6 +44,7 @@ function IconButton({ className = "", label, title, onClick, children }) {
       type="button"
       className={classes}
       onClick={onClick}
+      disabled={disabled}
       title={title || label}
       aria-label={label}
     >
@@ -69,8 +71,11 @@ function PhotoCard({
   const readableText = info?.cleanText || info?.text || "";
   const isPendingUpload = Boolean(photo.isPendingUpload);
   const hasReadableText = Boolean(readableText.trim());
-  const canOpenDocument = !isPendingUpload && Boolean(info) && hasReadableText;
-  const canDeleteFromContent = !isPendingUpload && (info?.status === "no_text" || info?.status === "error");
+  const canOpenDocument = !isPendingUpload && Boolean(info) && (hasReadableText || Boolean(photo.documentId));
+  const busyReason = photo.uploadView?.reason || "";
+  const displayPageCount=Math.max(pageCount,photo.uploadView?.expected||0);
+  const incompleteUpload=Boolean(photo.uploadView?.notUploaded||photo.uploadView?.rows.some(p=>p.placeholder));
+  const canDeleteFromContent = !isPendingUpload && !busyReason && (info?.status === "no_text" || info?.status === "error");
 
   function handleCardClick() {
     if (canOpenDocument) {
@@ -85,17 +90,18 @@ function PhotoCard({
       onClick={handleCardClick}
     >
       {!isPendingUpload && (
-        <IconButton
+        <span className="gallery__delete-hint" title={busyReason||undefined}><IconButton
           className="gallery__delete-button"
           label="Удалить фото"
-          title="Удалить фото"
+          title={busyReason||"Удалить фото"}
+          disabled={Boolean(busyReason)}
           onClick={(event) => {
             event.stopPropagation();
             onRequestDelete(photo.name);
           }}
         >
           <CloseIcon />
-        </IconButton>
+        </IconButton></span>
       )}
 
       <div className="gallery__meta">
@@ -108,7 +114,7 @@ function PhotoCard({
           <p className="gallery__status-badge gallery__status-badge--processing">
             Загружается
           </p>
-        ) : statusMeta && (
+        ) : photo.uploadView?.active ? <p className="gallery__status-badge gallery__status-badge--processing">Загружается</p> : incompleteUpload ? <p className="gallery__status-badge gallery__status-badge--error">Загружено не полностью</p> : statusMeta && (
           <p className={`gallery__status-badge ${statusMeta.badgeClassName}`}>
             {statusMeta.label}
           </p>
@@ -123,6 +129,8 @@ function PhotoCard({
 
       <div className="gallery__body">
         <div className="gallery__content">
+          {photo.uploadView&&<DocumentUploadProgress view={photo.uploadView} compact/>}
+          {!isPendingUpload&&["uploaded","processing"].includes(info?.status)&&<><h4>{info.title||"Название загружается…"}</h4><p>{info.status==="processing"?"Обрабатываем фото…":"Фотография загружена. Обработка ещё не завершена."}</p></>}
           {isPendingUpload && (
             <>
               <h4>Загружается новая запись…</h4>
@@ -202,10 +210,10 @@ function PhotoCard({
             </>
           )}
 
-          {(hasReadableText || canDeleteFromContent) && (
+          {(canOpenDocument || canDeleteFromContent) && (
             <div className="gallery__text-section">
               <div className="gallery__text-actions">
-                {hasReadableText && (
+                {canOpenDocument && (
                   <button
                     className="gallery__open-document"
                     type="button"
@@ -214,12 +222,12 @@ function PhotoCard({
                       onOpenDocument(photo, info);
                     }}
                   >
-                    Открыть текст
+                    {hasReadableText?"Открыть текст":"Открыть документ"}
                   </button>
                 )}
-                {hasReadableText && pageCount > 1 && (
+                {canOpenDocument && displayPageCount > 1 && (
                   <span className="gallery__page-count">
-                    {pageCount} {pageCount % 100 >= 11 && pageCount % 100 <= 14 ? "страниц" : pageCount % 10 === 1 ? "страница" : [2, 3, 4].includes(pageCount % 10) ? "страницы" : "страниц"}
+                    {displayPageCount} {displayPageCount % 100 >= 11 && displayPageCount % 100 <= 14 ? "страниц" : displayPageCount % 10 === 1 ? "страница" : [2, 3, 4].includes(displayPageCount % 10) ? "страницы" : "страниц"}
                   </span>
                 )}
                 {canDeleteFromContent && (
@@ -251,7 +259,7 @@ function PhotoCard({
               }
             }}
           />
-          {isPendingUpload ? (
+          {isPendingUpload || photo.uploadView?.active || photo.uploadView?.processing > 0 ? (
             <div className="gallery__upload-overlay">
               <div className="gallery__upload-spinner" aria-hidden="true" />
             </div>
@@ -280,6 +288,7 @@ function arePhotoCardPropsEqual(prev, next) {
     prev.photo?.name === next.photo?.name &&
     prev.photo?.url === next.photo?.url &&
     prev.photo?.isPendingUpload === next.photo?.isPendingUpload &&
+    prev.photo?.uploadView === next.photo?.uploadView &&
     prev.pageCount === next.pageCount &&
     prev.info === next.info &&
     prev.uploadMessage === next.uploadMessage &&

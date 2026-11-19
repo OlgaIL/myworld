@@ -101,7 +101,8 @@ function DocumentPage({
   onTextTabChange,
   onTextVariantReady,
   textOverride,
-  sideFooter
+  sideFooter,
+  previewBusy = false
 }) {
   if (!photo || !info) {
     return (
@@ -290,6 +291,7 @@ function DocumentPage({
             onClick={() => onOpenImage(photo.name)}
           >
             <img data-clarity-unmask="true" src={photo.url} alt="" />
+            {previewBusy && <span className="gallery__upload-overlay"><span className="gallery__upload-spinner" aria-hidden="true"/></span>}
             <span className="document-page__preview-zoom" aria-hidden="true">
               <ZoomIcon />
             </span>

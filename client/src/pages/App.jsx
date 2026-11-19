@@ -86,7 +86,6 @@ function App() {
   });
   const [activePhoto, setActivePhoto] = useState(null);
   const {documents, error:documentsError,reloadDocuments,removeDocuments}=useDocuments(user?.id,photos);
-  const archivePhotos=useMemo(()=>archiveDocumentPhotos(documents,photos),[documents,photos]);
   const reloadPhotos=useCallback(async(options)=>{await reloadRawPhotos(options);await reloadDocuments();},[reloadRawPhotos,reloadDocuments]);
   const [mergeSelection,setMergeSelection]=useState(null),[archiveError,setArchiveError]=useState("");
   const [improvementModalMode, setImprovementModalMode] = useState(null);
@@ -98,11 +97,11 @@ function App() {
   const [showPostAuthNextStep, setShowPostAuthNextStep] = useState(false);
   const { copiedMap: documentCopiedMap, copyText: handleDocumentCopy, resetCopied } = useCopyFeedback();
   const fileInputRef = useRef(null);
-  const photosCount = archivePhotos.length;
   const recordLimit = Number(user?.recordLimit || 0);
   const recordsUsed = Number(user?.recordsUsed ?? 0);
   const recordUploadAllowed = user?.recordUploadAllowed !== false;
   const documentUpload = useDocumentUpload({user,reloadPhotos,reloadUser,recordUploadAllowed,batchContext:batchUploadContext,
+    onUploadStarted:()=>navigate("/documents/upload"),
     onDocumentCreated:id=>navigate(`/documents/d-${id}`),
     onPageReady:(id,pageId,{first})=>navigate(`/documents/d-${id}?page=${pageId}`,{replace:!first||Boolean(documentName)})});
   const {
@@ -111,6 +110,8 @@ function App() {
     pendingPhotos,
     handleUpload
   } = documentUpload;
+  const archivePhotos=useMemo(()=>archiveDocumentPhotos(documents,photos,documentUpload.session),[documents,photos,documentUpload.session]);
+  const photosCount = archivePhotos.length;
   const pendingUploadName=documentUpload.activeUpload?.pendingName;
   useEffect(()=>{
     if(documentName||!pendingUploadName)return;
@@ -130,7 +131,7 @@ function App() {
     submitting: improvementRequestSubmitting,
     error: improvementRequestError,
     submitRequest: submitImprovementRequest
-  } = useImprovementRequest(documentName, Boolean(user && documentName && !documentName.startsWith("d-")), {
+  } = useImprovementRequest(documentName, Boolean(user && documentName && documentName!=="upload" && !documentName.startsWith("d-")), {
     onRequestChanged: upsertImprovementRequest
   });
 
@@ -474,7 +475,7 @@ function App() {
               user={user}
               recordsUsed={photosCount}
               photosCount={photosCount}
-              pendingPhotos={pendingPhotos}
+              pendingPhotos={documentUpload.session?.mode!=="separate"&&documentUpload.session?.documentId?[]:pendingPhotos}
               filteredPhotos={filteredPhotos}
               selectionPhotos={selectionPhotos}
               selectionScopeKey={selectionScopeKey}
