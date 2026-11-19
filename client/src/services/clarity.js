@@ -9,8 +9,16 @@ const PUBLIC_PATHS = new Set(["/", "/about", "/account", "/packages", "/privacy"
 export function isClarityUrlSafe(value, origin) {
   try {
     const url = new URL(value, origin);
-    return url.origin === origin && !url.search && !url.hash && (
+    const multipage = /^\/documents\/d-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(url.pathname);
+    // Page progress contains only a server-generated numeric photo ID. These
+    // internal transitions must stay in the SPA while selected Files are in memory.
+    const page = url.searchParams.get("page");
+    const pageQuery = multipage && [...url.searchParams.keys()].length === 1
+      && /^[1-9]\d{0,18}$/.test(page || "") && BigInt(page) <= 9223372036854775807n;
+    return url.origin === origin && (!url.search || pageQuery) && !url.hash && (
       PUBLIC_PATHS.has(url.pathname)
+      || url.pathname === "/documents/upload"
+      || multipage
       || /^\/guest-documents\/\d+$/.test(url.pathname)
       || /^\/documents\/\d{13}-[a-f0-9-]{36}(?:-guest)?\.(?:jpe?g|png|webp|heic|heif)$/i.test(url.pathname)
     );

@@ -19,6 +19,28 @@ function fixture(overrides = {}) {
   return { win, doc, controller, calls, scripts, navigation, listeners, values };
 }
 
+test("multipage upload and page progress navigate without reloading or unmounting the upload queue",()=>{
+  const f=fixture();f.controller.chooseConsent(true);
+  const documentPath="/documents/d-349d846f-b1f5-47d7-b821-780a38660255";
+  const paths=["/documents/upload",documentPath,`${documentPath}?page=123`,`${documentPath}?page=124`];
+  for(const path of paths){
+    assert.equal(isClarityUrlSafe(path,f.win.location.origin),true,path);
+    assert.equal(f.controller.isPrivateTransition(path),false,path);
+    f.win.history.pushState({},"",path);
+    f.win.history.replaceState({},"",path);
+  }
+  assert.deepEqual(f.navigation,[]);
+  assert.equal(f.calls.length,paths.length*2);
+  assert.equal(f.scripts.length,1);
+});
+
+test("multipage navigation still excludes unknown IDs and arbitrary query values",()=>{
+  const origin="https://word2you.ru",path="/documents/d-349d846f-b1f5-47d7-b821-780a38660255";
+  for(const url of ["/documents/d-private-name","/documents/upload?page=123",`${path}?page=private`,`${path}?page=123&email=private`,`${path}?page=123&page=124`,`${path}?view=tables`,`${path}#private`,`${path}?page=0`,`${path}?page=-1`]){
+    assert.equal(isClarityUrlSafe(url,origin),false,url);
+  }
+});
+
 test("safe URLs exclude admin, arbitrary filenames, query parameters, hashes and other origins", () => {
   const origin = "https://word2you.ru";
   for (const url of ["/", "/account", "/photo-to-text", "/handwriting-to-text", "/guest-documents/123", "/documents/1792012345678-12345678-1234-1234-1234-123456789abc.jpg"]) assert.equal(isClarityUrlSafe(url, origin), true, url);
