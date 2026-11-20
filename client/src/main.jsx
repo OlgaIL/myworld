@@ -4,9 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import AppShell from "./AppShell";
 import { PublicLimitsProvider } from "./contexts/PublicLimitsContext";
 import "./index.css";
-import { clarityController } from "./services/clarity";
+import { inspectletController } from "./services/inspectlet";
 
-clarityController?.install();
+inspectletController?.install();
 
 const root = document.getElementById("root");
 const app = <React.StrictMode><BrowserRouter><PublicLimitsProvider><AppShell /></PublicLimitsProvider></BrowserRouter></React.StrictMode>;

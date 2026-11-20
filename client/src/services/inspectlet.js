@@ -1,21 +1,34 @@
 const env = import.meta.env || {};
-// Switching back from Inspectlet requires fresh consent; never reuse prior providers or versions.
-export const CLARITY_CONSENT_KEY = "word2you_clarity_consent_v4_return";
-export const CLARITY_CONSENT_EVENT = "word2you:clarity-consent";
+// Returning from another provider requires fresh consent.
+export const INSPECTLET_CONSENT_KEY = "word2you_inspectlet_consent_v2_return";
+export const INSPECTLET_CONSENT_EVENT = "word2you:inspectlet-consent";
+const ACQUISITION_KEYS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid"]);
+function isRecordingQuerySafe(url, multipage) {
+  const keys = new Set();
+  for (const [key, value] of url.searchParams) {
+    if (keys.has(key)) return false;
+    keys.add(key);
+    if (key === "page" && multipage) {
+      if (!/^[1-9]\d{0,18}$/.test(value) || BigInt(value) > 9223372036854775807n) return false;
+    } else if (key === "intent" && ["tables", "batch", "handwriting"].includes(value)) {
+      continue;
+    } else if (ACQUISITION_KEYS.has(key)) {
+      // Permit normal ad labels, never email addresses, nested URLs or arbitrary parameters.
+      if (key === "yclid" ? !/^\d{1,64}$/.test(value)
+        : !/^[\p{L}\p{N} ._+~:|{}-]{1,200}$/u.test(value)) return false;
+    } else return false;
+  }
+  return true;
+}
 const PUBLIC_PATHS = new Set(["/", "/about", "/account", "/packages", "/privacy", "/consent", "/terms", "/requisites", "/photo-to-text", "/handwriting-to-text", "/batch-photo-to-text", "/table-from-photo"]);
 
 // Do not send arbitrary path names, query strings, fragments or referrers.
 // Document routes contain server-generated identifiers, never document titles.
-export function isClarityUrlSafe(value, origin) {
+export function isInspectletUrlSafe(value, origin) {
   try {
     const url = new URL(value, origin);
     const multipage = /^\/documents\/d-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(url.pathname);
-    // Page progress contains only a server-generated numeric photo ID. These
-    // internal transitions must stay in the SPA while selected Files are in memory.
-    const page = url.searchParams.get("page");
-    const pageQuery = multipage && [...url.searchParams.keys()].length === 1
-      && /^[1-9]\d{0,18}$/.test(page || "") && BigInt(page) <= 9223372036854775807n;
-    return url.origin === origin && (!url.search || pageQuery) && !url.hash && (
+    return url.origin === origin && isRecordingQuerySafe(url, multipage) && !url.hash && (
       PUBLIC_PATHS.has(url.pathname)
       || url.pathname === "/documents/upload"
       || multipage
@@ -25,8 +38,8 @@ export function isClarityUrlSafe(value, origin) {
   } catch { return false; }
 }
 
-export function isClarityReferrerSafe(value, origin) {
-  if (!value || isClarityUrlSafe(value, origin)) return true;
+export function isInspectletReferrerSafe(value, origin) {
+  if (!value || isInspectletUrlSafe(value, origin)) return true;
   try {
     const url = new URL(value);
     // Cross-origin browsers normally disclose just the referring origin.
@@ -35,27 +48,28 @@ export function isClarityReferrerSafe(value, origin) {
   } catch { return false; }
 }
 
-export function createClarityController(win, doc, config = env) {
+export function createInspectletController(win, doc, config = env) {
   let injected = false;
   let installed = false;
-  const hosts = (config.VITE_CLARITY_HOSTS || "word2you.ru").split(",").map(host => host.trim());
-  const enabled = config.PROD && config.VITE_CLARITY_ENABLED !== "false" && hosts.includes(win.location.hostname);
-  const safe = value => isClarityUrlSafe(value, win.location.origin);
-  const call = (...args) => { try { win.clarity?.(...args); } catch { /* Optional analytics. */ } };
+  const hosts = (config.VITE_INSPECTLET_HOSTS || "word2you.ru").split(",").map(host => host.trim());
+  const enabled = config.PROD && config.VITE_INSPECTLET_ENABLED !== "false" && hosts.includes(win.location.hostname);
+  const safe = value => isInspectletUrlSafe(value, win.location.origin);
 
   function sync() {
     if (!enabled || injected || !safe(win.location.href)) return;
     // Referrers can also contain document names, login tokens and email addresses.
-    if (!isClarityReferrerSafe(doc.referrer, win.location.origin)) return;
+    if (!isInspectletReferrerSafe(doc.referrer, win.location.origin)) return;
     try {
-      if (win.localStorage.getItem(CLARITY_CONSENT_KEY) !== "granted") return;
+      if (win.localStorage.getItem(INSPECTLET_CONSENT_KEY) !== "granted") return;
       injected = true;
-      win.clarity = win.clarity || function (...args) { (win.clarity.q = win.clarity.q || []).push(args); };
-      call("consentv2", { analytics_Storage: "granted", ad_Storage: "denied" });
+      win.__insp = win.__insp || [];
+      win.__insp.push(["wid", 390286863]);
+      if (win.__inspld !== undefined) return;
+      win.__inspld = 1;
       const script = doc.createElement("script");
       script.async = true;
-      script.src = "https://www.clarity.ms/tag/yy89cpbeew";
-      script.id = "word2you-clarity";
+      script.src = `https://cdn.inspectlet.com/inspectlet.js?wid=390286863&r=${Math.floor(Date.now() / 3600000)}`;
+      script.id = "inspsync";
       script.onerror = () => {}; // Failure must not affect the application.
       doc.head.appendChild(script);
     } catch { /* Storage, CSP and blockers must not break the product. */ }
@@ -64,13 +78,12 @@ export function createClarityController(win, doc, config = env) {
   function install() {
     if (installed || !enabled) return;
     installed = true;
-    // Installed before Clarity and the router: private destinations load in a
+    // Installed before Inspectlet and the router: private destinations load in a
     // fresh document where no recorder is started, including SPA/back navigation.
     for (const method of ["pushState", "replaceState"]) {
       const original = win.history[method];
       win.history[method] = function (state, unused, url) {
         if (injected && url != null && !safe(url)) {
-          call("stop");
           win.location[method === "replaceState" ? "replace" : "assign"](url);
           return;
         }
@@ -80,31 +93,26 @@ export function createClarityController(win, doc, config = env) {
     win.addEventListener("popstate", event => {
       if (injected && !safe(win.location.href)) {
         event.stopImmediatePropagation?.();
-        call("stop");
         win.location.reload();
       }
     }, true);
-    win.addEventListener(CLARITY_CONSENT_EVENT, sync);
+    win.addEventListener(INSPECTLET_CONSENT_EVENT, sync);
     win.addEventListener("storage", event => {
-      if (event.key !== CLARITY_CONSENT_KEY) return;
+      if (event.key !== INSPECTLET_CONSENT_KEY) return;
       if (event.newValue !== "granted" && injected) {
-        call("consentv2", { analytics_Storage: "denied", ad_Storage: "denied" });
-        call("stop");
         win.location.reload();
       } else sync();
     });
   }
 
   function chooseConsent(granted) {
-    try { win.localStorage.setItem(CLARITY_CONSENT_KEY, granted ? "granted" : "denied"); } catch { return false; }
+    try { win.localStorage.setItem(INSPECTLET_CONSENT_KEY, granted ? "granted" : "denied"); } catch { return false; }
     if (!granted && injected) {
-      call("consentv2", { analytics_Storage: "denied", ad_Storage: "denied" });
-      call("stop");
       win.location.reload();
-    } else win.dispatchEvent(new Event(CLARITY_CONSENT_EVENT));
+    } else win.dispatchEvent(new Event(INSPECTLET_CONSENT_EVENT));
     return true;
   }
   return { install, sync, chooseConsent, isPrivateTransition: value => injected && !safe(value || win.location.href) };
 }
 
-export const clarityController = typeof window === "undefined" ? null : createClarityController(window, document);
+export const inspectletController = typeof window === "undefined" ? null : createInspectletController(window, document);

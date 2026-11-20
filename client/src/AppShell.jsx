@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import AnalyticsTracker from "./components/AnalyticsTracker";
-import ClarityTracker from "./components/ClarityTracker";
-import ClarityRouteBoundary from "./components/ClarityRouteBoundary";
+import InspectletTracker from "./components/InspectletTracker";
+import InspectletRouteBoundary from "./components/InspectletRouteBoundary";
 import PresenceTracker from "./components/PresenceTracker";
 import CookieNotice from "./components/CookieNotice";
 import App from "./pages/App";
@@ -35,8 +35,8 @@ export default function AppShell() {
       <PageSeo />
       <PromoNavigationScroll />
       <DocumentNavigationScroll />
-      {!isOcrReview && <><AnalyticsTracker /><ClarityTracker /><PresenceTracker /><CookieNotice /></>}
-      <ClarityRouteBoundary><Routes>
+      {!isOcrReview && <><AnalyticsTracker /><InspectletTracker /><PresenceTracker /><CookieNotice /></>}
+      <InspectletRouteBoundary><Routes>
         <Route path="/admin-control" element={<AdminPage />} />
         <Route path="/admin-control/ocr-check" element={<OcrReviewPage />} />
         <Route
@@ -88,7 +88,7 @@ export default function AppShell() {
             </AuthProvider>
           }
         />
-      </Routes></ClarityRouteBoundary>
+      </Routes></InspectletRouteBoundary>
     </>
   );
 }

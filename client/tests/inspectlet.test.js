@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createClarityController, isClarityUrlSafe, isClarityReferrerSafe, CLARITY_CONSENT_KEY } from "../src/services/clarity.js";
+import { createInspectletController, isInspectletUrlSafe, isInspectletReferrerSafe, INSPECTLET_CONSENT_KEY } from "../src/services/inspectlet.js";
 
 function fixture(overrides = {}) {
   const calls = [], scripts = [], navigation = [], listeners = {};
@@ -14,7 +14,7 @@ function fixture(overrides = {}) {
   };
   const doc = { referrer: "", createElement: () => ({}), head: { appendChild: script => scripts.push(script) } };
   Object.assign(doc, overrides);
-  const controller = createClarityController(win, doc, { PROD: true });
+  const controller = createInspectletController(win, doc, { PROD: true });
   controller.install();
   return { win, doc, controller, calls, scripts, navigation, listeners, values };
 }
@@ -24,7 +24,7 @@ test("multipage upload and page progress navigate without reloading or unmountin
   const documentPath="/documents/d-349d846f-b1f5-47d7-b821-780a38660255";
   const paths=["/documents/upload",documentPath,`${documentPath}?page=123`,`${documentPath}?page=124`];
   for(const path of paths){
-    assert.equal(isClarityUrlSafe(path,f.win.location.origin),true,path);
+    assert.equal(isInspectletUrlSafe(path,f.win.location.origin),true,path);
     assert.equal(f.controller.isPrivateTransition(path),false,path);
     f.win.history.pushState({},"",path);
     f.win.history.replaceState({},"",path);
@@ -37,17 +37,17 @@ test("multipage upload and page progress navigate without reloading or unmountin
 test("multipage navigation still excludes unknown IDs and arbitrary query values",()=>{
   const origin="https://word2you.ru",path="/documents/d-349d846f-b1f5-47d7-b821-780a38660255";
   for(const url of ["/documents/d-private-name","/documents/upload?page=123",`${path}?page=private`,`${path}?page=123&email=private`,`${path}?page=123&page=124`,`${path}?view=tables`,`${path}#private`,`${path}?page=0`,`${path}?page=-1`]){
-    assert.equal(isClarityUrlSafe(url,origin),false,url);
+    assert.equal(isInspectletUrlSafe(url,origin),false,url);
   }
 });
 
 test("safe URLs exclude admin, arbitrary filenames, query parameters, hashes and other origins", () => {
   const origin = "https://word2you.ru";
-  for (const url of ["/", "/account", "/photo-to-text", "/handwriting-to-text", "/guest-documents/123", "/documents/1792012345678-12345678-1234-1234-1234-123456789abc.jpg"]) assert.equal(isClarityUrlSafe(url, origin), true, url);
-  for (const url of ["/admin-control", "/documents/secret.jpg", "/?email=private", "/#code", "/photo-to-text?utm_source=test", "/photo-to-text#how", "https://mirror.ru/", "mailto:private@example.org"]) assert.equal(isClarityUrlSafe(url, origin), false, url);
-  assert.equal(isClarityReferrerSafe("https://yandex.ru/", origin), true);
-  assert.equal(isClarityReferrerSafe("https://other.test/private-name", origin), false);
-  assert.equal(isClarityReferrerSafe("https://other.test/?email=private", origin), false);
+  for (const url of ["/", "/account", "/photo-to-text", "/handwriting-to-text", "/guest-documents/123", "/documents/1792012345678-12345678-1234-1234-1234-123456789abc.jpg"]) assert.equal(isInspectletUrlSafe(url, origin), true, url);
+  for (const url of ["/admin-control", "/documents/secret.jpg", "/?email=private", "/#code", "/photo-to-text#how", "https://mirror.ru/", "mailto:private@example.org"]) assert.equal(isInspectletUrlSafe(url, origin), false, url);
+  assert.equal(isInspectletReferrerSafe("https://yandex.ru/", origin), true);
+  assert.equal(isInspectletReferrerSafe("https://other.test/private-name", origin), false);
+  assert.equal(isInspectletReferrerSafe("https://other.test/?email=private", origin), false);
 });
 
 test("loads only after explicit consent, once across rerenders and SPA navigation", () => {
@@ -62,18 +62,18 @@ test("loads only after explicit consent, once across rerenders and SPA navigatio
   f.win.history.pushState({}, "", "/about");
   f.controller.sync();
   assert.equal(f.scripts.length, 1);
-  assert.equal(f.scripts[0].src, "https://www.clarity.ms/tag/yy89cpbeew");
-  assert.deepEqual(f.win.clarity.q, [["consentv2", { analytics_Storage: "granted", ad_Storage: "denied" }]]);
+  assert.match(f.scripts[0].src, /^https:\/\/cdn\.inspectlet\.com\/inspectlet\.js\?wid=390286863&r=\d+$/);
+  assert.deepEqual(f.win.__insp, [["wid", 390286863]]);
 });
 
-test("another provider's consents never authorize Clarity", () => {
-  for (const oldKey of ["word2you_inspectlet_consent_v1", "word2you_clarity_consent_v1", "word2you_clarity_consent_v2_documents", "word2you_clarity_consent_v3_account", "word2you_cookie_notice_accepted"]) {
+test("another provider's consents never authorize Inspectlet", () => {
+  for (const oldKey of ["word2you_inspectlet_consent_v1", "word2you_clarity_consent_v1", "word2you_clarity_consent_v2_documents", "word2you_clarity_consent_v3_account", "word2you_clarity_consent_v4_return", "word2you_cookie_notice_accepted"]) {
     const f = fixture();
     f.values.set(oldKey, "granted");
     f.controller.sync();
     assert.equal(f.scripts.length, 0);
     f.controller.chooseConsent(true);
-    assert.equal(f.values.get(CLARITY_CONSENT_KEY), "granted");
+    assert.equal(f.values.get(INSPECTLET_CONSENT_KEY), "granted");
     assert.equal(f.scripts.length, 1);
   }
 });
@@ -84,7 +84,7 @@ test("private navigation reloads before history mutation; revocation reloads wit
   assert.deepEqual(f.navigation, ["/admin-control"]);
   assert.equal(f.calls.length, 0);
   f.controller.chooseConsent(false);
-  assert.equal(f.values.get(CLARITY_CONSENT_KEY), "denied");
+  assert.equal(f.values.get(INSPECTLET_CONSENT_KEY), "denied");
   assert.equal(f.navigation.at(-1), "reload");
 });
 
@@ -97,17 +97,16 @@ test("referrers, disabled environments, storage and script failures fail closed"
   assert.doesNotThrow(() => h.controller.sync()); assert.equal(h.scripts.length, 0);
   const j = fixture(); j.doc.head.appendChild = () => { throw Error("CSP"); };
   assert.doesNotThrow(() => j.controller.chooseConsent(true));
-  for (const config of [{ PROD: false }, { PROD: true, VITE_CLARITY_ENABLED: "false" }, { PROD: true, VITE_CLARITY_HOSTS: "mirror.ru" }]) {
-    const k = fixture(); k.values.set(CLARITY_CONSENT_KEY, "granted");
-    createClarityController(k.win, k.doc, config).sync(); assert.equal(k.scripts.length, 0);
+  for (const config of [{ PROD: false }, { PROD: true, VITE_INSPECTLET_ENABLED: "false" }, { PROD: true, VITE_INSPECTLET_HOSTS: "mirror.ru" }]) {
+    const k = fixture(); k.values.set(INSPECTLET_CONSENT_KEY, "granted");
+    createInspectletController(k.win, k.doc, config).sync(); assert.equal(k.scripts.length, 0);
   }
 });
 
 
-test("storage revocation stops the recorder and denies both consent types", () => {
+test("storage revocation reloads the page when consent is removed", () => {
   const f = fixture(); f.controller.chooseConsent(true);
-  f.listeners.storage({ key: CLARITY_CONSENT_KEY, newValue: null });
-  assert.deepEqual(f.win.clarity.q.slice(-2), [["consentv2", { analytics_Storage: "denied", ad_Storage: "denied" }], ["stop"]]);
+  f.listeners.storage({ key: INSPECTLET_CONSENT_KEY, newValue: null });
   assert.equal(f.navigation.at(-1), "reload");
 });
 
@@ -116,7 +115,6 @@ test("replaceState and back navigation exclude admin before other listeners moun
   f.win.history.replaceState({}, "", "/admin-control/ocr-check");
   assert.equal(f.calls.length, 0);
   assert.deepEqual(f.navigation, ["/admin-control/ocr-check"]);
-  assert.deepEqual(f.win.clarity.q.at(-1), ["stop"]);
   f.win.location.href = "https://word2you.ru/admin-control";
   let stopped = false;
   f.listeners.popstate({ stopImmediatePropagation: () => { stopped = true; } });
@@ -129,4 +127,19 @@ test("all admin and unknown direct visits never inject a recorder", () => {
     const f = fixture(); f.win.location.href = f.win.location.origin + url;
     f.controller.chooseConsent(true); assert.equal(f.scripts.length, 0);
   }
+});
+
+
+test("guests and account users may record ad landings after consent", () => {
+  for (const path of ["/?utm_source=yandex&utm_medium=cpc&utm_campaign=123&utm_content=ad_456&utm_term=фото+текста&yclid=123456789", "/table-from-photo?intent=tables&utm_source=yandex", "/account?utm_campaign=return", "/guest-documents/123?utm_source=test"]) {
+    const f=fixture();f.win.location.href=f.win.location.origin+path;
+    f.controller.sync();assert.equal(f.scripts.length,0);
+    f.controller.chooseConsent(true);assert.equal(f.scripts.length,1,path);
+    assert.equal(f.controller.isPrivateTransition(path),false,path);
+  }
+});
+
+test("ad support keeps login secrets, malformed labels and admin URLs excluded", () => {
+  const origin="https://word2you.ru";
+  for (const path of ["/?email=secret@example.test", "/?code=123456", "/?token=secret", "/?utm_source=yandex&code=123456", "/?utm_term=secret%40example.test", "/?utm_source=https%3A%2F%2Fprivate.test", "/?yclid=secret", "/?utm_source=a&utm_source=b", "/admin-control?utm_source=yandex"])assert.equal(isInspectletUrlSafe(path,origin),false,path);
 });

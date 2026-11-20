@@ -127,7 +127,7 @@ function Modal({ src, onClose }) {
 
         <div className="modal__image-frame" ref={frameRef} tabIndex={0} role="region" aria-label="Фото с прокруткой">
           <div className="modal__image-stage" style={{ width: sideways ? fit.height : fit.width, height: sideways ? fit.width : fit.height }}>
-          <img data-clarity-unmask="true"
+          <img
             src={src}
             className="modal__image"
             alt=""

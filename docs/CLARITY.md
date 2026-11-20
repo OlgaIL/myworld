@@ -1,5 +1,8 @@
 # Microsoft Clarity: запись визитов
 
+20 ноября Ольга поручила возврат к Inspectlet вместо Clarity. Новая подготовка
+и приёмка — в [INSPECTLET.md](INSPECTLET.md); ниже история Clarity.
+
 ## Совместимость с многостраничной загрузкой — 19 ноября 2026
 
 Известные маршруты `/documents/upload` и `/documents/d-UUID` добавлены в список
