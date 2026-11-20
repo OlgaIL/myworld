@@ -24,6 +24,8 @@ before(async () => {
   await pool.query(`create table users (id bigint primary key, email text, display_name text, created_at timestamptz,
     last_processing_at timestamptz, records_processed_total int default 0, processing_quota int default 0);
     create table photos (id serial primary key, user_id bigint, status text, created_at timestamptz default now());
+    create table documents (id bigint primary key, user_id bigint);
+    create table document_pages (document_id bigint, user_id bigint, photo_id bigint);
     create table guest_documents (claimed_photo_id bigint);
     create table guest_document_claims (photo_id bigint);
     create table payments (id serial primary key, user_id bigint, status text);
@@ -66,7 +68,28 @@ test("stable pages, clamping, empty search and global totals stay independent", 
   assert.equal(new Set([...first.users, ...second.users, ...last.users].map(u => u.id)).size, 62);
   const empty = await list({ search: "does-not-exist" });
   assert.deepEqual([empty.users.length, empty.total, empty.page], [0, 0, 1]);
-  assert.deepEqual(await getAdminUsersSummary({ execute }), { usersCount: 62, documentsCount: 3 });
+  assert.deepEqual(await getAdminUsersSummary({ execute }), { usersCount: 62, documentsCount: 3, multipageDocumentsCount: 0 });
+});
+
+test("multipage summary counts current containers, including unfinished pages, and follows archive changes",async()=>{
+  const client=await pool.connect();
+  try{
+    await client.query("begin");
+    const run=client.query.bind(client);
+    await run(`insert into photos(id,user_id,status) values(4,1,'uploaded'),(5,2,'processing'),(6,2,'no_text');
+      insert into documents(id,user_id) values(101,1),(102,1),(103,2);
+      insert into document_pages(document_id,user_id,photo_id) values(101,1,1),(102,1,2),(102,1,4),(103,2,3),(103,2,5),(103,2,6)`);
+    assert.equal((await getAdminUsersSummary({execute:run})).multipageDocumentsCount,2);
+    // A page's recognition status does not decide whether its container is multipage.
+    await run("update photos set status='error' where id=2");
+    assert.equal((await getAdminUsersSummary({execute:run})).multipageDocumentsCount,2);
+    // Extracting/splitting two-page document 102 leaves one page in each container.
+    await run("insert into documents(id,user_id) values(104,1); update document_pages set document_id=104 where photo_id=4");
+    assert.equal((await getAdminUsersSummary({execute:run})).multipageDocumentsCount,1);
+    await run("delete from document_pages where document_id=103; delete from documents where id=103");
+    assert.equal((await getAdminUsersSummary({execute:run})).multipageDocumentsCount,0);
+    await client.query("rollback");
+  }finally{await client.query("rollback");client.release();}
 });
 test("paid means succeeded payment, never pending, gifts, manual quota, or duplicated payments", async () => {
   const paid = await list({ payment: "paid" });
@@ -105,4 +128,5 @@ test("auth, invalid filters, no-store and bounded response work over real HTTP",
   assert.deepEqual([data.total, data.page, data.pageSize, data.users.length], [62, 2, 25, 25]);
   const summary = await (await fetch(`${base}/admin-api/users-summary`, { headers })).json();
   assert.equal(summary.usersCount, 62);
+  assert.equal(summary.multipageDocumentsCount, 0);
 });

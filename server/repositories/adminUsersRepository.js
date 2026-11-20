@@ -109,6 +109,12 @@ export async function listAdminUsers(filters, { execute = query } = {}) {
 export async function getAdminUsersSummary({ execute = query } = {}) {
   const result = await execute(`select
     (select count(*)::int from users) as users_count,
-    (select count(*)::int from photos join users on users.id = photos.user_id) as documents_count`);
-  return { usersCount: Number(result.rows[0].users_count), documentsCount: Number(result.rows[0].documents_count) };
+    (select count(*)::int from photos join users on users.id = photos.user_id) as documents_count,
+    (select count(*)::int from (
+      select d.id from documents d join users on users.id = d.user_id
+      join document_pages dp on dp.document_id = d.id and dp.user_id = d.user_id
+      group by d.id having count(*) >= 2
+    ) multipage) as multipage_documents_count`);
+  return { usersCount: Number(result.rows[0].users_count), documentsCount: Number(result.rows[0].documents_count),
+    multipageDocumentsCount: Number(result.rows[0].multipage_documents_count) };
 }

@@ -555,7 +555,7 @@ function AdminDashboard({ onLogout }) {
   const [accountDeletion, setAccountDeletion] = useState(null);
   const [deletionRefreshError, setDeletionRefreshError] = useState("");
   const [users, setUsers] = useState([]);
-  const [usersSummary, setUsersSummary] = useState({ usersCount: 0, documentsCount: 0 });
+  const [usersSummary, setUsersSummary] = useState({ usersCount: 0, documentsCount: 0, multipageDocumentsCount: 0 });
   const [userFilters, setUserFilters] = useState({ ...DEFAULT_USER_FILTERS });
   const [userPage, setUserPage] = useState({ total: 0, page: 1, pageSize: 25 });
   const [usersLoading, setUsersLoading] = useState(true);
@@ -949,6 +949,11 @@ function AdminDashboard({ onLogout }) {
         <button type="button" onClick={() => setActiveTab("overview")}>
           <span>Записи</span>
           <strong>{documentsCount}</strong>
+        </button>
+        <button type="button" onClick={() => setActiveTab("overview")}
+          title="Документы в архивах пользователей, в которых сейчас не менее двух страниц.">
+          <span>Многостраничные сейчас</span>
+          <strong>{usersSummary.multipageDocumentsCount ?? 0}</strong>
         </button>
         <button type="button" onClick={() => setActiveTab("requests")}>
           <span>Новые заявки</span>
