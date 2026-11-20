@@ -84,7 +84,8 @@ export function createApp({
   clientDistDirectory = clientDistDir,
   getDatabaseStatus = () => EMPTY_DATABASE_STATUS,
   checkMonitorDatabase = () => query({ text: "select 1", query_timeout: 3000 }),
-  loadPublicLimits = getPublicLimits
+  loadPublicLimits = getPublicLimits,
+  observeUploads = null
 } = {}) {
   const app = express();
   let monitorResult = null;
@@ -93,6 +94,7 @@ export function createApp({
 
   app.set("passport", passport);
 
+  if (observeUploads) app.use(observeUploads);
   app.use(cors(buildCorsOptions()));
   app.use(express.json());
   app.use(session({ secret: SESSION_SECRET, resave: false, saveUninitialized: false }));

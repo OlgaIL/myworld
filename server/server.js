@@ -4,7 +4,8 @@ import { checkDatabaseConnection, isDatabaseConfigured } from "./db/index.js";
 import { createApp } from "./app.js";
 import { TELEGRAM_EVENTS_CHAT_ID } from "./config/env.js";
 import { TELEGRAM_BOT_TOKEN } from "./config/private-env.js";
-import { startTelegramNotificationWorker } from "./services/telegramNotificationsService.js";
+import { sendTelegramMessage, startTelegramNotificationWorker } from "./services/telegramNotificationsService.js";
+import { createUploadAlerts } from "./services/uploadAlertsService.js";
 import { startAccountDeletionCleanupWorker } from "./services/accountDeletionCleanupService.js";
 import { startLocalGuestCleanupWorker } from "./services/localGuestCleanupWorker.js";
 
@@ -15,7 +16,10 @@ let databaseStatus = {
   error: null
 };
 
-const app = createApp({ getDatabaseStatus: () => databaseStatus });
+const uploadAlerts = TELEGRAM_BOT_TOKEN && TELEGRAM_EVENTS_CHAT_ID ? createUploadAlerts({
+  send: text => sendTelegramMessage({ token: TELEGRAM_BOT_TOKEN, chatId: TELEGRAM_EVENTS_CHAT_ID, text })
+}) : null;
+const app = createApp({ getDatabaseStatus: () => databaseStatus, observeUploads: uploadAlerts?.middleware });
 
 async function initializeDatabaseStatus() {
   if (!databaseStatus.configured) {
@@ -51,4 +55,10 @@ if (databaseStatus.connected) {
   startTelegramNotificationWorker({ token: TELEGRAM_BOT_TOKEN, chatId: TELEGRAM_EVENTS_CHAT_ID });
 }
 
-app.listen(4000, () => console.log("Server running on http://localhost:4000"));
+app.listen(4000, () => {
+  if (uploadAlerts) {
+    uploadAlerts.start();
+    console.log("[upload-alerts] enabled");
+  }
+  console.log("Server running on http://localhost:4000");
+});
