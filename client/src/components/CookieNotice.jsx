@@ -18,8 +18,8 @@ function CookieNotice() {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  function acceptCookies(granted) {
-    inspectletController?.chooseConsent(granted);
+  function acceptCookies() {
+    inspectletController?.chooseConsent(true);
     try { localStorage.setItem(COOKIE_NOTICE_KEY, "true"); } catch { /* Optional storage. */ }
     setVisible(false);
   }
@@ -37,11 +37,8 @@ function CookieNotice() {
         <Link className="cookie-notice__link" to="/privacy">
           Подробнее
         </Link>
-        <button className="cookie-notice__button" type="button" onClick={() => acceptCookies(false)}>
-          Без записи визитов
-        </button>
-        <button className="cookie-notice__button" type="button" onClick={() => acceptCookies(true)}>
-          Разрешить запись
+        <button className="cookie-notice__button" type="button" onClick={acceptCookies}>
+          Согласен
         </button>
       </div>
     </div>
