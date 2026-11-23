@@ -30,6 +30,26 @@ test("requisite retry reads only the owned matching cache for account or guest a
   }
 });
 
+test("local heading retry can read its owned verified cache when bank recovery is disabled", async () => {
+  const env = { LOCAL_REQUISITE_LAYOUT_ENABLED: "false", REQUISITE_LAYOUT_ENABLED: "false",
+    LOCAL_STATEMENT_HEADING_ORDER_ENABLED: "true", DATABASE_URL: "postgres://test@localhost/test", NODE_ENV: "test" };
+  for (const guest of [false, true]) {
+    let reads = 0;
+    const doc = { id: 7, user_id: 8, guest_session_id: 9, storage_path: "synthetic" };
+    const options = { guest, env, readImage: async () => image, runQuery: async (sql, values) => {
+      reads++; assert.match(sql, /^select/u); assert.deepEqual(values, [7, guest ? 9 : 8]);
+      assert.ok(sql.includes(guest ? "guest_session_id" : "user_id")); return { rows: [{ artifact: layout }] };
+    } };
+    assert.equal(await loadRequisiteOcrLayout(doc, options), layout);
+    assert.equal(await loadRequisiteOcrLayout(doc, { ...options, readImage: async () => Buffer.from("changed") }), null);
+    const before = reads;
+    assert.equal(await loadRequisiteOcrLayout(doc, { ...options, env: { ...env, NODE_ENV: "production" } }), null);
+    assert.equal(reads, before);
+    assert.equal(await loadRequisiteOcrLayout(doc, { ...options, env: { ...env, NODE_ENV: "production",
+      DATABASE_URL: "postgres://test@remote.example/test", STATEMENT_HEADING_ORDER_ENABLED: "true" } }), layout);
+  }
+});
+
 test("OCR layout keeps raw and repaired text, image identity and zero coordinates", () => {
   assert.equal(layout.rawText, "Original OCR text");
   assert.equal(layout.text, "Repaired OCR text");

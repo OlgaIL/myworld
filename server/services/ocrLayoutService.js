@@ -4,11 +4,13 @@ import { matchesOcrLayout } from "../utils/ocrLayout.js";
 import { normalizeOcrResult } from "../utils/ocr.js";
 import { recognizeWithPipeline } from "./processingPipelineService.js";
 import { isRequisiteLayoutEnabled } from "./requisiteProcessingService.js";
+import { isStatementHeadingOrderEnabled } from "./statementHeadingPreviewService.js";
 
 // Retrying formatting must only read an existing, owned cache: never invoke OCR.
 export async function loadRequisiteOcrLayout(document, { guest = false, runQuery = query,
   readImage = fs.readFile, env = process.env } = {}) {
-  if (!isRequisiteLayoutEnabled(env) || !document?.id || !document.storage_path) return null;
+  if ((!isRequisiteLayoutEnabled(env) && !isStatementHeadingOrderEnabled(env))
+    || !document?.id || !document.storage_path) return null;
   const ownerId = guest ? document.guest_session_id : document.user_id;
   if (!ownerId) return null;
   const parent = guest ? "guest_documents" : "photos";

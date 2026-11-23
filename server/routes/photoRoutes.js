@@ -596,7 +596,8 @@ router.post("/api/photos/:id/process", requireAuthenticatedUser, withAccountOper
     });
 
     const aiResult = await enrichWithPipeline(text, pipeline, {
-      trigger: retryStoredEnrichment ? "retry" : "upload", layout: ocrLayout
+      // Both OCR capture and retry cache verify the source image hash/owner.
+      trigger: retryStoredEnrichment ? "retry" : "upload", layout: ocrLayout, layoutVerified: Boolean(ocrLayout)
     });
 
     timer.log("ai_finished", {

@@ -236,7 +236,8 @@ async function enrichGuestDocumentWithAi({ text, timer, trigger = "upload", layo
   });
 
   const savedLayout = layout || (document ? await loadRequisiteOcrLayout(document, { guest: true }) : null);
-  const aiResult = await enrichWithPipeline(text, pipeline, { trigger, layout: savedLayout });
+  // Fresh capture and owned retry cache both verify the source image hash.
+  const aiResult = await enrichWithPipeline(text, pipeline, { trigger, layout: savedLayout, layoutVerified: Boolean(savedLayout) });
 
   timer.log("ai_finished", {
     pipeline: pipeline.pipeline,

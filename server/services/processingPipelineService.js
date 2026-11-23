@@ -28,6 +28,7 @@ import * as aiService from "./aiService.js";
 import { runMeasuredLlmAttempt } from "./llmAttemptMetricsService.js";
 import ocrService from "./ocrService.js";
 import { applyLocalRequisiteResult } from "./requisiteProcessingService.js";
+import { applyStatementHeadingOrder } from "./statementHeadingPreviewService.js";
 
 export const PROCESSING_PIPELINES = {
   FAST: "fast",
@@ -191,7 +192,7 @@ export async function recognizeWithPipeline(imagePath, pipeline, { captureLayout
   });
 }
 
-export async function enrichWithPipeline(text, pipeline, { trigger = "upload", persistMetrics, layout = null } = {}) {
+export async function enrichWithPipeline(text, pipeline, { trigger = "upload", persistMetrics, layout = null, layoutVerified = false } = {}) {
   const result = await runMeasuredLlmAttempt({
     pipeline,
     trigger,
@@ -208,7 +209,8 @@ export async function enrichWithPipeline(text, pipeline, { trigger = "upload", p
       model: OPENAI_MODEL
     })
   });
-  return applyLocalRequisiteResult(text, result, layout, { pipeline });
+  const structured = applyLocalRequisiteResult(text, result, layout, { pipeline });
+  return applyStatementHeadingOrder(text, structured, layout, { pipeline, sourceVerified: layoutVerified });
 }
 
 export async function recognizeWithCurrentPipeline(imagePath) {
