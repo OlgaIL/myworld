@@ -19,7 +19,8 @@ export function useDocumentUpload({user,reloadPhotos,reloadUser,recordUploadAllo
     if(!files.length||inFlight.current||!user)return;
     clearSelection();
     const items=files.map((file,index)=>{const url=URL.createObjectURL(file);urls.current.add(url);return {file,url,name:`pending-${crypto.randomUUID()}`,ordinal:index+1};});
-    const nextSelection={items,mode:context.mode||"group",context};
+    const mode = context.mode || (items.length === 1 ? "separate" : "group");
+    const nextSelection={items,mode,context};
     if(files.length===1)void startUpload(nextSelection);
     else setSelection(nextSelection);
     if(files.length>1)trackGoal("account_batch_selected",{source:batchContext?.source||"cabinet_upload",placement:batchContext?.placement||"cabinet",file_count:files.length});
